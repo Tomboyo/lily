@@ -1,9 +1,11 @@
 package com.github.tomboyo.lily;
 
+import com.github.tomboyo.lily.ast.type.*;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.oas.models.media.Schema;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Main {
   public static void main(String[] args) {
@@ -22,48 +24,56 @@ public class Main {
       System.out.println("OAS version: version=" + version);
     }
 
-    var schemas = openApi.getComponents().getSchemas();
-    generateSchemas(schemas);
+    var componentAst =
+        openApi.getComponents().getSchemas().entrySet().stream()
+            .map(entry -> generateRootComponentAst(entry.getKey(), entry.getValue()))
+            .collect(Collectors.toSet());
+    componentAst.forEach(System.out::println);
   }
 
-  private static void generateSchemas(Map<String, Schema> schemas) {
-    schemas.forEach(Main::generateModel);
-  }
-
-  private static void generateModel(String name, Schema schema) {
-    var type = schema.getType();
-    if (type == null) {
-      println("Schema " + name + " has null type");
-      return;
-    }
+  private static Type generateRootComponentAst(String componentName, Schema componentSchema) {
+    var type = componentSchema.getType();
+    if (type == null)
+      throw new IllegalArgumentException(
+          "Root component has no type: componentName=" + componentName);
 
     switch (type) {
       case "object":
-        generateObjectModel(name, schema);
-        return;
+        return generateOuterClassFromComponent(componentName, componentSchema);
       default:
-        throw new RuntimeException("Type of top-level model '" + name + "' is null");
+        throw new IllegalArgumentException(
+            "Unsupported root component type: componentName="
+                + componentName
+                + " componentType="
+                + type);
     }
   }
 
-  private static void generateObjectModel(String name, Schema schema) {
-    var className = oasSchemaNameToJavaClassName(name);
-    Map<String, Schema> properties = schema.getProperties();
-    println("public class " + className + " {");
-    properties.forEach(Main::generateJavaObjectFieldFromOasProprty);
-    println("}");
+  private static OuterClass generateOuterClassFromComponent(
+      String componentName, Schema componentSchema) {
+    if (!componentSchema.getType().equalsIgnoreCase("object")) throw new IllegalArgumentException();
+
+    return new OuterClass(
+        componentName,
+        ((Map<String, Schema>) componentSchema.getProperties())
+            .entrySet().stream()
+                .map(entry -> oasObjectPropertyToField(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList()));
   }
 
-  // TODO: convert the given schema name to a class name
-  private static String oasSchemaNameToJavaClassName(String schemaName) {
-    return schemaName.replaceFirst("^#/components/schemas/", "");
-  }
+  private static Field oasObjectPropertyToField(String propertyName, Schema propertySchema) {
+    var type = propertySchema.getType();
+    var ref = propertySchema.get$ref();
 
-  private static void generateJavaObjectFieldFromOasProprty(
-      String propertyName, Schema propertySchema) {
-    var type = oasPropertyToJavaType(propertySchema);
-    var fieldName = getFieldName(propertyName);
-    println("  private " + type + " " + fieldName + ";");
+    if (type != null) {
+      var format = propertySchema.getFormat();
+      return new Field(oasObjectPropertyType(propertyName, type, format), propertyName);
+    } else if (ref != null) {
+      // TODO
+      return new Field(new UnsupportedType("$ref"), propertyName);
+    } else {
+      throw new IllegalArgumentException("Missing type or $ref: propertyName=" + propertyName);
+    }
   }
 
   // See https://swagger.io/specification/#data-types
@@ -72,51 +82,36 @@ public class Main {
   // response using query parameters or similar.
   // TODO: unexpected format should be warnings only -- and potential extension points to support
   // user-defined formats like "email," as per the spec linked above.
-  private static String oasPropertyToJavaType(Schema propertySchema) {
-    var type = propertySchema.getType();
-    if (type != null) {
-      var format = propertySchema.getFormat();
-
-      switch (type) {
-        case "integer":
-          if (format == null) return "java.math.BigInteger";
-          if (format.equalsIgnoreCase("int64")) return "Long";
-          if (format.equalsIgnoreCase("int32")) return "Integer";
-          throw new IllegalArgumentException("Unexpected integer format: " + format);
-        case "number":
-          if (format == null) return "java.math.BigDecimal";
-          if (format.equalsIgnoreCase("double")) return "Double";
-          if (format.equalsIgnoreCase("float")) return "Float";
-          throw new IllegalArgumentException("Unexpected number format: " + format);
-        case "string":
-          if (format == null || format.equalsIgnoreCase("password")) return "String";
-          // base64 or octets.
-          if (format.equalsIgnoreCase("byte") || format.equalsIgnoreCase("binary")) return "Byte[]";
-          if (format.equalsIgnoreCase("date")) return "java.time.LocalDate";
-          if (format.equalsIgnoreCase("date-time")) return "java.time.ZonedDateTime";
-          throw new IllegalArgumentException("Unexpected string format: " + format);
-        case "boolean":
-          return "Boolean";
-        case "object":
-          return "TODO: INLINE OBJECT";
-        case "array":
-          return "TODO: INLINE ARRAY";
-        default:
-          throw new IllegalArgumentException("Unexpected type: " + type);
-      }
-    } else if (propertySchema.get$ref() != null) {
-      return oasSchemaNameToJavaClassName(propertySchema.get$ref());
-    } else {
-      return "<UNKNOWN JAVA TYPE>";
+  private static Type oasObjectPropertyType(String propertyName, String type, String format) {
+    switch (type) {
+      case "integer":
+        if (format == null) return new StandardType("java.math.BigInteger");
+        if (format.equalsIgnoreCase("int64")) return new StandardType("Long");
+        if (format.equalsIgnoreCase("int32")) return new StandardType("Integer");
+        throw new IllegalArgumentException("Unexpected integer format: " + format);
+      case "number":
+        if (format == null) return new StandardType("java.math.BigDecimal");
+        if (format.equalsIgnoreCase("double")) return new StandardType("Double");
+        if (format.equalsIgnoreCase("float")) return new StandardType("Float");
+        throw new IllegalArgumentException("Unexpected number format: " + format);
+      case "string":
+        if (format == null || format.equalsIgnoreCase("password"))
+          return new StandardType("String");
+        // base64 or octets.
+        if (format.equalsIgnoreCase("byte") || format.equalsIgnoreCase("binary"))
+          return new StandardType("Byte[]");
+        if (format.equalsIgnoreCase("date")) return new StandardType("java.time.LocalDate");
+        if (format.equalsIgnoreCase("date-time"))
+          return new StandardType("java.time.ZonedDateTime");
+        throw new IllegalArgumentException("Unexpected string format: " + format);
+      case "boolean":
+        return new StandardType("Boolean");
+      case "object":
+        return new InnerClass(propertyName);
+      case "array":
+        return new UnsupportedType("inline array type");
+      default:
+        return new UnsupportedType("type=" + type + " format=" + format);
     }
-  }
-
-  // TODO: escapse and potentially format the given string as a java object field name
-  private static String getFieldName(String name) {
-    return name;
-  }
-
-  private static void println(String m) {
-    System.out.println(m);
   }
 }
