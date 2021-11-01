@@ -50,9 +50,10 @@ public class Main {
         throw new IllegalArgumentException("Null type and ref");
       }
 
-      // TODO: this is a reference to a class that is already defined or will later be defined.
-      // Consider depth-first generated with memoization?
-      return new Class(ref, List.of());
+      // We have already generated this class, or will do so soon, as a result of iterating over the
+      // OAS components. We will save a reference to this class so that we can render correctly
+      // later, but avoid circular dependencies during generation.
+      return new ClassRef(ref);
     }
 
     switch (type) {
