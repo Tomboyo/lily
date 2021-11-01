@@ -1,3 +1,9 @@
 package com.github.tomboyo.lily.ast.type;
 
-public record StandardType(String fqn) implements Type {}
+import java.util.List;
+
+public record StandardType(String fqn, List<Type> typeParameters) implements Type {
+    public StandardType(String fqn) {
+        this(fqn, List.of());
+    }
+}
