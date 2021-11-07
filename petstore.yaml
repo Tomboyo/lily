@@ -599,17 +599,42 @@ paths:
           description: User not found
 components:
   schemas:
+    # Is an object with an array of objects defined in-line
+    ArraysPropertyInLineDef:
+      type: object
+      properties:
+        foo:
+          type: array
+          items:
+            # nested type arrayspropertyinlinedef.FooItem
+            type: object
+            properties:
+              bar:
+                type: string
+    ArraysAlias:
+      type: array
+      items:
+        # anonymous type "ArrayAliasItem"
+        type: object
+        properties:
+          foo:
+            type: string
+    ArrayRef:
+      type: object
+      properties:
+        foo:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArrayAlias'
+
     HasInlineObject:
       type: object
       properties:
-        inlined:
+        foo:
           type: object
           properties:
-            inlinedAgain:
-              type: object
-              properties:
-                foo:
-                  type: string
+            bar:
+              type: string
     HasPropertyRefs:
       type: object
       properties:

@@ -1,3 +1,3 @@
 package com.github.tomboyo.lily.ast.type;
 
-public sealed interface Ast permits StdLibType, NewClass, ClassRef, UnsupportedAst {}
+public sealed interface Ast permits AstReference, AstClass, NewPackage {}

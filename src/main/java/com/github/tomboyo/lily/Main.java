@@ -19,6 +19,8 @@ public class Main {
       System.out.println("OAS version: version=" + version);
     }
 
-    OasSchemaToAst.oasComponentsAst(openApi.getComponents()).forEach(System.out::println);
+    openApi.getComponents().getSchemas().entrySet().stream()
+        .flatMap(entry -> OasSchemaToAst.generateAst("mypackage", entry.getKey(), entry.getValue()))
+        .forEach(System.out::println);
   }
 }
