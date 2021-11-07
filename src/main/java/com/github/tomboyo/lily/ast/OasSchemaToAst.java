@@ -13,7 +13,7 @@ import static java.util.Objects.requireNonNull;
 
 public class OasSchemaToAst {
 
-  public static List<Type> oasComponentsAst(Components components) {
+  public static List<Ast> oasComponentsAst(Components components) {
     var refs =
         components.getSchemas().entrySet().stream()
             .collect(
@@ -26,18 +26,18 @@ public class OasSchemaToAst {
             .collect(Collectors.toList());
   }
 
-  private static Type interpolateRefs(Type type, Map<String, Type> refs) {
+  private static Ast interpolateRefs(Ast type, Map<String, Ast> refs) {
     return switch (type) {
-      case AstClass astClass -> new AstClass(
-              astClass.name(),
-              astClass.fields().stream()
+      case NewClass newClass -> new NewClass(
+              newClass.name(),
+              newClass.fields().stream()
                       .map(field -> new Field(interpolateRefs(field.type(), refs), field.name()))
                       .collect(Collectors.toList()));
       case ClassRef ref -> requireNonNull(
               refs.get(ref.ref().replaceFirst("^#/components/schemas/", "")),
               "Missing type definition for ref: ref=" + ref.ref());
-      case StandardType t -> t;
-      case UnsupportedType t -> t;
+      case StdLibType t -> t;
+      case UnsupportedAst t -> t;
     };
   }
 
@@ -47,7 +47,7 @@ public class OasSchemaToAst {
   // response using query parameters or similar.
   // TODO: unexpected format should be warnings only -- and potential extension points to support
   // user-defined formats like "email," as per the spec linked above.
-  private static Type oasSchemaAst(String schmaName, Schema schema) {
+  private static Ast oasSchemaAst(String schmaName, Schema schema) {
     var type = schema.getType();
     var format = schema.getFormat();
     var ref = schema.get$ref();
@@ -65,40 +65,40 @@ public class OasSchemaToAst {
 
     switch (type) {
       case "integer":
-        if (format == null) return new StandardType("java.math.BigInteger");
-        if (format.equalsIgnoreCase("int64")) return new StandardType("Long");
-        if (format.equalsIgnoreCase("int32")) return new StandardType("Integer");
+        if (format == null) return new StdLibType("java.math.BigInteger");
+        if (format.equalsIgnoreCase("int64")) return new StdLibType("Long");
+        if (format.equalsIgnoreCase("int32")) return new StdLibType("Integer");
         throw new IllegalArgumentException("Unexpected integer format: " + format);
       case "number":
-        if (format == null) return new StandardType("java.math.BigDecimal");
-        if (format.equalsIgnoreCase("double")) return new StandardType("Double");
-        if (format.equalsIgnoreCase("float")) return new StandardType("Float");
+        if (format == null) return new StdLibType("java.math.BigDecimal");
+        if (format.equalsIgnoreCase("double")) return new StdLibType("Double");
+        if (format.equalsIgnoreCase("float")) return new StdLibType("Float");
         throw new IllegalArgumentException("Unexpected number format: " + format);
       case "string":
         if (format == null || format.equalsIgnoreCase("password"))
-          return new StandardType("String");
+          return new StdLibType("String");
         // base64 or octets.
         if (format.equalsIgnoreCase("byte") || format.equalsIgnoreCase("binary"))
-          return new StandardType("Byte[]");
-        if (format.equalsIgnoreCase("date")) return new StandardType("java.time.LocalDate");
+          return new StdLibType("Byte[]");
+        if (format.equalsIgnoreCase("date")) return new StdLibType("java.time.LocalDate");
         if (format.equalsIgnoreCase("date-time"))
-          return new StandardType("java.time.ZonedDateTime");
+          return new StdLibType("java.time.ZonedDateTime");
         throw new IllegalArgumentException("Unexpected string format: " + format);
       case "boolean":
-        return new StandardType("Boolean");
+        return new StdLibType("Boolean");
       case "object":
-        return new AstClass(
+        return new NewClass(
             schmaName,
             ((Map<String, Schema>) schema.getProperties())
                 .entrySet().stream()
                     .map(entry -> oasObjectPropertyToField(entry.getKey(), entry.getValue()))
                     .collect(Collectors.toList()));
       case "array":
-        return new StandardType(
+        return new StdLibType(
             "java.util.ArrayList",
             List.of(oasSchemaAst(schmaName, ((ArraySchema) schema).getItems())));
       default:
-        return new UnsupportedType("type=" + type + " format=" + format);
+        return new UnsupportedAst("type=" + type + " format=" + format);
     }
   }
 
