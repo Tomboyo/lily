@@ -3,18 +3,22 @@ package com.github.tomboyo.lily.ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstReference;
 import com.github.tomboyo.lily.ast.type.Field;
+import com.github.tomboyo.lily.ast.type.NewPackage;
 import com.github.tomboyo.lily.ast.type.PackageContents;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
 public class OasSchemaToAst {
+
   // ignoring special case for alias types at the moment...
   public static Stream<PackageContents> generateAst(
       String currentPackage,
