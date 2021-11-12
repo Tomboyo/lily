@@ -3,24 +3,33 @@ package com.github.tomboyo.lily.ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstReference;
 import com.github.tomboyo.lily.ast.type.Field;
-import com.github.tomboyo.lily.ast.type.NewPackage;
 import com.github.tomboyo.lily.ast.type.PackageContents;
-import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
 public class OasSchemaToAst {
 
-  // ignoring special case for alias types at the moment...
+  private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(OasSchemaToAst.class);
+
   public static Stream<PackageContents> generateAst(
+      String currentPackage,
+      String schemaName,
+      Schema schema
+  ) {
+    return generateAst(DEFAULT_LOGGER,currentPackage, schemaName,schema);
+  }
+
+  public static Stream<PackageContents> generateAst(
+      Logger logger,
       String currentPackage,
       String schemaName,
       Schema schema) {
@@ -31,7 +40,7 @@ public class OasSchemaToAst {
 
     return switch (type) {
       case null, "integer", "number", "string", "boolean" -> Stream.of();
-      case "object" -> generateObjectAst(currentPackage, schemaName, schema);
+      case "object" -> generateObjectAst(logger, currentPackage, schemaName, schema);
       case "array" -> generateListAst(currentPackage,
           schemaName + "Item",
           schema);
@@ -55,7 +64,7 @@ public class OasSchemaToAst {
     }
   }
 
-  private static Stream<PackageContents> generateObjectAst(String currentPackage,
+  private static Stream<PackageContents> generateObjectAst(Logger logger, String currentPackage,
       String schemaName,
       Schema schema) {
     // This package is "nested" beneath this class. Any nested in-line class definitions are generated within the
@@ -68,7 +77,7 @@ public class OasSchemaToAst {
     var fields = properties.entrySet().stream().map(entry -> {
       var pName = entry.getKey();
       var pSchema = entry.getValue();
-      var reference = toReference(interiorPackage, pName, pSchema);
+      var reference = toReference(logger, interiorPackage, pName, pSchema);
       return new Field(reference, pName);
     }).collect(toList());
     var exteriorClass = Stream.of(new AstClass(schemaName, fields));
@@ -85,7 +94,9 @@ public class OasSchemaToAst {
     return Stream.concat(exteriorClass, interiorClasses);
   }
 
-  private static AstReference toReference(String packageName,
+  private static AstReference toReference(
+      Logger logger,
+      String packageName,
       String schemaName,
       Schema schema) {
     var type = schema.getType();
@@ -94,11 +105,11 @@ public class OasSchemaToAst {
 
     return switch (type) {
       case null -> toBasePackageClassReference(ref);
-      case "integer", "number", "string", "boolean" -> toStdLibAstReference(type,
+      case "integer", "number", "string", "boolean" -> toStdLibAstReference(logger, type,
           format);
-      case "array" -> toListReference(packageName, schemaName, schema);
+      case "array" -> toListReference(logger, packageName, schemaName, schema);
       case "object" -> new AstReference(packageName, schemaName);
-      default -> throw new RuntimeException("Unexpected type: " + type);
+      default -> throw new IllegalArgumentException("Unexpected type: " + type);
     };
   }
 
@@ -107,43 +118,50 @@ public class OasSchemaToAst {
         $ref.replaceFirst("^#/components/schemas/", ""));
   }
 
-  private static AstReference toStdLibAstReference(String type, String format) {
+  private static AstReference toStdLibAstReference(Logger logger, String type, String format) {
     return switch (type) {
       case "integer" -> switch (format) {
         case null -> new AstReference("java.math", "BigInteger");
         case "int64" -> new AstReference("java.lang", "Long");
         case "int32" -> new AstReference("java.lang", "Integer");
-        default -> throw new IllegalArgumentException(
-            "Unexpected integer format: " + format);
+        default -> defaultType(logger, type, format, new AstReference("java.math", "BigInteger"));
       };
       case "number" -> switch (format) {
         case null -> new AstReference("java.math", "BigDecimal");
         case "double" -> new AstReference("java.lang", "Double");
         case "float" -> new AstReference("java.lang", "Float");
-        default -> throw new IllegalArgumentException(
-            "Unexpected number format: " + format);
+        default -> defaultType(logger, type, format, new AstReference("java.math", "BigDecimal"));
       };
       case "string" -> switch (format) {
         case null, "password" -> new AstReference("java.lang", "String");
         case "byte", "binary" -> new AstReference("java.lang", "Byte[]");
         case "date" -> new AstReference("java.time", "LocalDate");
         case "date-time" -> new AstReference("java.time", "ZonedDateTime");
-        default -> throw new IllegalArgumentException(
-            "Unexpected string format: " + format);
+        default -> defaultType(logger, type,format,new AstReference("java.lang","String"));
       };
-      case "boolean" -> new AstReference("java.lang", "Boolean");
+      case "boolean" -> switch (format) {
+        case null -> new AstReference("java.lang", "Boolean");
+        default -> defaultType(logger, type, format, new AstReference("java.lang", "Boolean"));
+      };
       default -> throw new IllegalArgumentException("Unexpected type: " + type);
     };
   }
 
-  private static AstReference toListReference(String packageName,
+  private static AstReference defaultType(Logger logger, String type, String format, AstReference defaultAst) {
+    if (format != null) {
+      logger.warn("Using default class for unsupported format: type={} format={}", type, format);
+    }
+    return defaultAst;
+  }
+
+  private static AstReference toListReference(Logger logger, String packageName,
       String schemaName,
       Schema schema) {
     var itemSchema = ((ArraySchema) schema).getItems();
     var itemName = schemaName + "Item";
     return new AstReference("java.util",
         "List",
-        List.of(toReference(packageName, itemName, itemSchema)));
+        List.of(toReference(logger, packageName, itemName, itemSchema)));
   }
 
   /**
