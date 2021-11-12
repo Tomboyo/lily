@@ -49,20 +49,21 @@ class OasSchemaToAstTest {
   @MethodSource("standardTypesAndFormats")
   public void standardTypesAndFormats(
       String type, String format, String expectedPackage, String expectedClass) {
-    var schema =
-        new Schema()
-            .name("MyComponent")
-            .type("object")
-            .properties(Map.of("myField", new Schema().type(type).format(format)));
-
     var ast =
-        (AstClass)
-            OasSchemaToAst.generateAst("com.foo", "MyComponent", schema).findAny().orElseThrow();
+        OasSchemaToAst.generateAst(
+                "com.foo",
+                "MyComponent",
+                new Schema()
+                    .name("MyComponent")
+                    .type("object")
+                    .properties(Map.of("myField", new Schema().type(type).format(format))))
+            .collect(Collectors.toSet());
 
     assertEquals(
-        new AstClass(
-            "MyComponent",
-            List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField"))),
+        Set.of(
+            new AstClass(
+                "MyComponent",
+                List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField")))),
         ast,
         "OAS primitives evaluate to standard java types");
   }
@@ -88,13 +89,13 @@ class OasSchemaToAstTest {
                     .type("object")
                     .properties(
                         Map.of("myField", new Schema().type(type).format("unsupported-format"))))
-            .findAny()
-            .orElseThrow();
+            .collect(Collectors.toSet());
 
     assertEquals(
-        new AstClass(
-            "MyComponent",
-            List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField"))),
+        Set.of(
+            new AstClass(
+                "MyComponent",
+                List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField")))),
         ast,
         "Unsupported formats fall back to default types");
 
@@ -137,19 +138,19 @@ class OasSchemaToAstTest {
                             new ArraySchema()
                                 .type("array")
                                 .items(new Schema().type(type).format(format)))))
-            .findAny()
-            .orElseThrow();
+            .collect(Collectors.toSet());
 
     assertEquals(
-        new AstClass(
-            "MyComponent",
-            List.of(
-                new Field(
-                    new AstReference(
-                        "java.util",
-                        "List",
-                        List.of(new AstReference(expectedPackage, expectedClass))),
-                    "myField"))),
+        Set.of(
+            new AstClass(
+                "MyComponent",
+                List.of(
+                    new Field(
+                        new AstReference(
+                            "java.util",
+                            "List",
+                            List.of(new AstReference(expectedPackage, expectedClass))),
+                        "myField")))),
         ast,
         "Arrays evaluate to Lists with type parameters");
   }
