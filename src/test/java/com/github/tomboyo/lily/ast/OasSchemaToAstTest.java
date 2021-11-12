@@ -3,11 +3,13 @@ package com.github.tomboyo.lily.ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstReference;
 import com.github.tomboyo.lily.ast.type.Field;
+import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -24,24 +26,29 @@ class OasSchemaToAstTest {
   @Nested
   public class AstClassFields {
 
+    private static String[][] standardTypesAndFormats() {
+      return new String[][] {
+        // OAS type, OAS format, expected package, expected class
+        new String[] {"boolean", null, "java.lang", "Boolean"},
+        new String[] {"integer", null, "java.math", "BigInteger"},
+        new String[] {"integer", "int32", "java.lang", "Integer"},
+        new String[] {"integer", "int64", "java.lang", "Long"},
+        new String[] {"number", null, "java.math", "BigDecimal"},
+        new String[] {"number", "double", "java.lang", "Double"},
+        new String[] {"number", "float", "java.lang", "Float"},
+        new String[] {"string", null, "java.lang", "String"},
+        new String[] {"string", "password", "java.lang", "String"},
+        new String[] {"string", "byte", "java.lang", "Byte[]"},
+        new String[] {"string", "binary", "java.lang", "Byte[]"},
+        new String[] {"string", "date", "java.time", "LocalDate"},
+        new String[] {"string", "date-time", "java.time", "ZonedDateTime"}
+      };
+    }
+
     @ParameterizedTest
-    @CsvSource({
-      "boolean,, java.lang, Boolean",
-      "integer,, java.math, BigInteger",
-      "integer, int32, java.lang, Integer",
-      "integer, int64, java.lang, Long",
-      "number,, java.math, BigDecimal",
-      "number, double, java.lang, Double",
-      "number, float, java.lang, Float",
-      "string,, java.lang, String",
-      "string, password, java.lang, String",
-      "string, byte, java.lang, Byte[]",
-      "string, binary, java.lang, Byte[]",
-      "string, date, java.time, LocalDate",
-      "string, date-time, java.time, ZonedDateTime"
-    })
+    @MethodSource("standardTypesAndFormats")
     public void standardTypesAndFormats(
-        String type, String format, String packageName, String className) {
+        String type, String format, String expectedPackage, String expectedClass) {
       var schema =
           new Schema()
               .name("MyComponent")
@@ -55,7 +62,7 @@ class OasSchemaToAstTest {
       assertEquals(
           new AstClass(
               "MyComponent",
-              List.of(new Field(new AstReference(packageName, className), "myField"))),
+              List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField"))),
           ast,
           "OAS primitives evaluate to standard java types");
     }
@@ -112,6 +119,39 @@ class OasSchemaToAstTest {
                       .type("object")
                       .properties(Map.of("myField", new Schema().type("unsupported-type")))),
           "Unsupported types trigger runtime exceptions.");
+    }
+
+    @ParameterizedTest
+    @MethodSource("standardTypesAndFormats")
+    public void arrays(String type, String format, String expectedPackage, String expectedClass) {
+      var ast =
+          OasSchemaToAst.generateAst(
+                  "com.foo",
+                  "MyComponent",
+                  new Schema()
+                      .name("MyComponent")
+                      .type("object")
+                      .properties(
+                          Map.of(
+                              "myField",
+                              new ArraySchema()
+                                  .type("array")
+                                  .items(new Schema().type(type).format(format)))))
+              .findAny()
+              .orElseThrow();
+
+      assertEquals(
+          new AstClass(
+              "MyComponent",
+              List.of(
+                  new Field(
+                      new AstReference(
+                          "java.util",
+                          "List",
+                          List.of(new AstReference(expectedPackage, expectedClass))),
+                      "myField"))),
+          ast,
+          "Arrays evaluate to Lists with type parameters");
     }
   }
 }
