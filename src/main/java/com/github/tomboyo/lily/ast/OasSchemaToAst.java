@@ -3,6 +3,7 @@ package com.github.tomboyo.lily.ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstReference;
 import com.github.tomboyo.lily.ast.type.Field;
+import com.github.tomboyo.lily.ast.type.NewPackage;
 import com.github.tomboyo.lily.ast.type.PackageContents;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -25,7 +27,7 @@ public class OasSchemaToAst {
       String schemaName,
       Schema schema
   ) {
-    return generateAst(DEFAULT_LOGGER,currentPackage, schemaName,schema);
+    return generateAst(DEFAULT_LOGGER, currentPackage, schemaName, schema);
   }
 
   public static Stream<PackageContents> generateAst(
@@ -80,7 +82,7 @@ public class OasSchemaToAst {
       var reference = toReference(logger, interiorPackage, pName, pSchema);
       return new Field(reference, pName);
     }).collect(toList());
-    var exteriorClass = Stream.of(new AstClass(schemaName, fields));
+    var exteriorClass = new AstClass(schemaName, fields);
 
     // 2. Define new classes for interior objects (e.g. in-line object definitions for our fields).
     // Note that many properties _may not_ warrant AST generation -- those return an empty stream.
@@ -88,10 +90,18 @@ public class OasSchemaToAst {
         properties.entrySet()
             .stream()
             .flatMap(entry -> generateAst(interiorPackage,
-                entry.getKey(),
-                entry.getValue()));
+                toClassCase(entry.getKey()),
+                entry.getValue())).collect(Collectors.toSet());
 
-    return Stream.concat(exteriorClass, interiorClasses);
+    if (interiorClasses.isEmpty()) {
+      return Stream.of(exteriorClass);
+    } else {
+      return Stream.of(exteriorClass, new NewPackage(interiorPackage, interiorClasses));
+    }
+  }
+
+  private static String toClassCase(String name) {
+    return name.substring(0, 1).toUpperCase() + name.substring(1);
   }
 
   private static AstReference toReference(

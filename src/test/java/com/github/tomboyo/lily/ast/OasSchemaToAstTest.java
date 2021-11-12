@@ -3,9 +3,10 @@ package com.github.tomboyo.lily.ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstReference;
 import com.github.tomboyo.lily.ast.type.Field;
+import com.github.tomboyo.lily.ast.type.NewPackage;
 import io.swagger.v3.oas.models.media.ArraySchema;
+import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -14,6 +15,8 @@ import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,135 +26,164 @@ import static org.mockito.Mockito.verify;
 
 class OasSchemaToAstTest {
 
-  @Nested
-  public class AstClassFields {
+  private static String[][] standardTypesAndFormats() {
+    return new String[][] {
+      // OAS type, OAS format, expected package, expected class
+      new String[] {"boolean", null, "java.lang", "Boolean"},
+      new String[] {"integer", null, "java.math", "BigInteger"},
+      new String[] {"integer", "int32", "java.lang", "Integer"},
+      new String[] {"integer", "int64", "java.lang", "Long"},
+      new String[] {"number", null, "java.math", "BigDecimal"},
+      new String[] {"number", "double", "java.lang", "Double"},
+      new String[] {"number", "float", "java.lang", "Float"},
+      new String[] {"string", null, "java.lang", "String"},
+      new String[] {"string", "password", "java.lang", "String"},
+      new String[] {"string", "byte", "java.lang", "Byte[]"},
+      new String[] {"string", "binary", "java.lang", "Byte[]"},
+      new String[] {"string", "date", "java.time", "LocalDate"},
+      new String[] {"string", "date-time", "java.time", "ZonedDateTime"}
+    };
+  }
 
-    private static String[][] standardTypesAndFormats() {
-      return new String[][] {
-        // OAS type, OAS format, expected package, expected class
-        new String[] {"boolean", null, "java.lang", "Boolean"},
-        new String[] {"integer", null, "java.math", "BigInteger"},
-        new String[] {"integer", "int32", "java.lang", "Integer"},
-        new String[] {"integer", "int64", "java.lang", "Long"},
-        new String[] {"number", null, "java.math", "BigDecimal"},
-        new String[] {"number", "double", "java.lang", "Double"},
-        new String[] {"number", "float", "java.lang", "Float"},
-        new String[] {"string", null, "java.lang", "String"},
-        new String[] {"string", "password", "java.lang", "String"},
-        new String[] {"string", "byte", "java.lang", "Byte[]"},
-        new String[] {"string", "binary", "java.lang", "Byte[]"},
-        new String[] {"string", "date", "java.time", "LocalDate"},
-        new String[] {"string", "date-time", "java.time", "ZonedDateTime"}
-      };
-    }
+  @ParameterizedTest
+  @MethodSource("standardTypesAndFormats")
+  public void standardTypesAndFormats(
+      String type, String format, String expectedPackage, String expectedClass) {
+    var schema =
+        new Schema()
+            .name("MyComponent")
+            .type("object")
+            .properties(Map.of("myField", new Schema().type(type).format(format)));
 
-    @ParameterizedTest
-    @MethodSource("standardTypesAndFormats")
-    public void standardTypesAndFormats(
-        String type, String format, String expectedPackage, String expectedClass) {
-      var schema =
-          new Schema()
-              .name("MyComponent")
-              .type("object")
-              .properties(Map.of("myField", new Schema().type(type).format(format)));
+    var ast =
+        (AstClass)
+            OasSchemaToAst.generateAst("com.foo", "MyComponent", schema).findAny().orElseThrow();
 
-      var ast =
-          (AstClass)
-              OasSchemaToAst.generateAst("com.foo", "MyComponent", schema).findAny().orElseThrow();
+    assertEquals(
+        new AstClass(
+            "MyComponent",
+            List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField"))),
+        ast,
+        "OAS primitives evaluate to standard java types");
+  }
 
-      assertEquals(
-          new AstClass(
-              "MyComponent",
-              List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField"))),
-          ast,
-          "OAS primitives evaluate to standard java types");
-    }
+  @ParameterizedTest
+  @CsvSource({
+    "boolean, java.lang, Boolean",
+    "string, java.lang, String",
+    "integer, java.math, BigInteger",
+    "number, java.math, BigDecimal",
+    "string, java.lang, String"
+  })
+  public void unsupportedFormats(String type, String expectedPackage, String expectedClass) {
+    Logger logger = mock(Logger.class);
 
-    @ParameterizedTest
-    @CsvSource({
-      "boolean, java.lang, Boolean",
-      "string, java.lang, String",
-      "integer, java.math, BigInteger",
-      "number, java.math, BigDecimal",
-      "string, java.lang, String"
-    })
-    public void unsupportedFormats(String type, String expectedPackage, String expectedClass) {
-      Logger logger = mock(Logger.class);
+    var ast =
+        OasSchemaToAst.generateAst(
+                logger,
+                "com.foo",
+                "MyComponent",
+                new Schema()
+                    .name("MyComponent")
+                    .type("object")
+                    .properties(
+                        Map.of("myField", new Schema().type(type).format("unsupported-format"))))
+            .findAny()
+            .orElseThrow();
 
-      var ast =
-          OasSchemaToAst.generateAst(
-                  logger,
-                  "com.foo",
-                  "MyComponent",
-                  new Schema()
-                      .name("MyComponent")
-                      .type("object")
-                      .properties(
-                          Map.of("myField", new Schema().type(type).format("unsupported-format"))))
-              .findAny()
-              .orElseThrow();
+    assertEquals(
+        new AstClass(
+            "MyComponent",
+            List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField"))),
+        ast,
+        "Unsupported formats fall back to default types");
 
-      assertEquals(
-          new AstClass(
-              "MyComponent",
-              List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField"))),
-          ast,
-          "Unsupported formats fall back to default types");
+    // Warn the user when an unsupported format is found.
+    verify(logger)
+        .warn(
+            eq("Using default class for unsupported format: type={} format={}"),
+            eq(type),
+            eq("unsupported-format"));
+  }
 
-      // Warn the user when an unsupported format is found.
-      verify(logger)
-          .warn(
-              eq("Using default class for unsupported format: type={} format={}"),
-              eq(type),
-              eq("unsupported-format"));
-    }
+  @Test
+  public void unsupportedTypes() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            OasSchemaToAst.generateAst(
+                "com.foo",
+                "MyComponent",
+                new Schema()
+                    .name("MyComponent")
+                    .type("object")
+                    .properties(Map.of("myField", new Schema().type("unsupported-type")))),
+        "Unsupported types trigger runtime exceptions.");
+  }
 
-    @Test
-    public void unsupportedTypes() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              OasSchemaToAst.generateAst(
-                  "com.foo",
-                  "MyComponent",
-                  new Schema()
-                      .name("MyComponent")
-                      .type("object")
-                      .properties(Map.of("myField", new Schema().type("unsupported-type")))),
-          "Unsupported types trigger runtime exceptions.");
-    }
+  @ParameterizedTest
+  @MethodSource("standardTypesAndFormats")
+  public void arrays(String type, String format, String expectedPackage, String expectedClass) {
+    var ast =
+        OasSchemaToAst.generateAst(
+                "com.foo",
+                "MyComponent",
+                new Schema()
+                    .name("MyComponent")
+                    .type("object")
+                    .properties(
+                        Map.of(
+                            "myField",
+                            new ArraySchema()
+                                .type("array")
+                                .items(new Schema().type(type).format(format)))))
+            .findAny()
+            .orElseThrow();
 
-    @ParameterizedTest
-    @MethodSource("standardTypesAndFormats")
-    public void arrays(String type, String format, String expectedPackage, String expectedClass) {
-      var ast =
-          OasSchemaToAst.generateAst(
-                  "com.foo",
-                  "MyComponent",
-                  new Schema()
-                      .name("MyComponent")
-                      .type("object")
-                      .properties(
-                          Map.of(
-                              "myField",
-                              new ArraySchema()
-                                  .type("array")
-                                  .items(new Schema().type(type).format(format)))))
-              .findAny()
-              .orElseThrow();
+    assertEquals(
+        new AstClass(
+            "MyComponent",
+            List.of(
+                new Field(
+                    new AstReference(
+                        "java.util",
+                        "List",
+                        List.of(new AstReference(expectedPackage, expectedClass))),
+                    "myField"))),
+        ast,
+        "Arrays evaluate to Lists with type parameters");
+  }
 
-      assertEquals(
-          new AstClass(
-              "MyComponent",
-              List.of(
-                  new Field(
-                      new AstReference(
-                          "java.util",
-                          "List",
-                          List.of(new AstReference(expectedPackage, expectedClass))),
-                      "myField"))),
-          ast,
-          "Arrays evaluate to Lists with type parameters");
-    }
+  @Test
+  public void inLineObjectFields() {
+    var ast =
+        OasSchemaToAst.generateAst(
+                "com.foo",
+                "MyComponent",
+                new ObjectSchema()
+                    .name("MyComponent")
+                    .type("object")
+                    .properties(
+                        Map.of(
+                            "myField",
+                            new Schema()
+                                .type("object")
+                                .properties(Map.of("myOtherField", new Schema().type("string"))))))
+            .collect(Collectors.toSet());
+
+    assertEquals(
+        Set.of(
+            new AstClass(
+                "MyComponent",
+                List.of(new Field(new AstReference("com.foo.mycomponent", "MyField"), "myField"))),
+            new NewPackage(
+                "com.foo.mycomponent",
+                Set.of(
+                    new AstClass(
+                        "MyField",
+                        List.of(
+                            new Field(new AstReference("java.lang", "String"), "myOtherField")))))),
+        ast,
+        "in-line object definitions evaluate to references to new classes in a nested package");
   }
 }
