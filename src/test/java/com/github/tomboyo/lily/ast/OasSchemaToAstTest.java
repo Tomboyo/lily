@@ -1,6 +1,7 @@
 package com.github.tomboyo.lily.ast;
 
 import com.github.tomboyo.lily.ast.type.AstClass;
+import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstReference;
 import com.github.tomboyo.lily.ast.type.Field;
 import com.github.tomboyo.lily.ast.type.NewPackage;
@@ -54,10 +55,7 @@ class OasSchemaToAstTest {
             .collect(Collectors.toSet());
 
     assertEquals(
-        Set.of(
-            new AstClass(
-                "MyAliasComponent",
-                List.of(new Field(new AstReference(javaPackage, javaClass), "value")))),
+        Set.of(new AstClassAlias("MyAliasComponent", new AstReference(javaPackage, javaClass))),
         ast,
         "Components with standard types are defined as wrapper types (aliases)");
   }

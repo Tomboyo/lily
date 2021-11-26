@@ -1,6 +1,7 @@
 package com.github.tomboyo.lily.ast;
 
 import com.github.tomboyo.lily.ast.type.AstClass;
+import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstReference;
 import com.github.tomboyo.lily.ast.type.Field;
 import com.github.tomboyo.lily.ast.type.NewPackage;
@@ -57,14 +58,11 @@ public class OasSchemaToAst {
     };
   }
 
-  /** An "alias" AstClass is a wrapper type containing a single field of a stdlib type. */
-  private static AstClass generateAlias(Logger logger, String schemaName, Schema schema) {
+  private static AstClassAlias generateAlias(Logger logger, String schemaName, Schema schema) {
     var type = schema.getType();
     var format = schema.getFormat();
 
-    return new AstClass(schemaName, List.of(
-        new Field(toStdLibAstReference(logger, type, format), "value")
-    ));
+    return new AstClassAlias(schemaName, toStdLibAstReference(logger, type, format));
   }
 
   private static Stream<PackageContents> generateAstInternalComponent(
