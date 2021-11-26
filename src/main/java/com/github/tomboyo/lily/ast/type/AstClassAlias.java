@@ -6,4 +6,4 @@ package com.github.tomboyo.lily.ast.type;
  * <p> There is no first-class Java representation of a type alias, but it could be rendered either by substituting for
  * the referent type, or as a "wrapper" class.
  */
-public record AstClassAlias(String name, AstReference aliasedType) implements PackageContents {}
+public record AstClassAlias(String name, AstReference aliasedType) implements AstPackageContents {}

@@ -2,9 +2,9 @@ package com.github.tomboyo.lily.ast;
 
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstClassAlias;
+import com.github.tomboyo.lily.ast.type.AstField;
+import com.github.tomboyo.lily.ast.type.AstPackage;
 import com.github.tomboyo.lily.ast.type.AstReference;
-import com.github.tomboyo.lily.ast.type.Field;
-import com.github.tomboyo.lily.ast.type.NewPackage;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -78,7 +78,8 @@ class OasSchemaToAstTest {
         Set.of(
             new AstClass(
                 "MyComponent",
-                List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField")))),
+                List.of(
+                    new AstField(new AstReference(expectedPackage, expectedClass), "myField")))),
         ast,
         "OAS primitives evaluate to standard java types");
   }
@@ -110,7 +111,8 @@ class OasSchemaToAstTest {
         Set.of(
             new AstClass(
                 "MyComponent",
-                List.of(new Field(new AstReference(expectedPackage, expectedClass), "myField")))),
+                List.of(
+                    new AstField(new AstReference(expectedPackage, expectedClass), "myField")))),
         ast,
         "Unsupported formats fall back to default types");
 
@@ -160,7 +162,7 @@ class OasSchemaToAstTest {
             new AstClass(
                 "MyComponent",
                 List.of(
-                    new Field(
+                    new AstField(
                         new AstReference(
                             "java.util",
                             "List",
@@ -191,14 +193,16 @@ class OasSchemaToAstTest {
         Set.of(
             new AstClass(
                 "MyComponent",
-                List.of(new Field(new AstReference("com.foo.mycomponent", "MyField"), "myField"))),
-            new NewPackage(
+                List.of(
+                    new AstField(new AstReference("com.foo.mycomponent", "MyField"), "myField"))),
+            new AstPackage(
                 "com.foo.mycomponent",
                 Set.of(
                     new AstClass(
                         "MyField",
                         List.of(
-                            new Field(new AstReference("java.lang", "String"), "myOtherField")))))),
+                            new AstField(
+                                new AstReference("java.lang", "String"), "myOtherField")))))),
         ast,
         "in-line object definitions evaluate to references to new classes in a nested package");
   }
@@ -228,18 +232,19 @@ class OasSchemaToAstTest {
             new AstClass(
                 "MyComponent",
                 List.of(
-                    new Field(
+                    new AstField(
                         new AstReference(
                             "java.util",
                             "List",
                             List.of(new AstReference("com.foo.mycomponent", "MyItemsItem"))),
                         "myItems"))),
-            new NewPackage(
+            new AstPackage(
                 "com.foo.mycomponent",
                 Set.of(
                     new AstClass(
                         "MyItemsItem",
-                        List.of(new Field(new AstReference("java.lang", "String"), "myString")))))),
+                        List.of(
+                            new AstField(new AstReference("java.lang", "String"), "myString")))))),
         ast,
         "in-line array item definitions within object definitions evaluate to references to nested class definitions");
   }

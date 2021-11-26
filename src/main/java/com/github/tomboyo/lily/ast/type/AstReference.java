@@ -14,8 +14,4 @@ public final record AstReference(String packageName, String className, List<Ast>
         this.className = toClassCase(className);
         this.typeParameters = typeParameters;
     }
-
-    public String fqn() {
-        return String.join(".", packageName, className);
-    }
 }
