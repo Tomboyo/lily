@@ -47,6 +47,23 @@ class OasSchemaToAstTest {
 
   @ParameterizedTest
   @MethodSource("standardTypesAndFormats")
+  public void aliasTypes(String type, String format, String javaPackage, String javaClass) {
+    var ast =
+        OasSchemaToAst.generateAst(
+                "com.foo", "MyAliasComponent", new Schema().type(type).format(format))
+            .collect(Collectors.toSet());
+
+    assertEquals(
+        Set.of(
+            new AstClass(
+                "MyAliasComponent",
+                List.of(new Field(new AstReference(javaPackage, javaClass), "value")))),
+        ast,
+        "Components with standard types are defined as wrapper types (aliases)");
+  }
+
+  @ParameterizedTest
+  @MethodSource("standardTypesAndFormats")
   public void standardTypesAndFormats(
       String type, String format, String expectedPackage, String expectedClass) {
     var ast =
@@ -156,7 +173,7 @@ class OasSchemaToAstTest {
   }
 
   @Test
-  public void inLineObjectFields() {
+  public void inLineObjectFieldDefinition() {
     var ast =
         OasSchemaToAst.generateAst(
                 "com.foo",
@@ -186,5 +203,46 @@ class OasSchemaToAstTest {
                             new Field(new AstReference("java.lang", "String"), "myOtherField")))))),
         ast,
         "in-line object definitions evaluate to references to new classes in a nested package");
+  }
+
+  @Test
+  public void inLineArrayItemDefinition() {
+    var ast =
+        OasSchemaToAst.generateAst(
+                "com.foo",
+                "MyComponent",
+                new Schema()
+                    .name("MyComponent")
+                    .type("object")
+                    .properties(
+                        Map.of(
+                            "myItems",
+                            new ArraySchema()
+                                .items(
+                                    new Schema()
+                                        .type("object")
+                                        .properties(
+                                            Map.of("myString", new Schema().type("string")))))))
+            .collect(Collectors.toSet());
+
+    assertEquals(
+        Set.of(
+            new AstClass(
+                "MyComponent",
+                List.of(
+                    new Field(
+                        new AstReference(
+                            "java.util",
+                            "List",
+                            List.of(new AstReference("com.foo.mycomponent", "MyItemsItem"))),
+                        "myItems"))),
+            new NewPackage(
+                "com.foo.mycomponent",
+                Set.of(
+                    new AstClass(
+                        "MyItemsItem",
+                        List.of(new Field(new AstReference("java.lang", "String"), "myString")))))),
+        ast,
+        "in-line array item definitions within object definitions evaluate to references to nested class definitions");
   }
 }

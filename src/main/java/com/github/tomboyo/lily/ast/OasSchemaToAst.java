@@ -35,6 +35,44 @@ public class OasSchemaToAst {
       String currentPackage,
       String schemaName,
       Schema schema) {
+    return generateAstRootComponent(logger, currentPackage,schemaName, schema);
+  }
+
+  private static Stream<PackageContents> generateAstRootComponent(
+      Logger logger,
+      String currentPackage,
+      String schemaName,
+      Schema schema
+  ) {
+    var type =
+        Optional.ofNullable(schema.getType())
+            .map(String::toLowerCase)
+            .orElse(null);
+
+    return switch (type) {
+      // TODO: type-alias definition
+      // TODO: when is the type null...?
+      case null, "integer", "number", "string", "boolean" -> Stream.of(generateAlias(logger, schemaName, schema));
+      default -> generateAstInternalComponent(logger, currentPackage, schemaName, schema);
+    };
+  }
+
+  /** An "alias" AstClass is a wrapper type containing a single field of a stdlib type. */
+  private static AstClass generateAlias(Logger logger, String schemaName, Schema schema) {
+    var type = schema.getType();
+    var format = schema.getFormat();
+
+    return new AstClass(schemaName, List.of(
+        new Field(toStdLibAstReference(logger, type, format), "value")
+    ));
+  }
+
+  private static Stream<PackageContents> generateAstInternalComponent(
+      Logger logger,
+      String currentPackage,
+      String schemaName,
+      Schema schema
+  ) {
     var type =
         Optional.ofNullable(schema.getType())
             .map(String::toLowerCase)
@@ -43,15 +81,19 @@ public class OasSchemaToAst {
     return switch (type) {
       case null, "integer", "number", "string", "boolean" -> Stream.of();
       case "object" -> generateObjectAst(logger, currentPackage, schemaName, schema);
-      case "array" -> generateListAst(currentPackage,
-          schemaName + "Item",
+      case "array" -> generateListAst(
+          logger,
+          currentPackage,
+          schemaName,
           schema);
       default -> throw new IllegalArgumentException(("Unexpected type: " +
           type));
     };
   }
 
-  private static Stream<PackageContents> generateListAst(String currentPackage,
+  private static Stream<PackageContents> generateListAst(
+      Logger logger,
+      String currentPackage,
       String schemaName,
       Schema schema) {
     var itemSchema = ((ArraySchema) schema).getItems();
@@ -60,9 +102,9 @@ public class OasSchemaToAst {
     // Only append "Item" to the name if the nested type is actually an object. Otherwise, we end up with
     // ThingItemItem...Item in the presence of nested array definitions.
     if (itemType != null && itemType.equalsIgnoreCase("object")) {
-      return generateAst(currentPackage, schemaName + "Item", itemSchema);
+      return generateAstInternalComponent(logger, currentPackage, schemaName + "Item", itemSchema);
     } else {
-      return generateAst(currentPackage, schemaName, itemSchema);
+      return generateAstInternalComponent(logger, currentPackage, schemaName, itemSchema);
     }
   }
 
@@ -89,7 +131,9 @@ public class OasSchemaToAst {
     var interiorClasses =
         properties.entrySet()
             .stream()
-            .flatMap(entry -> generateAst(interiorPackage,
+            .flatMap(entry -> generateAstInternalComponent(
+                logger,
+                interiorPackage,
                 toClassCase(entry.getKey()),
                 entry.getValue())).collect(Collectors.toSet());
 
@@ -172,23 +216,5 @@ public class OasSchemaToAst {
     return new AstReference("java.util",
         "List",
         List.of(toReference(logger, packageName, itemName, itemSchema)));
-  }
-
-  /**
-   * True if this schema or any nested schema contains an object type
-   */
-  private static boolean containsObjectSchema(Schema schema) {
-    var type = schema.getType();
-
-    if (type == null) {
-      return false;
-    }
-
-    return switch (type.toLowerCase()) {
-      case "integer", "number", "string", "boolean" -> false;
-      case "object" -> true;
-      case "array" -> containsObjectSchema(((ArraySchema) schema).getItems());
-      default -> throw new IllegalArgumentException("Unexpected type: " + type);
-    };
   }
 }
