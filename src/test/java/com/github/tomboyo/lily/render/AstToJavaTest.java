@@ -20,7 +20,7 @@ public class AstToJavaTest {
             public java.lang.String myString() { return myString; }
             public MyClass myString(java.lang.String myString) { this.myString = myString; return this; }
             }""",
-        AstToJava.renderAst("com.foo", new AstClass("MyClass", List.of(
+        AstToJava.renderAst("com.foo", new AstClass("com.foo","MyClass", List.of(
             new AstField(new AstReference("java.lang", "String"), "myString")
         )))
     );

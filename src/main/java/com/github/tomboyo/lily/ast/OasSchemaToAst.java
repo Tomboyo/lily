@@ -25,24 +25,24 @@ public class OasSchemaToAst {
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(OasSchemaToAst.class);
 
   public static Stream<AstPackageContents> generateAst(
-      String currentPackage,
+      String basePackage,
       String schemaName,
       Schema schema
   ) {
-    return generateAst(DEFAULT_LOGGER, currentPackage, schemaName, schema);
+    return generateAst(DEFAULT_LOGGER, basePackage, schemaName, schema);
   }
 
   public static Stream<AstPackageContents> generateAst(
       Logger logger,
-      String currentPackage,
+      String basePackage,
       String schemaName,
       Schema schema) {
-    return generateAstRootComponent(logger, currentPackage,schemaName, schema);
+    return generateAstRootComponent(logger, basePackage,schemaName, schema);
   }
 
   private static Stream<AstPackageContents> generateAstRootComponent(
       Logger logger,
-      String currentPackage,
+      String basePackage,
       String schemaName,
       Schema schema
   ) {
@@ -55,7 +55,7 @@ public class OasSchemaToAst {
       // TODO: type-alias definition
       // TODO: when is the type null...?
       case null, "integer", "number", "string", "boolean" -> Stream.of(generateAlias(logger, schemaName, schema));
-      default -> generateAstInternalComponent(logger, currentPackage, schemaName, schema);
+      default -> generateAstInternalComponent(logger, basePackage, schemaName, schema);
     };
   }
 
@@ -124,7 +124,7 @@ public class OasSchemaToAst {
       var reference = toReference(logger, interiorPackage, pName, pSchema);
       return new AstField(reference, pName);
     }).collect(toList());
-    var exteriorClass = new AstClass(schemaName, fields);
+    var exteriorClass = new AstClass(currentPackage, schemaName, fields);
 
     // 2. Define new classes for interior objects (e.g. in-line object definitions for our fields).
     // Note that many properties _may not_ warrant AST generation -- those return an empty stream.

@@ -77,6 +77,7 @@ class OasSchemaToAstTest {
     assertEquals(
         Set.of(
             new AstClass(
+                "com.foo",
                 "MyComponent",
                 List.of(
                     new AstField(new AstReference(expectedPackage, expectedClass), "myField")))),
@@ -110,6 +111,7 @@ class OasSchemaToAstTest {
     assertEquals(
         Set.of(
             new AstClass(
+                "com.foo",
                 "MyComponent",
                 List.of(
                     new AstField(new AstReference(expectedPackage, expectedClass), "myField")))),
@@ -160,6 +162,7 @@ class OasSchemaToAstTest {
     assertEquals(
         Set.of(
             new AstClass(
+                "com.foo",
                 "MyComponent",
                 List.of(
                     new AstField(
@@ -192,6 +195,7 @@ class OasSchemaToAstTest {
     assertEquals(
         Set.of(
             new AstClass(
+                "com.foo",
                 "MyComponent",
                 List.of(
                     new AstField(new AstReference("com.foo.mycomponent", "MyField"), "myField"))),
@@ -199,6 +203,7 @@ class OasSchemaToAstTest {
                 "com.foo.mycomponent",
                 Set.of(
                     new AstClass(
+                        "com.foo.mycomponent",
                         "MyField",
                         List.of(
                             new AstField(
@@ -230,6 +235,7 @@ class OasSchemaToAstTest {
     assertEquals(
         Set.of(
             new AstClass(
+                "com.foo",
                 "MyComponent",
                 List.of(
                     new AstField(
@@ -242,6 +248,7 @@ class OasSchemaToAstTest {
                 "com.foo.mycomponent",
                 Set.of(
                     new AstClass(
+                        "com.foo.mycomponent",
                         "MyItemsItem",
                         List.of(
                             new AstField(new AstReference("java.lang", "String"), "myString")))))),
