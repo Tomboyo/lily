@@ -4,6 +4,7 @@ import com.github.tomboyo.lily.ast.type.Ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstField;
 
+import java.nio.file.Path;
 import java.util.stream.Collectors;
 
 import static com.github.tomboyo.lily.ast.Support.capitalCamelCase;
@@ -11,21 +12,24 @@ import static com.github.tomboyo.lily.ast.Support.lowerCamelCase;
 import static com.github.tomboyo.lily.ast.Support.toClassCase;
 
 public class AstToJava {
-  public static String renderAst(String packageName, Ast ast) {
+  public static Source renderAst(Ast ast) {
     return switch (ast) {
-      case AstClass astClass -> renderClass(packageName, astClass);
-      default -> "";
+      case AstClass astClass -> renderClass(astClass);
+      default -> new Source(Path.of(".").normalize(), "");
     };
   }
 
-  private static String renderClass(String packageName, AstClass ast) {
-    return """
+  private static Source renderClass(AstClass ast) {
+    var path = Path.of(".", ast.packageName().split("\\."))
+        .normalize()
+        .resolve(capitalCamelCase(ast.name()) + ".java");
+    var content = """
         package %s;
         public class %s {
         %s
         %s
         }""".formatted(
-            packageName,
+            ast.packageName(),
             toClassCase(ast.name()),
             ast.fields().stream()
                 .map(AstToJava::renderFieldDeclaration)
@@ -33,6 +37,8 @@ public class AstToJava {
             ast.fields().stream()
                 .map(astField -> renderGetterAndSetter(ast, astField))
                 .collect(Collectors.joining("\n")));
+
+    return new Source(path, content);
   }
 
   private static String renderFieldDeclaration(AstField ast) {

@@ -1,11 +1,11 @@
 package com.github.tomboyo.lily.ast;
 
+import com.github.tomboyo.lily.ast.type.Ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstField;
-import com.github.tomboyo.lily.ast.type.AstPackage;
-import com.github.tomboyo.lily.ast.type.AstPackageContents;
 import com.github.tomboyo.lily.ast.type.AstReference;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import org.slf4j.Logger;
@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.github.tomboyo.lily.ast.Support.toClassCase;
@@ -24,23 +23,22 @@ public class OasSchemaToAst {
 
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(OasSchemaToAst.class);
 
-  public static Stream<AstPackageContents> generateAst(
+  public static Stream<Ast> generateAst(
       String basePackage,
-      String schemaName,
-      Schema schema
+      Components components
   ) {
-    return generateAst(DEFAULT_LOGGER, basePackage, schemaName, schema);
+    return generateAst(DEFAULT_LOGGER, basePackage, components);
   }
 
-  public static Stream<AstPackageContents> generateAst(
+  public static Stream<Ast> generateAst(
       Logger logger,
       String basePackage,
-      String schemaName,
-      Schema schema) {
-    return generateAstRootComponent(logger, basePackage,schemaName, schema);
+      Components components) {
+    return components.getSchemas().entrySet().stream()
+        .flatMap(entry -> generateAstRootComponent(logger, basePackage, entry.getKey(), entry.getValue()));
   }
 
-  private static Stream<AstPackageContents> generateAstRootComponent(
+  private static Stream<Ast> generateAstRootComponent(
       Logger logger,
       String basePackage,
       String schemaName,
@@ -54,19 +52,19 @@ public class OasSchemaToAst {
     return switch (type) {
       // TODO: type-alias definition
       // TODO: when is the type null...?
-      case null, "integer", "number", "string", "boolean" -> Stream.of(generateAlias(logger, schemaName, schema));
+      case null, "integer", "number", "string", "boolean" -> Stream.of(generateAlias(logger, basePackage, schemaName, schema));
       default -> generateAstInternalComponent(logger, basePackage, schemaName, schema);
     };
   }
 
-  private static AstClassAlias generateAlias(Logger logger, String schemaName, Schema schema) {
+  private static AstClassAlias generateAlias(Logger logger, String currentPackage, String schemaName, Schema schema) {
     var type = schema.getType();
     var format = schema.getFormat();
 
-    return new AstClassAlias(schemaName, toStdLibAstReference(logger, type, format));
+    return new AstClassAlias(currentPackage, schemaName, toStdLibAstReference(logger, type, format));
   }
 
-  private static Stream<AstPackageContents> generateAstInternalComponent(
+  private static Stream<Ast> generateAstInternalComponent(
       Logger logger,
       String currentPackage,
       String schemaName,
@@ -90,7 +88,7 @@ public class OasSchemaToAst {
     };
   }
 
-  private static Stream<AstPackageContents> generateListAst(
+  private static Stream<Ast> generateListAst(
       Logger logger,
       String currentPackage,
       String schemaName,
@@ -107,7 +105,7 @@ public class OasSchemaToAst {
     }
   }
 
-  private static Stream<AstPackageContents> generateObjectAst(
+  private static Stream<Ast> generateObjectAst(
       Logger logger, String currentPackage,
       String schemaName,
       Schema schema) {
@@ -135,13 +133,9 @@ public class OasSchemaToAst {
                 logger,
                 interiorPackage,
                 toClassCase(entry.getKey()),
-                entry.getValue())).collect(Collectors.toSet());
+                entry.getValue()));
 
-    if (interiorClasses.isEmpty()) {
-      return Stream.of(exteriorClass);
-    } else {
-      return Stream.of(exteriorClass, new AstPackage(interiorPackage, interiorClasses));
-    }
+    return Stream.concat(Stream.of(exteriorClass), interiorClasses);
   }
 
   private static AstReference toReference(

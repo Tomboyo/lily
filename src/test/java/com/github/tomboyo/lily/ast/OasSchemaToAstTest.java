@@ -3,11 +3,12 @@ package com.github.tomboyo.lily.ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstField;
-import com.github.tomboyo.lily.ast.type.AstPackage;
 import com.github.tomboyo.lily.ast.type.AstReference;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -51,13 +52,17 @@ class OasSchemaToAstTest {
   public void aliasTypes(String type, String format, String javaPackage, String javaClass) {
     var ast =
         OasSchemaToAst.generateAst(
-                "com.foo", "MyAliasComponent", new Schema().type(type).format(format))
+                "com.foo",
+                new Components()
+                    .schemas(Map.of("MyAliasComponent", new Schema().type(type).format(format))))
             .collect(Collectors.toSet());
 
     assertEquals(
-        Set.of(new AstClassAlias("MyAliasComponent", new AstReference(javaPackage, javaClass))),
+        Set.of(
+            new AstClassAlias(
+                "com.foo", "MyAliasComponent", new AstReference(javaPackage, javaClass))),
         ast,
-        "Components with standard types are defined as wrapper types (aliases)");
+        "Top-level components with standard types evaluate to type aliases");
   }
 
   @ParameterizedTest
@@ -67,11 +72,14 @@ class OasSchemaToAstTest {
     var ast =
         OasSchemaToAst.generateAst(
                 "com.foo",
-                "MyComponent",
-                new Schema()
-                    .name("MyComponent")
-                    .type("object")
-                    .properties(Map.of("myField", new Schema().type(type).format(format))))
+                new Components()
+                    .schemas(
+                        Map.of(
+                            "MyComponent",
+                            new ObjectSchema()
+                                .name("MyComponent")
+                                .properties(
+                                    Map.of("myField", new Schema().type(type).format(format))))))
             .collect(Collectors.toSet());
 
     assertEquals(
@@ -100,12 +108,16 @@ class OasSchemaToAstTest {
         OasSchemaToAst.generateAst(
                 logger,
                 "com.foo",
-                "MyComponent",
-                new Schema()
-                    .name("MyComponent")
-                    .type("object")
-                    .properties(
-                        Map.of("myField", new Schema().type(type).format("unsupported-format"))))
+                new Components()
+                    .schemas(
+                        Map.of(
+                            "MyComponent",
+                            new ObjectSchema()
+                                .name("MyComponent")
+                                .properties(
+                                    Map.of(
+                                        "myField",
+                                        new Schema().type(type).format("unsupported-format"))))))
             .collect(Collectors.toSet());
 
     assertEquals(
@@ -116,7 +128,7 @@ class OasSchemaToAstTest {
                 List.of(
                     new AstField(new AstReference(expectedPackage, expectedClass), "myField")))),
         ast,
-        "Unsupported formats fall back to default types");
+        "Unsupported formats evaluate to default (fall-back) types");
 
     // Warn the user when an unsupported format is found.
     verify(logger)
@@ -132,12 +144,16 @@ class OasSchemaToAstTest {
         IllegalArgumentException.class,
         () ->
             OasSchemaToAst.generateAst(
-                "com.foo",
-                "MyComponent",
-                new Schema()
-                    .name("MyComponent")
-                    .type("object")
-                    .properties(Map.of("myField", new Schema().type("unsupported-type")))),
+                    "com.foo",
+                    new Components()
+                        .schemas(
+                            Map.of(
+                                "MyComponent",
+                                new ObjectSchema()
+                                    .name("MyComponent")
+                                    .properties(
+                                        Map.of("myField", new Schema().type("unsupported-type"))))))
+                .toList(),
         "Unsupported types trigger runtime exceptions.");
   }
 
@@ -147,16 +163,18 @@ class OasSchemaToAstTest {
     var ast =
         OasSchemaToAst.generateAst(
                 "com.foo",
-                "MyComponent",
-                new Schema()
-                    .name("MyComponent")
-                    .type("object")
-                    .properties(
+                new Components()
+                    .schemas(
                         Map.of(
-                            "myField",
-                            new ArraySchema()
-                                .type("array")
-                                .items(new Schema().type(type).format(format)))))
+                            "MyComponent",
+                            new ObjectSchema()
+                                .name("MyComponent")
+                                .properties(
+                                    Map.of(
+                                        "myField",
+                                        new ArraySchema()
+                                            .type("array")
+                                            .items(new Schema().type(type).format(format)))))))
             .collect(Collectors.toSet());
 
     assertEquals(
@@ -180,16 +198,20 @@ class OasSchemaToAstTest {
     var ast =
         OasSchemaToAst.generateAst(
                 "com.foo",
-                "MyComponent",
-                new ObjectSchema()
-                    .name("MyComponent")
-                    .type("object")
-                    .properties(
+                new Components()
+                    .schemas(
                         Map.of(
-                            "myField",
-                            new Schema()
-                                .type("object")
-                                .properties(Map.of("myOtherField", new Schema().type("string"))))))
+                            "MyComponent",
+                            new ObjectSchema()
+                                .name("MyComponent")
+                                .properties(
+                                    Map.of(
+                                        "myField",
+                                        new ObjectSchema()
+                                            .properties(
+                                                Map.of(
+                                                    "myOtherField",
+                                                    new Schema().type("string"))))))))
             .collect(Collectors.toSet());
 
     assertEquals(
@@ -199,15 +221,10 @@ class OasSchemaToAstTest {
                 "MyComponent",
                 List.of(
                     new AstField(new AstReference("com.foo.mycomponent", "MyField"), "myField"))),
-            new AstPackage(
+            new AstClass(
                 "com.foo.mycomponent",
-                Set.of(
-                    new AstClass(
-                        "com.foo.mycomponent",
-                        "MyField",
-                        List.of(
-                            new AstField(
-                                new AstReference("java.lang", "String"), "myOtherField")))))),
+                "MyField",
+                List.of(new AstField(new AstReference("java.lang", "String"), "myOtherField")))),
         ast,
         "in-line object definitions evaluate to references to new classes in a nested package");
   }
@@ -217,19 +234,21 @@ class OasSchemaToAstTest {
     var ast =
         OasSchemaToAst.generateAst(
                 "com.foo",
-                "MyComponent",
-                new Schema()
-                    .name("MyComponent")
-                    .type("object")
-                    .properties(
+                new Components()
+                    .schemas(
                         Map.of(
-                            "myItems",
-                            new ArraySchema()
-                                .items(
-                                    new Schema()
-                                        .type("object")
-                                        .properties(
-                                            Map.of("myString", new Schema().type("string")))))))
+                            "MyComponent",
+                            new ObjectSchema()
+                                .name("MyComponent")
+                                .properties(
+                                    Map.of(
+                                        "myItems",
+                                        new ArraySchema()
+                                            .items(
+                                                new ObjectSchema()
+                                                    .properties(
+                                                        Map.of(
+                                                            "myString", new StringSchema()))))))))
             .collect(Collectors.toSet());
 
     assertEquals(
@@ -244,15 +263,11 @@ class OasSchemaToAstTest {
                             "List",
                             List.of(new AstReference("com.foo.mycomponent", "MyItemsItem"))),
                         "myItems"))),
-            new AstPackage(
+            new AstClass(
                 "com.foo.mycomponent",
-                Set.of(
-                    new AstClass(
-                        "com.foo.mycomponent",
-                        "MyItemsItem",
-                        List.of(
-                            new AstField(new AstReference("java.lang", "String"), "myString")))))),
+                "MyItemsItem",
+                List.of(new AstField(new AstReference("java.lang", "String"), "myString")))),
         ast,
-        "in-line array item definitions within object definitions evaluate to references to nested class definitions");
+        "in-line array item definitions within object definitions evaluate to references to new classes in nested packages");
   }
 }
