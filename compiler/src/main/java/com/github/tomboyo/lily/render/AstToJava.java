@@ -74,7 +74,7 @@ public class AstToJava {
 
   private static String renderTypeName(AstReference astReference) {
     var fqn = String.join(
-        ".",
+
         astReference.packageName(),
         capitalCamelCase(astReference.className()));
 
