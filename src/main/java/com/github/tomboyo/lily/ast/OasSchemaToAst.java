@@ -16,12 +16,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static com.github.tomboyo.lily.ast.Support.toClassCase;
+import static com.github.tomboyo.lily.ast.Support.capitalCamelCase;
+import static com.github.tomboyo.lily.ast.Support.joinPackages;
 import static java.util.stream.Collectors.toList;
 
 public class OasSchemaToAst {
 
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(OasSchemaToAst.class);
+
+  private static record Constants(Logger logger, String basePackage) {};
 
   public static Stream<Ast> generateAst(
       String basePackage,
@@ -35,12 +38,12 @@ public class OasSchemaToAst {
       String basePackage,
       Components components) {
     return components.getSchemas().entrySet().stream()
-        .flatMap(entry -> generateAstRootComponent(logger, basePackage, entry.getKey(), entry.getValue()));
+        .flatMap(entry -> generateAstRootComponent(
+            new Constants(logger, basePackage), entry.getKey(), entry.getValue()));
   }
 
   private static Stream<Ast> generateAstRootComponent(
-      Logger logger,
-      String basePackage,
+      Constants constants,
       String schemaName,
       Schema schema
   ) {
@@ -52,20 +55,19 @@ public class OasSchemaToAst {
     return switch (type) {
       // TODO: type-alias definition
       // TODO: when is the type null...?
-      case null, "integer", "number", "string", "boolean" -> Stream.of(generateAlias(logger, basePackage, schemaName, schema));
-      default -> generateAstInternalComponent(logger, basePackage, schemaName, schema);
+      case null, "integer", "number", "string", "boolean" -> Stream.of(generateAlias(constants, constants.basePackage(), schemaName, schema));
+      default -> generateAstInternalComponent(constants, constants.basePackage(), schemaName, schema);
     };
   }
 
-  private static AstClassAlias generateAlias(Logger logger, String currentPackage, String schemaName, Schema schema) {
+  private static AstClassAlias generateAlias(Constants constants, String currentPackage, String schemaName, Schema schema) {
     var type = schema.getType();
     var format = schema.getFormat();
-
-    return new AstClassAlias(currentPackage, schemaName, toStdLibAstReference(logger, type, format));
+    return new AstClassAlias(currentPackage, schemaName, toStdLibAstReference(constants, type, format));
   }
 
   private static Stream<Ast> generateAstInternalComponent(
-      Logger logger,
+      Constants constants,
       String currentPackage,
       String schemaName,
       Schema schema
@@ -77,9 +79,9 @@ public class OasSchemaToAst {
 
     return switch (type) {
       case null, "integer", "number", "string", "boolean" -> Stream.of();
-      case "object" -> generateObjectAst(logger, currentPackage, schemaName, schema);
+      case "object" -> generateObjectAst(constants, currentPackage, schemaName, schema);
       case "array" -> generateListAst(
-          logger,
+          constants,
           currentPackage,
           schemaName,
           schema);
@@ -89,7 +91,7 @@ public class OasSchemaToAst {
   }
 
   private static Stream<Ast> generateListAst(
-      Logger logger,
+      Constants constants,
       String currentPackage,
       String schemaName,
       Schema schema) {
@@ -99,27 +101,27 @@ public class OasSchemaToAst {
     // Only append "Item" to the name if the nested type is actually an object. Otherwise, we end up with
     // ThingItemItem...Item in the presence of nested array definitions.
     if (itemType != null && itemType.equalsIgnoreCase("object")) {
-      return generateAstInternalComponent(logger, currentPackage, schemaName + "Item", itemSchema);
+      return generateAstInternalComponent(constants, currentPackage, schemaName + "Item", itemSchema);
     } else {
-      return generateAstInternalComponent(logger, currentPackage, schemaName, itemSchema);
+      return generateAstInternalComponent(constants, currentPackage, schemaName, itemSchema);
     }
   }
 
   private static Stream<Ast> generateObjectAst(
-      Logger logger, String currentPackage,
+      Constants constants,
+      String currentPackage,
       String schemaName,
       Schema schema) {
     // This package is "nested" beneath this class. Any nested in-line class definitions are generated within the
     // interior package.
-    var interiorPackage =
-        String.join(".", currentPackage, schemaName.toLowerCase());
+    var interiorPackage = joinPackages(currentPackage, schemaName.toLowerCase());
 
     // 1. Define a new class for this object.
     Map<String, Schema> properties = Optional.ofNullable(schema.getProperties()).orElse(Map.of());
     var fields = properties.entrySet().stream().map(entry -> {
       var pName = entry.getKey();
       var pSchema = entry.getValue();
-      var reference = toReference(logger, interiorPackage, pName, pSchema);
+      var reference = toReference(constants, interiorPackage, pName, pSchema);
       return new AstField(reference, pName);
     }).collect(toList());
     var exteriorClass = new AstClass(currentPackage, schemaName, fields);
@@ -130,17 +132,17 @@ public class OasSchemaToAst {
         properties.entrySet()
             .stream()
             .flatMap(entry -> generateAstInternalComponent(
-                logger,
+                constants,
                 interiorPackage,
-                toClassCase(entry.getKey()),
+                capitalCamelCase(entry.getKey()),
                 entry.getValue()));
 
     return Stream.concat(Stream.of(exteriorClass), interiorClasses);
   }
 
   private static AstReference toReference(
-      Logger logger,
-      String packageName,
+      Constants constants,
+      String referentPackage,
       String schemaName,
       Schema schema) {
     var type = schema.getType();
@@ -148,63 +150,66 @@ public class OasSchemaToAst {
     var ref = schema.get$ref();
 
     return switch (type) {
-      case null -> toBasePackageClassReference(ref);
-      case "integer", "number", "string", "boolean" -> toStdLibAstReference(logger, type,
+      case null -> toBasePackageClassReference(constants, ref);
+      case "integer", "number", "string", "boolean" -> toStdLibAstReference(constants, type,
           format);
-      case "array" -> toListReference(logger, packageName, schemaName, schema);
-      case "object" -> new AstReference(packageName, schemaName);
+      case "array" -> toListReference(constants, referentPackage, schemaName, schema);
+      case "object" -> new AstReference(referentPackage, schemaName);
       default -> throw new IllegalArgumentException("Unexpected type: " + type);
     };
   }
 
-  private static AstReference toBasePackageClassReference(String $ref) {
-    return new AstReference("",
+  private static AstReference toBasePackageClassReference(Constants constants, String $ref) {
+    return new AstReference(
+        constants.basePackage(),
         $ref.replaceFirst("^#/components/schemas/", ""));
   }
 
-  private static AstReference toStdLibAstReference(Logger logger, String type, String format) {
+  private static AstReference toStdLibAstReference(Constants constants, String type, String format) {
     return switch (type) {
       case "integer" -> switch (format) {
         case null -> new AstReference("java.math", "BigInteger");
         case "int64" -> new AstReference("java.lang", "Long");
         case "int32" -> new AstReference("java.lang", "Integer");
-        default -> defaultType(logger, type, format, new AstReference("java.math", "BigInteger"));
+        default -> defaultType(constants, type, format, new AstReference("java.math", "BigInteger"));
       };
       case "number" -> switch (format) {
         case null -> new AstReference("java.math", "BigDecimal");
         case "double" -> new AstReference("java.lang", "Double");
         case "float" -> new AstReference("java.lang", "Float");
-        default -> defaultType(logger, type, format, new AstReference("java.math", "BigDecimal"));
+        default -> defaultType(constants, type, format, new AstReference("java.math", "BigDecimal"));
       };
       case "string" -> switch (format) {
         case null, "password" -> new AstReference("java.lang", "String");
         case "byte", "binary" -> new AstReference("java.lang", "Byte[]");
         case "date" -> new AstReference("java.time", "LocalDate");
         case "date-time" -> new AstReference("java.time", "ZonedDateTime");
-        default -> defaultType(logger, type,format,new AstReference("java.lang","String"));
+        default -> defaultType(constants, type,format,new AstReference("java.lang","String"));
       };
       case "boolean" -> switch (format) {
         case null -> new AstReference("java.lang", "Boolean");
-        default -> defaultType(logger, type, format, new AstReference("java.lang", "Boolean"));
+        default -> defaultType(constants, type, format, new AstReference("java.lang", "Boolean"));
       };
       default -> throw new IllegalArgumentException("Unexpected type: " + type);
     };
   }
 
-  private static AstReference defaultType(Logger logger, String type, String format, AstReference defaultAst) {
+  private static AstReference defaultType(Constants constants, String type, String format, AstReference defaultAst) {
     if (format != null) {
-      logger.warn("Using default class for unsupported format: type={} format={}", type, format);
+      constants.logger().warn("Using default class for unsupported format: type={} format={}", type, format);
     }
     return defaultAst;
   }
 
-  private static AstReference toListReference(Logger logger, String packageName,
+  private static AstReference toListReference(
+      Constants constants,
+      String referentPackage,
       String schemaName,
       Schema schema) {
     var itemSchema = ((ArraySchema) schema).getItems();
     var itemName = schemaName + "Item";
     return new AstReference("java.util",
         "List",
-        List.of(toReference(logger, packageName, itemName, itemSchema)));
+        List.of(toReference(constants, referentPackage, itemName, itemSchema)));
   }
 }

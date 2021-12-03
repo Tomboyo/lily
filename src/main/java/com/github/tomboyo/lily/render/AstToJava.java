@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import static com.github.tomboyo.lily.ast.Support.capitalCamelCase;
 import static com.github.tomboyo.lily.ast.Support.lowerCamelCase;
-import static com.github.tomboyo.lily.ast.Support.toClassCase;
 
 public class AstToJava {
   public static Source renderAst(Ast ast) {
@@ -30,7 +29,7 @@ public class AstToJava {
         %s
         }""".formatted(
             ast.packageName(),
-            toClassCase(ast.name()),
+            capitalCamelCase(ast.name()),
             ast.fields().stream()
                 .map(AstToJava::renderFieldDeclaration)
                 .collect(Collectors.joining("\n")),
@@ -44,14 +43,14 @@ public class AstToJava {
   private static String renderFieldDeclaration(AstField ast) {
     var fqn = String.join(".",
         ast.astReference().packageName(),
-        toClassCase(ast.astReference().className()));
+        capitalCamelCase(ast.astReference().className()));
     return "private %s %s;".formatted(fqn, ast.name());
   }
 
   private static String renderGetterAndSetter(AstClass astClass, AstField astField) {
     var fqFieldType = String.join(".",
         astField.astReference().packageName(),
-        toClassCase(astField.astReference().className()));
+        capitalCamelCase(astField.astReference().className()));
     var getterName = lowerCamelCase(astField.name());
     var setterName = lowerCamelCase(astField.name());
     var fieldName = lowerCamelCase(astField.name());
