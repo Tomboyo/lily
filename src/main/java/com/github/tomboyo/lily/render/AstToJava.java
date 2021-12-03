@@ -3,6 +3,7 @@ package com.github.tomboyo.lily.render;
 import com.github.tomboyo.lily.ast.type.Ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstField;
+import com.github.tomboyo.lily.ast.type.AstReference;
 
 import java.nio.file.Path;
 import java.util.stream.Collectors;
@@ -40,17 +41,14 @@ public class AstToJava {
     return new Source(path, content);
   }
 
-  private static String renderFieldDeclaration(AstField ast) {
-    var fqn = String.join(".",
-        ast.astReference().packageName(),
-        capitalCamelCase(ast.astReference().className()));
-    return "private %s %s;".formatted(fqn, ast.name());
+  private static String renderFieldDeclaration(AstField astField) {
+    return "private %s %s;".formatted(
+        renderTypeName(astField.astReference()),
+        astField.name());
   }
 
   private static String renderGetterAndSetter(AstClass astClass, AstField astField) {
-    var fqFieldType = String.join(".",
-        astField.astReference().packageName(),
-        capitalCamelCase(astField.astReference().className()));
+    var typeName = renderTypeName(astField.astReference());
     var getterName = lowerCamelCase(astField.name());
     var setterName = lowerCamelCase(astField.name());
     var fieldName = lowerCamelCase(astField.name());
@@ -58,7 +56,7 @@ public class AstToJava {
 
     var getter = "public %s %s() { return %s; }"
         .formatted(
-            fqFieldType,
+            typeName,
             getterName,
             fieldName);
 
@@ -66,11 +64,28 @@ public class AstToJava {
         .formatted(
             className,
             setterName,
-            fqFieldType,
+            typeName,
             fieldName,
             fieldName,
             fieldName);
 
     return String.join("\n", getter, setter);
+  }
+
+  private static String renderTypeName(AstReference astReference) {
+    var fqn = String.join(
+        ".",
+        astReference.packageName(),
+        capitalCamelCase(astReference.className()));
+
+    if (astReference.typeParameters().isEmpty()) {
+      return fqn;
+    } else {
+      var typeParameters = "<%s>".formatted(
+          astReference.typeParameters().stream()
+              .map(AstToJava::renderTypeName)
+              .collect(Collectors.joining(",")));
+      return fqn + typeParameters;
+    }
   }
 }
