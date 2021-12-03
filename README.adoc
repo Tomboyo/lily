@@ -1,0 +1,45 @@
+= Lily OAS-To-Java Compiler
+
+Lily is a compiler that consumers OpenAPI (Swagger) specifications and produces Java source code.
+It is intended to be an alternative to https://github.com/OpenAPITools/openapi-generator[OpenAPI Generator], which at time of writing is the only option, and substantially more complete than Lily.
+
+== Goals
+
+. Generate java source code directly from an OAS document within a java build pipeline (e.g. integrated with Maven or Gradle).
+. Support OAS v3.
+. Target Java 11 (The project is written in 17-preview, but the generated source is 11)
+. Help end-users work around incorrect or incomplete schema specifications so that they can make progress while awaiting upstream fixes.
+. [Tentative] Support customizable generated code, especially code which can leverage user-made JARs from unrelated projects.
+
+== Non-Goals
+
+. Do not (yet) support other languages than Java.
+It's not clear that a Java-oriented AST will cleanly translate to another language target.
+. Do not support too many options.
+Options become confusing to maintain -- prefer opinionated code that works for most people who are doing sensible things.
+. Do not support generate-and-check-in workflows.
+Treat the OAS document as source code.
+
+== Feature Roadmap
+
+=== Components
+
+==== Schemas
+
+* [x] Map OAS types to Java stdlib types
+* [x] Map arrays to Java Lists
+* [x] Map objects to Java classes
+* [x] Map top-level non-object components (e.g. arrays, strings) to alises
+** [ ] Map aliases as their aliased type.
+** [ ] (Tentative) Or, optionally map aliases as value types (wrappers around the aliased type which are serialized as the referent value only.
+E.g, StringAlias serializes as a String)
+* [ ] Support Jackson annotations
+* [ ] Support allOf/anyOf/oneOf types
+
+==== Responses, Parameters, Examples, Request Bodies, Headers, Security Schemes, Links, Callbacks
+
+To do!
+
+=== Paths, Security, Servers, Info, Tags, and External Docs
+
+To do!
