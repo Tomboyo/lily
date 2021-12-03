@@ -18,8 +18,8 @@ import org.slf4j.Logger;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,7 +55,7 @@ class OasSchemaToAstTest {
                 "com.foo",
                 new Components()
                     .schemas(Map.of("MyAliasComponent", new Schema().type(type).format(format))))
-            .collect(Collectors.toSet());
+            .collect(toSet());
 
     assertEquals(
         Set.of(
@@ -80,7 +80,7 @@ class OasSchemaToAstTest {
                                 .name("MyComponent")
                                 .properties(
                                     Map.of("myField", new Schema().type(type).format(format))))))
-            .collect(Collectors.toSet());
+            .collect(toSet());
 
     assertEquals(
         Set.of(
@@ -118,7 +118,7 @@ class OasSchemaToAstTest {
                                     Map.of(
                                         "myField",
                                         new Schema().type(type).format("unsupported-format"))))))
-            .collect(Collectors.toSet());
+            .collect(toSet());
 
     assertEquals(
         Set.of(
@@ -175,7 +175,7 @@ class OasSchemaToAstTest {
                                         new ArraySchema()
                                             .type("array")
                                             .items(new Schema().type(type).format(format)))))))
-            .collect(Collectors.toSet());
+            .collect(toSet());
 
     assertEquals(
         Set.of(
@@ -212,7 +212,7 @@ class OasSchemaToAstTest {
                                                 Map.of(
                                                     "myOtherField",
                                                     new Schema().type("string"))))))))
-            .collect(Collectors.toSet());
+            .collect(toSet());
 
     assertEquals(
         Set.of(
@@ -249,7 +249,7 @@ class OasSchemaToAstTest {
                                                     .properties(
                                                         Map.of(
                                                             "myString", new StringSchema()))))))))
-            .collect(Collectors.toSet());
+            .collect(toSet());
 
     assertEquals(
         Set.of(
@@ -269,5 +269,36 @@ class OasSchemaToAstTest {
                 List.of(new AstField(new AstReference("java.lang", "String"), "myString")))),
         ast,
         "in-line array item definitions within object definitions evaluate to references to new classes in nested packages");
+  }
+
+  @Test
+  public void componentReferences() {
+    var ast =
+        OasSchemaToAst.generateAst(
+                "com.foo",
+                new Components()
+                    .schemas(
+                        Map.of(
+                            "MyComponent",
+                            new ObjectSchema()
+                                .properties(
+                                    Map.of(
+                                        "myRef",
+                                        new Schema()
+                                            .$ref("#/components/schemas/MyReferencedComponent"))),
+                            "MyReferencedComponent",
+                            new ObjectSchema())))
+            .collect(toSet());
+
+    assertEquals(
+        Set.of(
+            new AstClass(
+                "com.foo",
+                "MyComponent",
+                List.of(
+                    new AstField(new AstReference("com.foo", "MyReferencedComponent"), "myRef"))),
+            new AstClass("com.foo", "MyReferencedComponent", List.of())),
+        ast,
+        "$ref types evaluate to references to other classes");
   }
 }

@@ -115,7 +115,7 @@ public class OasSchemaToAst {
         String.join(".", currentPackage, schemaName.toLowerCase());
 
     // 1. Define a new class for this object.
-    Map<String, Schema> properties = schema.getProperties();
+    Map<String, Schema> properties = Optional.ofNullable(schema.getProperties()).orElse(Map.of());
     var fields = properties.entrySet().stream().map(entry -> {
       var pName = entry.getKey();
       var pSchema = entry.getValue();
