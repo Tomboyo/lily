@@ -7,10 +7,9 @@ It is intended to be an alternative to https://github.com/OpenAPITools/openapi-g
 
 . Generate java source code directly from an OAS document within a java build pipeline (e.g. integrated with Maven or Gradle).
 . Support OAS v3.
+. Target Java 17.
 . Help end-users work around incorrect or incomplete schema specifications so that they can make progress while awaiting upstream fixes.
 . [Tentative] Support customizable generated code, especially code which can leverage user-made JARs from unrelated projects.
-
-What version of Java will this target? This is currently to-be-decided. I'm developing everything in Java 17 with preview features for convenience. As the project approaches maturity, I will target an up-to-date stable release (likely 17 or higher).
 
 == Non-Goals
 

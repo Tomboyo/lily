@@ -13,12 +13,13 @@ import static com.github.tomboyo.lily.ast.Support.lowerCamelCase;
 
 public class AstToJava {
   public static Source renderAst(Ast ast) {
-    return switch (ast) {
-      case AstClass astClass -> renderClass(astClass);
-      default -> new Source(
+    if (ast instanceof AstClass astClass) {
+      return renderClass(astClass);
+    } else {
+      return new Source(
           Path.of(".").normalize(),
           "TODO: This AST is unimplemented: " + ast);
-    };
+    }
   }
 
   private static Source renderClass(AstClass ast) {

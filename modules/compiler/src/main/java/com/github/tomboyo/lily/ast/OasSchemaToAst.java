@@ -48,16 +48,20 @@ public class OasSchemaToAst {
       String schemaName,
       Schema schema
   ) {
-    var type =
-        Optional.ofNullable(schema.getType())
-            .map(String::toLowerCase)
-            .orElse(null);
+    var type = schema.getType();
+    if (type == null) {
+      return Stream.of(generateAlias(constants, constants.basePackage(), schemaName, schema));
+    }
 
-    return switch (type) {
-      // TODO: when is the type null...?
-      case null, "integer", "number", "string", "boolean" -> Stream.of(generateAlias(constants, constants.basePackage(), schemaName, schema));
-      default -> generateAstInternalComponent(constants, constants.basePackage(), schemaName, schema);
-    };
+    switch (type) {
+      case "integer":
+      case "number":
+      case "string":
+      case "boolean":
+        return Stream.of(generateAlias(constants, constants.basePackage(), schemaName, schema));
+      default:
+        return generateAstInternalComponent(constants, constants.basePackage(), schemaName, schema);
+    }
   }
 
   private static AstClassAlias generateAlias(Constants constants, String currentPackage, String schemaName, Schema schema) {
@@ -72,22 +76,28 @@ public class OasSchemaToAst {
       String schemaName,
       Schema schema
   ) {
-    var type =
-        Optional.ofNullable(schema.getType())
-            .map(String::toLowerCase)
-            .orElse(null);
+    var type = schema.getType();
+    if (type == null) {
+      return Stream.of();
+    }
 
-    return switch (type) {
-      case null, "integer", "number", "string", "boolean" -> Stream.of();
-      case "object" -> generateObjectAst(constants, currentPackage, schemaName, schema);
-      case "array" -> generateListAst(
-          constants,
-          currentPackage,
-          schemaName,
-          schema);
-      default -> throw new IllegalArgumentException(("Unexpected type: " +
-          type));
-    };
+    switch (type) {
+      case "integer":
+      case "number":
+      case "string":
+      case "boolean":
+        return Stream.of();
+      case "object":
+        return generateObjectAst(constants, currentPackage, schemaName, schema);
+      case "array":
+        return generateListAst(
+            constants,
+            currentPackage,
+            schemaName,
+            schema);
+      default:
+        throw new IllegalArgumentException(("Unexpected type: " + type));
+    }
   }
 
   private static Stream<Ast> generateListAst(
@@ -149,14 +159,23 @@ public class OasSchemaToAst {
     var format = schema.getFormat();
     var ref = schema.get$ref();
 
-    return switch (type) {
-      case null -> toBasePackageClassReference(constants, ref);
-      case "integer", "number", "string", "boolean" -> toStdLibAstReference(constants, type,
-          format);
-      case "array" -> toListReference(constants, referentPackage, schemaName, schema);
-      case "object" -> new AstReference(referentPackage, schemaName);
-      default -> throw new IllegalArgumentException("Unexpected type: " + type);
-    };
+    if (type == null) {
+      return toBasePackageClassReference(constants, ref);
+    }
+
+    switch (type) {
+      case "integer":
+      case "number":
+      case "string":
+      case "boolean":
+        return toStdLibAstReference(constants, type, format);
+      case "array":
+        return toListReference(constants, referentPackage, schemaName, schema);
+      case "object":
+        return new AstReference(referentPackage, schemaName);
+      default:
+        throw new IllegalArgumentException("Unexpected type: " + type);
+    }
   }
 
   private static AstReference toBasePackageClassReference(Constants constants, String $ref) {
@@ -166,32 +185,60 @@ public class OasSchemaToAst {
   }
 
   private static AstReference toStdLibAstReference(Constants constants, String type, String format) {
-    return switch (type) {
-      case "integer" -> switch (format) {
-        case null -> new AstReference("java.math", "BigInteger");
-        case "int64" -> new AstReference("java.lang", "Long");
-        case "int32" -> new AstReference("java.lang", "Integer");
-        default -> defaultType(constants, type, format, new AstReference("java.math", "BigInteger"));
-      };
-      case "number" -> switch (format) {
-        case null -> new AstReference("java.math", "BigDecimal");
-        case "double" -> new AstReference("java.lang", "Double");
-        case "float" -> new AstReference("java.lang", "Float");
-        default -> defaultType(constants, type, format, new AstReference("java.math", "BigDecimal"));
-      };
-      case "string" -> switch (format) {
-        case null, "password" -> new AstReference("java.lang", "String");
-        case "byte", "binary" -> new AstReference("java.lang", "Byte[]");
-        case "date" -> new AstReference("java.time", "LocalDate");
-        case "date-time" -> new AstReference("java.time", "ZonedDateTime");
-        default -> defaultType(constants, type, format, new AstReference("java.lang", "String"));
-      };
-      case "boolean" -> switch (format) {
-        case null -> new AstReference("java.lang", "Boolean");
-        default -> defaultType(constants, type, format, new AstReference("java.lang", "Boolean"));
-      };
-      default -> throw new IllegalArgumentException("Unexpected type: " + type);
-    };
+    switch (type) {
+      case "integer":
+        if (format == null) {
+          return new AstReference("java.math", "BigInteger");
+        }
+
+        switch (format) {
+          case "int64":
+            return new AstReference("java.lang", "Long");
+          case "int32":
+            return new AstReference("java.lang", "Integer");
+          default:
+            return defaultType(constants, type, format, new AstReference("java.math", "BigInteger"));
+        }
+      case "number":
+        if (format == null) {
+          return new AstReference("java.math", "BigDecimal");
+        }
+
+        switch (format) {
+          case "double":
+            return new AstReference("java.lang", "Double");
+          case "float":
+            return new AstReference("java.lang", "Float");
+          default:
+            return defaultType(constants, type, format, new AstReference("java.math", "BigDecimal"));
+        }
+      case "string":
+        if (format == null) {
+          return new AstReference("java.lang", "String");
+        }
+
+        switch (format) {
+          case "password":
+            return new AstReference("java.lang", "String");
+          case "byte":
+          case "binary":
+            return new AstReference("java.lang", "Byte[]");
+          case "date":
+            return new AstReference("java.time", "LocalDate");
+          case "date-time":
+            return new AstReference("java.time", "ZonedDateTime");
+          default:
+            return defaultType(constants, type, format, new AstReference("java.lang", "String"));
+        }
+      case "boolean":
+        if (format == null) {
+          return new AstReference("java.lang", "Boolean");
+        } else {
+          return defaultType(constants, type, format, new AstReference("java.lang", "Boolean"));
+        }
+      default:
+        throw new IllegalArgumentException("Unexpected type: " + type);
+    }
   }
 
   private static AstReference defaultType(Constants constants, String type, String format, AstReference defaultAst) {
