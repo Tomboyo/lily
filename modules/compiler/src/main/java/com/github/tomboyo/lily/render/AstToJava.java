@@ -15,7 +15,9 @@ public class AstToJava {
   public static Source renderAst(Ast ast) {
     return switch (ast) {
       case AstClass astClass -> renderClass(astClass);
-      default -> new Source(Path.of(".").normalize(), "");
+      default -> new Source(
+          Path.of(".").normalize(),
+          "TODO: This AST is unimplemented: " + ast);
     };
   }
 
@@ -29,14 +31,14 @@ public class AstToJava {
         %s
         %s
         }""".formatted(
-            ast.packageName(),
-            capitalCamelCase(ast.name()),
-            ast.fields().stream()
-                .map(AstToJava::renderFieldDeclaration)
-                .collect(Collectors.joining("\n")),
-            ast.fields().stream()
-                .map(astField -> renderGetterAndSetter(ast, astField))
-                .collect(Collectors.joining("\n")));
+        ast.packageName(),
+        capitalCamelCase(ast.name()),
+        ast.fields().stream()
+            .map(AstToJava::renderFieldDeclaration)
+            .collect(Collectors.joining("\n")),
+        ast.fields().stream()
+            .map(astField -> renderGetterAndSetter(ast, astField))
+            .collect(Collectors.joining("\n")));
 
     return new Source(path, content);
   }
@@ -74,7 +76,7 @@ public class AstToJava {
 
   private static String renderTypeName(AstReference astReference) {
     var fqn = String.join(
-
+        ".",
         astReference.packageName(),
         capitalCamelCase(astReference.className()));
 

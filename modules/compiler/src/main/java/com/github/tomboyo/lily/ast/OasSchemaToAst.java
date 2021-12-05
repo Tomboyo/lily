@@ -24,7 +24,8 @@ public class OasSchemaToAst {
 
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(OasSchemaToAst.class);
 
-  private static record Constants(Logger logger, String basePackage) {};
+  private static record Constants(Logger logger, String basePackage) {
+  }
 
   public static Stream<Ast> generateAst(
       String basePackage,
@@ -53,7 +54,6 @@ public class OasSchemaToAst {
             .orElse(null);
 
     return switch (type) {
-      // TODO: type-alias definition
       // TODO: when is the type null...?
       case null, "integer", "number", "string", "boolean" -> Stream.of(generateAlias(constants, constants.basePackage(), schemaName, schema));
       default -> generateAstInternalComponent(constants, constants.basePackage(), schemaName, schema);
@@ -184,7 +184,7 @@ public class OasSchemaToAst {
         case "byte", "binary" -> new AstReference("java.lang", "Byte[]");
         case "date" -> new AstReference("java.time", "LocalDate");
         case "date-time" -> new AstReference("java.time", "ZonedDateTime");
-        default -> defaultType(constants, type,format,new AstReference("java.lang","String"));
+        default -> defaultType(constants, type, format, new AstReference("java.lang", "String"));
       };
       case "boolean" -> switch (format) {
         case null -> new AstReference("java.lang", "Boolean");

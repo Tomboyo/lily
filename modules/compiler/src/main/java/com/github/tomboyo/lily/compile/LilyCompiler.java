@@ -38,7 +38,6 @@ public class LilyCompiler {
     // TODO: render source instead of printing.
     OasSchemaToAst.generateAst(basePackage, openApi.getComponents())
         .map(AstToJava::renderAst)
-        .peek(rendering -> LOGGER.info("Writing source file: '{}'", rendering.relativePath()))
         .forEach(rendering -> persistSource(output, rendering));
   }
 
