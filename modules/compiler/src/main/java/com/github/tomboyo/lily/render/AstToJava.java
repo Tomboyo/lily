@@ -2,6 +2,7 @@ package com.github.tomboyo.lily.render;
 
 import com.github.tomboyo.lily.ast.type.Ast;
 import com.github.tomboyo.lily.ast.type.AstClass;
+import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstField;
 import com.github.tomboyo.lily.ast.type.AstReference;
 
@@ -16,10 +17,10 @@ public class AstToJava {
   public static Source renderAst(Ast ast) {
     if (ast instanceof AstClass astClass) {
       return renderClass(astClass);
+    } else if (ast instanceof AstClassAlias astClassAlias) {
+      return renderAstClassAlias(astClassAlias);
     } else {
-      return new Source(
-          Path.of(".").normalize(),
-          "TODO: This AST is unimplemented: " + ast);
+      throw new IllegalArgumentException("Unsupported AST: " + ast);
     }
   }
 
@@ -63,5 +64,13 @@ public class AstToJava {
               .collect(Collectors.joining(",")));
       return fqn + typeParameters;
     }
+  }
+
+  private static Source renderAstClassAlias(AstClassAlias ast) {
+    var path = Path.of(".", ast.packageName().split("\\."))
+        .normalize()
+        .resolve(capitalCamelCase(ast.name()) + ".java");
+    var content = "// AstClassAlias not yet implemented (%s)".formatted(ast);
+    return new Source(path, content);
   }
 }
