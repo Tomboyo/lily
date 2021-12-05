@@ -20,15 +20,11 @@ public class AstToJavaTest {
         new Source(
             Path.of("com/foo/MyClass.java"),
             """
-            package com.foo;
-            public class MyClass {
-            private java.lang.String myString;
-            private java.util.List<com.foo.myclass.MyListItem> myList;
-            public java.lang.String myString() { return myString; }
-            public MyClass myString(java.lang.String myString) { this.myString = myString; return this; }
-            public java.util.List<com.foo.myclass.MyListItem> myList() { return myList; }
-            public MyClass myList(java.util.List<com.foo.myclass.MyListItem> myList) { this.myList = myList; return this; }
-            }"""
+                package com.foo;
+                public record MyClass(
+                    java.lang.String myString,
+                    java.util.List<com.foo.myclass.MyListItem> myList
+                ) {}"""
         ),
         AstToJava.renderAst(
             new AstClass(

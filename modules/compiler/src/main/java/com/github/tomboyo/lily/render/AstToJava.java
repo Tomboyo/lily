@@ -6,6 +6,7 @@ import com.github.tomboyo.lily.ast.type.AstField;
 import com.github.tomboyo.lily.ast.type.AstReference;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.github.tomboyo.lily.ast.Support.capitalCamelCase;
@@ -28,54 +29,26 @@ public class AstToJava {
         .resolve(capitalCamelCase(ast.name()) + ".java");
     var content = """
         package %s;
-        public class %s {
+        public record %s(
         %s
-        %s
-        }""".formatted(
+        ) {}""".formatted(
         ast.packageName(),
         capitalCamelCase(ast.name()),
-        ast.fields().stream()
-            .map(AstToJava::renderFieldDeclaration)
-            .collect(Collectors.joining("\n")),
-        ast.fields().stream()
-            .map(astField -> renderGetterAndSetter(ast, astField))
-            .collect(Collectors.joining("\n")));
+        recordFieldDeclaration(ast.fields()));
 
     return new Source(path, content);
   }
 
-  private static String renderFieldDeclaration(AstField astField) {
-    return "private %s %s;".formatted(
-        renderTypeName(astField.astReference()),
-        astField.name());
+  private static String recordFieldDeclaration(List<AstField> fields) {
+    return fields.stream()
+        .map(field -> "    %s %s".formatted(
+            typeName(field.astReference()),
+            lowerCamelCase(field.name())
+        ))
+        .collect(Collectors.joining(",\n"));
   }
 
-  private static String renderGetterAndSetter(AstClass astClass, AstField astField) {
-    var typeName = renderTypeName(astField.astReference());
-    var getterName = lowerCamelCase(astField.name());
-    var setterName = lowerCamelCase(astField.name());
-    var fieldName = lowerCamelCase(astField.name());
-    var className = capitalCamelCase(astClass.name());
-
-    var getter = "public %s %s() { return %s; }"
-        .formatted(
-            typeName,
-            getterName,
-            fieldName);
-
-    var setter = "public %s %s(%s %s) { this.%s = %s; return this; }"
-        .formatted(
-            className,
-            setterName,
-            typeName,
-            fieldName,
-            fieldName,
-            fieldName);
-
-    return String.join("\n", getter, setter);
-  }
-
-  private static String renderTypeName(AstReference astReference) {
+  private static String typeName(AstReference astReference) {
     var fqn = String.join(
         ".",
         astReference.packageName(),
@@ -86,7 +59,7 @@ public class AstToJava {
     } else {
       var typeParameters = "<%s>".formatted(
           astReference.typeParameters().stream()
-              .map(AstToJava::renderTypeName)
+              .map(AstToJava::typeName)
               .collect(Collectors.joining(",")));
       return fqn + typeParameters;
     }
