@@ -4,17 +4,32 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.tomboyo.lily.example</groupId>
-    <artifactId>local-spec</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
-    <name>Example OAS Generated Client</name>
+    <parent>
+        <groupId>com.github.tomboyo.lily</groupId>
+        <artifactId>lily</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../../../pom.xml</relativePath>
+    </parent>
 
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <artifactId>it-project</artifactId>
+    <packaging>jar</packaging>
+    <name>Integration Test Project</name>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <!-- The parent project installs everything here at pre-integration-test -->
+            <id>it-repository</id>
+            <name>Integration Test Repository</name>
+            <!-- lily/target/it-repository -->
+            <url>file://${project.basedir}/../../../target/it-repository</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 
     <build>
         <plugins>
@@ -23,7 +38,7 @@
                 <artifactId>lily-compiler-maven-plugin</artifactId>
                 <version>0.1.0-SNAPSHOT</version>
                 <configuration>
-                    <source>example.yaml</source>
+                    <source>oas.yaml</source>
                     <!-- <outputDir>target/generated-sources</outputDir> -->
                     <basePackage>com.example</basePackage>
                 </configuration>
@@ -36,11 +51,20 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M5</version>
+                <configuration>
+                    <failIfNoTests>true</failIfNoTests>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
     <dependencyManagement>
         <dependencies>
+            <!-- BEGIN generated code dependency management -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
@@ -48,13 +72,7 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>5.8.1</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+            <!-- END generated code dependency management -->
         </dependencies>
     </dependencyManagement>
 

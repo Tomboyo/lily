@@ -17,5 +17,53 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <main.project.dir>${project.basedir}</main.project.dir>
+        <it.repository.url>file://${main.project.dir}/target/it-repository</it.repository.url>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.8.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <!-- Runs before integration testing to ensure the plugin module and dependent poms are installed where
+                     the it-project can find them. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.0.0-M1</version>
+                <executions>
+                    <execution>
+                        <id>deploy-plugin-to-it-repository</id>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                        <phase>pre-integration-test</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- URLs must be defined in each project. Maven doesn't have a consistent reference to the multi-
+                         module root dir. -->
+                    <altDeploymentRepository>
+                        it-repository::${it.repository.url}
+                    </altDeploymentRepository>
+                    <altReleaseDeploymentRepository>
+                        it-repository::${it.repository.url}
+                    </altReleaseDeploymentRepository>
+                    <altSnapshotDeploymentRepository>
+                        it-repository::${it.repository.url}
+                    </altSnapshotDeploymentRepository>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -21,8 +21,6 @@ public class SerializationTest {
     // Local zone is serialized as-is but deserialized to UTC, so use UTC to ensure they're equal.
     var data = new MyObjectType(false, ZonedDateTime.now(ZoneId.of("UTC")));
 
-    assertEquals(
-        data,
-        MAPPER.readValue(MAPPER.writeValueAsString(data), MyObjectType.class));
+    assertEquals(data, MAPPER.readValue(MAPPER.writeValueAsString(data), MyObjectType.class));
   }
 }
