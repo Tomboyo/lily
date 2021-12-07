@@ -17,11 +17,8 @@ public class LilyCompiler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LilyCompiler.class);
 
-  public static void compile(
-      String source,
-      Path output,
-      String basePackage
-  ) throws OasParseException {
+  public static void compile(String source, Path output, String basePackage)
+      throws OasParseException {
     var parseResult = new OpenAPIParser().readLocation(source, null, null);
 
     if (!parseResult.getMessages().isEmpty()) {
@@ -45,7 +42,7 @@ public class LilyCompiler {
     var destination = outputDirectory.resolve(rendering.relativePath());
     try {
       Files.createDirectories(destination.getParent());
-      Files.writeString(destination, rendering.contents(), StandardOpenOption.CREATE_NEW);
+      Files.writeString(destination, rendering.contents(), StandardOpenOption.CREATE);
     } catch (IOException e) {
       throw new UncheckedIOException(
           "Failed to write source file to path '" + destination + "'", e);

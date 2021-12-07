@@ -36,6 +36,45 @@ paths:
           description: Validation exception
 components:
   schemas:
+    # A top-level object with fields of every standard type
+    MyObjectType:
+      type: object
+      properties:
+        a:
+          type: boolean
+        b:
+          type: integer
+        c:
+          type: integer
+          format: int32
+        d:
+          type: integer
+          format: int64
+        e:
+          type: number
+        f:
+          type: number
+          format: double
+        g:
+          type: number
+          format: float
+        h:
+          type: string
+        i:
+          type: string
+          format: password
+        j:
+          type: string
+          format: byte
+        k:
+          type: string
+          format: binary
+        l:
+          type: string
+          format: date
+        m:
+          type: string
+          format: date-time
     # MyAliasType is an *alias* of String.
     MyAliasType:
       type: string
@@ -54,12 +93,3 @@ components:
             type: string
           bar:
             type: integer
-    # A top-level object
-    MyObjectType:
-      type: object
-      properties:
-        foo:
-          type: boolean
-        bar:
-          type: string
-          format: date-time
