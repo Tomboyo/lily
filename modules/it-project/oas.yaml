@@ -75,6 +75,15 @@ components:
         m:
           type: string
           format: date-time
+    # A top-level object with an in-line object definition
+    MyObject2:
+      type: object
+      properties:
+        foo:
+          type: object
+          properties:
+            bar:
+              type: string
     # MySimpleAlias is an *alias* of String, a standard/simple type.
     MySimpleAlias:
       type: string
