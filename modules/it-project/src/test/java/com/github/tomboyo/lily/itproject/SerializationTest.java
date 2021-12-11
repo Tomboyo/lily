@@ -1,6 +1,6 @@
 package com.github.tomboyo.lily.itproject;
 
-import com.example.MyObjectType;
+import com.example.MyObject;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -26,10 +26,10 @@ public class SerializationTest {
   }
 
   @Nested
-  public class MyObjectTypeTests {
+  public class MyObjectTests {
     @Test
     public void toJson() throws Exception {
-      var obj = new MyObjectType(
+      var obj = new MyObject(
         true,
           BigInteger.ZERO,
           1,

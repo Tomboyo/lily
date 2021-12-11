@@ -11,33 +11,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MyAliasType'
+              $ref: '#/components/schemas/MySimpleAlias'
           application/xml:
             schema:
-              $ref: '#/components/schemas/MyAliasType'
+              $ref: '#/components/schemas/MySimpleAlias'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/MyAliasType'
+              $ref: '#/components/schemas/MySimpleAlias'
       responses:
         "200":
           description: Successful operation
           content:
             application/xml:
               schema:
-                $ref: '#/components/schemas/MyAliasType'
+                $ref: '#/components/schemas/MySimpleAlias'
             application/json:
               schema:
-                $ref: '#/components/schemas/MyAliasType'
+                $ref: '#/components/schemas/MySimpleAlias'
         "400":
           description: Invalid ID supplied
         "404":
-          description: MyAliasType not found
+          description: MySimpleAlias not found
         "405":
           description: Validation exception
 components:
   schemas:
     # A top-level object with fields of every standard type
-    MyObjectType:
+    MyObject:
       type: object
       properties:
         a:
@@ -75,16 +75,16 @@ components:
         m:
           type: string
           format: date-time
-    # MyAliasType is an *alias* of String.
-    MyAliasType:
+    # MySimpleAlias is an *alias* of String, a standard/simple type.
+    MySimpleAlias:
       type: string
     # A top-level alias of an array of numbers (a standard type)
-    MyArrayAliasType:
+    MyArrayAlias:
       type: array
       items:
         type: number
     # A top-level alias of an array of objects defined in-line
-    MyArrayAliasType2:
+    MyArrayAlias2:
       type: array
       items:
         type: object
