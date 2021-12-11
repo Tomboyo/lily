@@ -8,7 +8,7 @@
         <groupId>com.github.tomboyo.lily</groupId>
         <artifactId>lily</artifactId>
         <version>0.1.0-SNAPSHOT</version>
-        <relativePath>../../../pom.xml</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>it-project</artifactId>
@@ -21,7 +21,7 @@
             <id>it-repository</id>
             <name>Integration Test Repository</name>
             <!-- lily/target/it-repository -->
-            <url>file://${project.basedir}/../../../target/it-repository</url>
+            <url>file://${project.basedir}/../../target/it-repository</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -38,7 +38,7 @@
                 <artifactId>lily-compiler-maven-plugin</artifactId>
                 <version>0.1.0-SNAPSHOT</version>
                 <configuration>
-                    <source>oas.yaml</source>
+                    <source>file://${project.basedir}/oas.yaml</source>
                     <!-- <outputDir>target/generated-sources</outputDir> -->
                     <basePackage>com.example</basePackage>
                 </configuration>

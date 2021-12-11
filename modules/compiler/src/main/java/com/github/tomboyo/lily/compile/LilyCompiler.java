@@ -21,12 +21,17 @@ public class LilyCompiler {
       throws OasParseException {
     var parseResult = new OpenAPIParser().readLocation(source, null, null);
 
-    if (!parseResult.getMessages().isEmpty()) {
+    var messages = parseResult.getMessages();
+    if (messages != null && !messages.isEmpty()) {
       var message = String.join("\n", parseResult.getMessages());
       throw new OasParseException("Failed to parse OAS document:\n" + message);
     }
 
     var openApi = parseResult.getOpenAPI();
+    if (openApi == null) {
+      throw new OasParseException("Failed to parse OpenAPI document (see preceding errors)");
+    }
+
     var version = openApi.getOpenapi();
     if (version == null || !version.startsWith("3.")) {
       throw new OasParseException("OAS version 3 or higher required. Got version=" + version);

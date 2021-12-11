@@ -1,6 +1,5 @@
 package com.github.tomboyo.lily;
 
-
 import com.github.tomboyo.lily.compile.LilyCompiler;
 import com.github.tomboyo.lily.compile.OasParseException;
 import org.apache.maven.plugin.AbstractMojo;
@@ -21,7 +20,10 @@ public class MyMojo extends AbstractMojo {
   @Parameter(property = "source", required = true)
   private String source;
 
-  @Parameter(defaultValue = "${project.build.directory}/generated-sources", property = "outputDir", required = true)
+  @Parameter(
+      defaultValue = "${project.build.directory}/generated-sources",
+      property = "outputDir",
+      required = true)
   private String outputDirectory;
 
   @Parameter(property = "basePackage", required = true)

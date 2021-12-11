@@ -11,6 +11,7 @@
     <modules>
         <module>modules/compiler</module>
         <module>modules/lily-compiler-maven-plugin</module>
+        <module>modules/it-project</module>
     </modules>
 
     <properties>
