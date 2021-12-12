@@ -1,6 +1,6 @@
 = Lily OAS-To-Java Compiler
 
-Lily is a compiler that consumers OpenAPI (Swagger) specifications and produces Java source code.
+Lily is a compiler that consumes OpenAPI (Swagger) specifications and produces Java source code.
 It is intended to be an alternative to https://github.com/OpenAPITools/openapi-generator[OpenAPI Generator], which at time of writing is the only option, and substantially more complete than Lily.
 
 == Goals
@@ -20,26 +20,12 @@ Options become confusing to maintain -- prefer opinionated code that works for m
 . Do not support generate-and-check-in workflows.
 Treat the OAS document as source code.
 
-== Feature Roadmap
+== Quick Tour
 
-=== Components
+Lily is composed of three modules in the `modules` directory:
 
-==== Schemas
+- `it-project` is an integration test project and living example of the compiler in action. The pom shows how to configure Lily in a maven build. The OAS shows what Lily supports. Check out the generated-sources directory under `target/` to see how it compiles OAS definitions.
 
-* [x] Map OAS types to Java stdlib types
-* [x] Map arrays to Java Lists
-* [x] Map objects to Java classes
-* [x] Map top-level non-object components (e.g. arrays, strings) to alises
-** [ ] Map aliases as their aliased type.
-** [ ] (Tentative) Or, optionally map aliases as value types (wrappers around the aliased type which are serialized as the referent value only.
-E.g, StringAlias serializes as a String)
-* [ ] Support Jackson annotations
-* [ ] Support allOf/anyOf/oneOf types
+- `lily-compiler-maven-plugin` is a teensy-weensy Maven plugin that reads configuration from the pom and hands it off to the compiler project.
 
-==== Responses, Parameters, Examples, Request Bodies, Headers, Security Schemes, Links, Callbacks
-
-To do!
-
-=== Paths, Security, Servers, Info, Tags, and External Docs
-
-To do!
+- `compiler` is responsible for reading an OAS document, translating it to an intermediary AST (abstract syntax tree), rendering the AST as source code, and finally saving source code to disc.
