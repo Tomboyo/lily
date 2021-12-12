@@ -1,6 +1,7 @@
 package com.github.tomboyo.lily.render;
 
 import com.github.tomboyo.lily.ast.type.AstClass;
+import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstField;
 import com.github.tomboyo.lily.ast.type.AstReference;
 import org.junit.jupiter.api.Test;
@@ -45,5 +46,27 @@ public class AstToJavaTest {
                                     "com.foo.myclass",
                                     "MyListItem"))),
                         "myList")))));
+  }
+
+  @Test
+  public void renderAstClassAlias() {
+    assertEquals(
+        new Source(
+            Path.of("com/foo/MyAlias.java"),
+            """
+                package com.foo;
+                public record MyAlias(
+                    java.lang.String value
+                ) {
+                  @com.fasterxml.jackson.annotation.JsonCreator
+                  public static MyAlias creator(java.lang.String value) { return new MyAlias(value); }
+                  @com.fasterxml.jackson.annotation.JsonValue
+                  public java.lang.String value() { return value; }
+                }"""
+        ),
+        AstToJava.renderAst(
+            new AstClassAlias("com.foo", "MyAlias",
+                new AstReference("java.lang", "String")))
+    );
   }
 }

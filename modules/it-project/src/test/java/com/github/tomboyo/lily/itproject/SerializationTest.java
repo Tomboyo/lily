@@ -2,6 +2,7 @@ package com.github.tomboyo.lily.itproject;
 
 import com.example.MyObject;
 import com.example.MyObject2;
+import com.example.MySimpleAlias;
 import com.example.myobject2.Foo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -15,6 +16,7 @@ import java.time.ZonedDateTime;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static com.github.tomboyo.lily.itproject.testsupport.Support.assertJsonEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SerializationTest {
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -82,5 +84,24 @@ public class SerializationTest {
               new Foo("value")),
           MAPPER);
       }
+  }
+
+  @Nested
+  public class MySimpleAliasTests {
+    @Test
+    public void toJson() throws Exception {
+      assertJsonEquals(
+          "\"value-string\"",
+          new MySimpleAlias("value-string"),
+          MAPPER);
+    }
+
+    @Test
+    public void fromJson() throws Exception {
+      assertEquals(
+          MAPPER.readValue("\"value-string\"", MySimpleAlias.class),
+          new MySimpleAlias("value-string")
+      );
+    }
   }
 }

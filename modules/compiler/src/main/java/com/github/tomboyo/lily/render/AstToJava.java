@@ -43,13 +43,13 @@ public class AstToJava {
   private static String recordFieldDeclaration(List<AstField> fields) {
     return fields.stream()
         .map(field -> "    %s %s".formatted(
-            typeName(field.astReference()),
+            fullyQualifiedType(field.astReference()),
             lowerCamelCase(field.name())
         ))
         .collect(Collectors.joining(",\n"));
   }
 
-  private static String typeName(AstReference astReference) {
+  private static String fullyQualifiedType(AstReference astReference) {
     var fqn = String.join(
         ".",
         astReference.packageName(),
@@ -60,7 +60,7 @@ public class AstToJava {
     } else {
       var typeParameters = "<%s>".formatted(
           astReference.typeParameters().stream()
-              .map(AstToJava::typeName)
+              .map(AstToJava::fullyQualifiedType)
               .collect(Collectors.joining(",")));
       return fqn + typeParameters;
     }
@@ -70,7 +70,25 @@ public class AstToJava {
     var path = Path.of(".", ast.packageName().split("\\."))
         .normalize()
         .resolve(capitalCamelCase(ast.name()) + ".java");
-    var content = "// AstClassAlias not yet implemented (%s)".formatted(ast);
+    var valueType = fullyQualifiedType(ast.aliasedType());
+    var className = capitalCamelCase(ast.name());
+    var content = """
+        package %s;
+        public record %s(
+            %s value
+        ) {
+          @com.fasterxml.jackson.annotation.JsonCreator
+          public static %s creator(%s value) { return new %s(value); }
+          @com.fasterxml.jackson.annotation.JsonValue
+          public %s value() { return value; }
+        }""".formatted(
+            ast.packageName(),
+            className,
+            valueType,
+            className,
+            valueType,
+            className,
+            valueType);
     return new Source(path, content);
   }
 }
