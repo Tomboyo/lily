@@ -43,7 +43,7 @@ class OasSchemaToAstTest {
       new String[] {"string", "byte", "java.lang", "Byte[]"},
       new String[] {"string", "binary", "java.lang", "Byte[]"},
       new String[] {"string", "date", "java.time", "LocalDate"},
-      new String[] {"string", "date-time", "java.time", "ZonedDateTime"}
+      new String[] {"string", "date-time", "java.time", "OffsetDateTime"}
     };
   }
 

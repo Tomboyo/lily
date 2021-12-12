@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static com.github.tomboyo.lily.itproject.testsupport.Support.assertJsonEquals;
@@ -47,7 +47,7 @@ public class SerializationTest {
                 "j": [3],
                 "k": [7],
                 "l": "2021-01-01",
-                "m": "2021-01-01T00:00:00.012Z"
+                "m": "2021-01-01T00:00:00.012+01:00"
               }
               """,
           new MyObject(
@@ -63,7 +63,7 @@ public class SerializationTest {
               new Byte[]{ (byte) 3},
               new Byte[]{ (byte) 7},
               LocalDate.of(2021, 1, 1),
-              ZonedDateTime.parse("2021-01-01T00:00:00.012Z")
+              OffsetDateTime.parse("2021-01-01T00:00:00.012+01:00")
           ),
           MAPPER
       );
