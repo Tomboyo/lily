@@ -13,9 +13,11 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static com.github.tomboyo.lily.itproject.testsupport.Support.assertJsonEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SerializationTest {
@@ -47,7 +49,7 @@ public class SerializationTest {
                 "j": [3],
                 "k": [7],
                 "l": "2021-01-01",
-                "m": "2021-01-01T00:00:00.012+01:00"
+                "m": "2021-01-01T00:00:00.012Z"
               }
               """,
           new MyObject(
@@ -63,10 +65,53 @@ public class SerializationTest {
               new Byte[]{ (byte) 3},
               new Byte[]{ (byte) 7},
               LocalDate.of(2021, 1, 1),
-              OffsetDateTime.parse("2021-01-01T00:00:00.012+01:00")
+              OffsetDateTime.parse("2021-01-01T00:00:00.012Z")
           ),
           MAPPER
       );
+    }
+
+    @Test
+    public void fromJson() throws Exception {
+      var actual = MAPPER.readValue("""
+              {
+                "a": true,
+                "b": 0,
+                "c": 1,
+                "d": 2,
+                "e": 3,
+                "f": 4.1,
+                "g": 5.2,
+                "h": "foo",
+                "i": "password",
+                "j": [3],
+                "k": [7],
+                "l": "2021-01-01",
+                "m": "2021-01-01T00:00:00.012Z"
+              }
+              """, MyObject.class);
+      var expected = new MyObject(
+          true,
+          BigInteger.ZERO,
+          1,
+          2L,
+          BigDecimal.valueOf(3L),
+          4.1d,
+          5.2f,
+          "foo",
+          "password",
+          new Byte[]{ (byte) 3},
+          new Byte[]{ (byte) 7},
+          LocalDate.of(2021, 1, 1),
+          OffsetDateTime.parse("2021-01-01T00:00:00.012Z")
+      );
+
+      // Byte[]#equals() is by object equality, so we must decompose our assertEquals.
+      assertEquals(
+          List.of(expected.a(), expected.b(), expected.c(), expected.d(), expected.e(), expected.f(), expected.g(), expected.h(), expected.i(), expected.l(), expected.m()),
+          List.of(actual.a(), actual.b(), actual.c(), actual.d(), actual.e(), actual.f(), actual.g(), actual.h(), actual.i(), actual.l(), actual.m()));
+      assertArrayEquals(expected.j(), actual.j());
+      assertArrayEquals(expected.k(), actual.k());
     }
   }
 
@@ -84,6 +129,18 @@ public class SerializationTest {
               new Foo("value")),
           MAPPER);
       }
+
+    @Test
+    public void fromJson() throws Exception {
+      assertEquals(
+          new MyObject2(new Foo("value")),
+          MAPPER.readValue("""
+            {
+              "foo": {
+                "bar": "value"
+              }
+            }""", MyObject2.class));
+    }
   }
 
   @Nested
