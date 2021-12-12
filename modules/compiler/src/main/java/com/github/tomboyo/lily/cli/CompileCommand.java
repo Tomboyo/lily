@@ -2,13 +2,12 @@ package com.github.tomboyo.lily.cli;
 
 import com.github.tomboyo.lily.compile.LilyCompiler;
 import com.github.tomboyo.lily.compile.OasParseException;
+import java.nio.file.Path;
+import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-
-import java.nio.file.Path;
-import java.util.concurrent.Callable;
 
 @Command(
     name = "compile",

@@ -1,16 +1,15 @@
 package com.github.tomboyo.lily;
 
+import static org.apache.maven.plugins.annotations.LifecyclePhase.GENERATE_SOURCES;
+
 import com.github.tomboyo.lily.compile.LilyCompiler;
 import com.github.tomboyo.lily.compile.OasParseException;
+import java.nio.file.Paths;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-
-import java.nio.file.Paths;
-
-import static org.apache.maven.plugins.annotations.LifecyclePhase.GENERATE_SOURCES;
 
 @Mojo(name = "compile-client", defaultPhase = GENERATE_SOURCES)
 public class MyMojo extends AbstractMojo {

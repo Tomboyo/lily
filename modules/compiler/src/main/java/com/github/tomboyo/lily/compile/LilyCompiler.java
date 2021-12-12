@@ -4,14 +4,13 @@ import com.github.tomboyo.lily.ast.OasSchemaToAst;
 import com.github.tomboyo.lily.render.AstToJava;
 import com.github.tomboyo.lily.render.Source;
 import io.swagger.parser.OpenAPIParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LilyCompiler {
 

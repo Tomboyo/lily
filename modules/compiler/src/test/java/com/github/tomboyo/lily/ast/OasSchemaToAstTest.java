@@ -1,5 +1,12 @@
 package com.github.tomboyo.lily.ast;
 
+import static java.util.stream.Collectors.toSet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstField;
@@ -9,22 +16,14 @@ import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static java.util.stream.Collectors.toSet;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 class OasSchemaToAstTest {
 
@@ -268,7 +267,8 @@ class OasSchemaToAstTest {
                 "MyItemsItem",
                 List.of(new AstField(new AstReference("java.lang", "String"), "myString")))),
         ast,
-        "in-line array item definitions within object definitions evaluate to references to new classes in nested packages");
+        "in-line array item definitions within object definitions evaluate to references to new"
+            + " classes in nested packages");
   }
 
   @Test

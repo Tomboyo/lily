@@ -1,15 +1,14 @@
 package com.github.tomboyo.lily.render;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstField;
 import com.github.tomboyo.lily.ast.type.AstReference;
-import org.junit.jupiter.api.Test;
-
 import java.nio.file.Path;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 public class AstToJavaTest {
   @Test
@@ -25,26 +24,18 @@ public class AstToJavaTest {
                 public record MyClass(
                     java.lang.String myString,
                     java.util.List<com.foo.myclass.MyListItem> myList
-                ) {}"""
-        ),
+                ) {}"""),
         AstToJava.renderAst(
             new AstClass(
                 "com.foo",
                 "MyClass",
                 List.of(
-                    new AstField(
-                        new AstReference(
-                            "java.lang",
-                            "String"),
-                        "myString"),
+                    new AstField(new AstReference("java.lang", "String"), "myString"),
                     new AstField(
                         new AstReference(
                             "java.util",
                             "List",
-                            List.of(
-                                new AstReference(
-                                    "com.foo.myclass",
-                                    "MyListItem"))),
+                            List.of(new AstReference("com.foo.myclass", "MyListItem"))),
                         "myList")))));
   }
 
@@ -62,11 +53,8 @@ public class AstToJavaTest {
                   public static MyAlias creator(java.lang.String value) { return new MyAlias(value); }
                   @com.fasterxml.jackson.annotation.JsonValue
                   public java.lang.String value() { return value; }
-                }"""
-        ),
+                }"""),
         AstToJava.renderAst(
-            new AstClassAlias("com.foo", "MyAlias",
-                new AstReference("java.lang", "String")))
-    );
+            new AstClassAlias("com.foo", "MyAlias", new AstReference("java.lang", "String"))));
   }
 }
