@@ -2,6 +2,7 @@ package com.github.tomboyo.lily.ast;
 
 import static com.github.tomboyo.lily.ast.Support.capitalCamelCase;
 import static com.github.tomboyo.lily.ast.Support.joinPackages;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import com.github.tomboyo.lily.ast.type.Ast;
@@ -41,7 +42,8 @@ public class OasSchemaToAst {
       Constants constants, String schemaName, Schema schema) {
     var type = schema.getType();
     if (type == null) {
-      return Stream.of(generateAlias(constants, constants.basePackage(), schemaName, schema));
+      // TODO: Alias of $ref
+      return Stream.of();
     }
 
     switch (type) {
@@ -49,18 +51,39 @@ public class OasSchemaToAst {
       case "number":
       case "string":
       case "boolean":
-        return Stream.of(generateAlias(constants, constants.basePackage(), schemaName, schema));
+        return Stream.of(
+            generateScalarAlias(constants, constants.basePackage(), schemaName, schema));
+      case "array":
+        return generateArrayAlias(constants, constants.basePackage(), schemaName, schema);
       default:
         return generateAstInternalComponent(constants, constants.basePackage(), schemaName, schema);
     }
   }
 
-  private static AstClassAlias generateAlias(
+  private static AstClassAlias generateScalarAlias(
       Constants constants, String currentPackage, String schemaName, Schema schema) {
     var type = schema.getType();
     var format = schema.getFormat();
     return new AstClassAlias(
         currentPackage, schemaName, toStdLibAstReference(constants, type, format));
+  }
+
+  private static Stream<Ast> generateArrayAlias(
+      Constants constants, String currentPackage, String schemaName, Schema schema) {
+    var arraySchema = (ArraySchema) schema;
+    var itemType = arraySchema.getItems().getType();
+    if (itemType == null) {
+      var ref = requireNonNull(arraySchema.getItems().get$ref());
+      return Stream.of(
+          new AstClassAlias(
+              currentPackage,
+              schemaName,
+              new AstReference(
+                  "java.util", "List", List.of(toBasePackageClassReference(constants, ref)))));
+    } else {
+      // TODO
+      return Stream.of();
+    }
   }
 
   private static Stream<Ast> generateAstInternalComponent(

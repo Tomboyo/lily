@@ -51,6 +51,7 @@ class OasSchemaToAstTest {
           arguments("string", "date-time", "java.time", "OffsetDateTime"));
     }
 
+    // Fields
     @ParameterizedTest
     @MethodSource("scalars")
     public void scalarObjectProperties(
@@ -122,6 +123,7 @@ class OasSchemaToAstTest {
               eq("unsupported-format"));
     }
 
+    // Aliases
     @ParameterizedTest
     @MethodSource("scalars")
     public void componentsOfScalarType(
@@ -141,6 +143,7 @@ class OasSchemaToAstTest {
           "Top-level components with standard types evaluate to type aliases");
     }
 
+    // Lists
     @ParameterizedTest
     @MethodSource("scalars")
     public void inLineArraysWithScalarItems(
@@ -176,6 +179,34 @@ class OasSchemaToAstTest {
                           "myField")))),
           ast,
           "In-line arrays of scalar items evaluate to Lists with type parameters");
+    }
+  }
+
+  // Array aliases
+  @Nested
+  public class ComponentsWithArrayType {
+    @Test
+    public void arraysOfRefs() {
+      var ast =
+          OasSchemaToAst.generateAst(
+                  "com.foo",
+                  new Components()
+                      .schemas(
+                          Map.of(
+                              "MyAlias",
+                              new ArraySchema()
+                                  .items(new Schema().$ref("#/components/schemas/MyComponent")))))
+              .collect(toSet());
+
+      assertEquals(
+          Set.of(
+              new AstClassAlias(
+                  "com.foo",
+                  "MyAlias",
+                  new AstReference(
+                      "java.util", "List", List.of(new AstReference("com.foo", "MyComponent"))))),
+          ast,
+          "Array components of references evaluate to list aliases of the referenced type");
     }
   }
 
