@@ -36,7 +36,7 @@ paths:
           description: Validation exception
 components:
   schemas:
-    # A top-level object with fields of every standard type
+    # An object with fields of every standard type
     MyObject:
       type: object
       properties:
@@ -75,7 +75,7 @@ components:
         m:
           type: string
           format: date-time
-    # A top-level object with an in-line object definition
+    # An object with an in-line object definition
     MyObject2:
       type: object
       properties:
@@ -84,15 +84,15 @@ components:
           properties:
             bar:
               type: string
-    # MySimpleAlias is an *alias* of String, a standard/simple type.
+    # An alias for the simple/standard String type.
     MySimpleAlias:
       type: string
-    # A top-level alias of an array of numbers (a standard type)
+    # An alias for arrays of numbers.
     MyArrayAlias:
       type: array
       items:
         type: number
-    # A top-level alias of an array of objects defined in-line
+    # An alias for arrays of the in-lined type
     MyArrayAlias2:
       type: array
       items:
