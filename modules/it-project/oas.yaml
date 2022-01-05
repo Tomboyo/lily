@@ -92,8 +92,8 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/MyObject2"
-    # An alias for arrays of numbers.
-    MyArrayAlias:
+    # An alias for arrays of simple/standard number type.
+    MyNumberArrayAlias:
       type: array
       items:
         type: number

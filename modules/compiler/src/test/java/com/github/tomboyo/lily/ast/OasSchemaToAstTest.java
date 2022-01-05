@@ -206,7 +206,29 @@ class OasSchemaToAstTest {
                   new AstReference(
                       "java.util", "List", List.of(new AstReference("com.foo", "MyComponent"))))),
           ast,
-          "Array components of references evaluate to list aliases of the referenced type");
+          "Array components of $refs evaluate to aliases of lists of the referenced type");
+    }
+
+    @Test
+    public void arrayOfStandardType() {
+      var ast =
+          OasSchemaToAst.generateAst(
+                  "com.foo",
+                  new Components()
+                      .schemas(
+                          Map.of(
+                              "MyAlias", new ArraySchema().items(new Schema<>().type("string")))))
+              .collect(toSet());
+
+      assertEquals(
+          Set.of(
+              new AstClassAlias(
+                  "com.foo",
+                  "MyAlias",
+                  new AstReference(
+                      "java.util", "List", List.of(new AstReference("java.lang", "String"))))),
+          ast,
+          "Array components of strings evaluate to aliases of lists of strings");
     }
   }
 

@@ -81,8 +81,24 @@ public class OasSchemaToAst {
               new AstReference(
                   "java.util", "List", List.of(toBasePackageClassReference(constants, ref)))));
     } else {
-      // TODO
-      return Stream.of();
+      switch (itemType.toLowerCase()) {
+        case "integer":
+        case "number":
+        case "string":
+        case "boolean":
+          var itemFormat = arraySchema.getItems().getFormat();
+          return Stream.of(
+              new AstClassAlias(
+                  currentPackage,
+                  schemaName,
+                  new AstReference(
+                      "java.util",
+                      "List",
+                      List.of(toStdLibAstReference(constants, itemType, itemFormat)))));
+        default:
+          // TODO
+          return Stream.of();
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import com.example.MyNumberArrayAlias;
 import com.example.MyObject;
 import com.example.MyObject2;
 import com.example.MyRefArrayAlias;
@@ -48,19 +49,28 @@ public class SerializationTest {
   @ParameterizedTest
   @MethodSource("parameterSource")
   public <T> void fromJson(TestParameter<T> params) throws Exception {
-    params.assertObjectEquals.accept(
-        params.asObject, MAPPER.readValue(params.asJson, params.type()));
+    params.assertObjectEquals.accept(params.asObject, MAPPER.readValue(params.asJson, params.type));
   }
 
   private record TestParameter<T>(
-      String asJson, T asObject, Class<T> type, BiConsumer<T, T> assertObjectEquals) {}
+      String asJson, T asObject, Class<T> type, BiConsumer<T, T> assertObjectEquals) {
+    @SuppressWarnings("unchecked")
+    public TestParameter(String asJson, T asObject, BiConsumer<T, T> assertObjectEquals) {
+      this(asJson, asObject, (Class<T>) asObject.getClass(), assertObjectEquals);
+    }
+
+    public TestParameter(String asJson, T asObject) {
+      this(asJson, asObject, Assertions::assertEquals);
+    }
+  }
 
   public static Stream<Arguments> parameterSource() {
     return Stream.of(
             myObjectTestParameter(),
             myObject2TestParameter(),
             mySimpleAliasTestParameter(),
-            myRefArrayAliasTestParameter())
+            myRefArrayAliasTestParameter(),
+            myNumberArrayAliasTestParameter())
         .map(x -> arguments(Named.of(x.type.getSimpleName(), x)));
   }
 
@@ -97,7 +107,6 @@ public class SerializationTest {
             new Byte[] {(byte) 7},
             LocalDate.of(2021, 1, 1),
             OffsetDateTime.parse("2021-01" + "-01T00:00:00.012Z")),
-        MyObject.class,
         (expected, actual) -> {
           assertEquals(
               List.of(
@@ -131,22 +140,20 @@ public class SerializationTest {
 
   private static TestParameter<MyObject2> myObject2TestParameter() {
     return new TestParameter<>(
-        "{ \"foo\": { \"bar\": \"value\" } }",
-        new MyObject2(new Foo("value")),
-        MyObject2.class,
-        Assertions::assertEquals);
+        "{ \"foo\": { \"bar\": \"value\" } }", new MyObject2(new Foo("value")));
   }
 
   private static TestParameter<MySimpleAlias> mySimpleAliasTestParameter() {
-    return new TestParameter<>(
-        "\"value\"", new MySimpleAlias("value"), MySimpleAlias.class, Assertions::assertEquals);
+    return new TestParameter<>("\"value\"", new MySimpleAlias("value"));
   }
 
   private static TestParameter<MyRefArrayAlias> myRefArrayAliasTestParameter() {
     return new TestParameter<>(
         "[{ \"foo\": { \"bar\": \"value\" } }]",
-        new MyRefArrayAlias(List.of(new MyObject2(new Foo("value")))),
-        MyRefArrayAlias.class,
-        Assertions::assertEquals);
+        new MyRefArrayAlias(List.of(new MyObject2(new Foo("value")))));
+  }
+
+  private static TestParameter<MyNumberArrayAlias> myNumberArrayAliasTestParameter() {
+    return new TestParameter<>("[123]", new MyNumberArrayAlias(List.of(BigDecimal.valueOf(123))));
   }
 }
