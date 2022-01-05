@@ -87,6 +87,11 @@ components:
     # An alias for the simple/standard String type.
     MySimpleAlias:
       type: string
+    # An alias for lists of MyObject2 instances
+    MyRefArrayAlias:
+      type: array
+      items:
+        $ref: "#/components/schemas/MyObject2"
     # An alias for arrays of numbers.
     MyArrayAlias:
       type: array

@@ -7,6 +7,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.example.MyObject;
 import com.example.MyObject2;
+import com.example.MyRefArrayAlias;
 import com.example.MySimpleAlias;
 import com.example.myobject2.Foo;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -56,7 +57,10 @@ public class SerializationTest {
 
   public static Stream<Arguments> parameterSource() {
     return Stream.of(
-            myObjectTestParameter(), myObject2TestParameter(), mySimpleAliasTestParameter())
+            myObjectTestParameter(),
+            myObject2TestParameter(),
+            mySimpleAliasTestParameter(),
+            myRefArrayAliasTestParameter())
         .map(x -> arguments(Named.of(x.type.getSimpleName(), x)));
   }
 
@@ -136,5 +140,13 @@ public class SerializationTest {
   private static TestParameter<MySimpleAlias> mySimpleAliasTestParameter() {
     return new TestParameter<>(
         "\"value\"", new MySimpleAlias("value"), MySimpleAlias.class, Assertions::assertEquals);
+  }
+
+  private static TestParameter<MyRefArrayAlias> myRefArrayAliasTestParameter() {
+    return new TestParameter<>(
+        "[{ \"foo\": { \"bar\": \"value\" } }]",
+        new MyRefArrayAlias(List.of(new MyObject2(new Foo("value")))),
+        MyRefArrayAlias.class,
+        Assertions::assertEquals);
   }
 }
