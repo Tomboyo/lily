@@ -1,5 +1,9 @@
 package com.github.tomboyo.lily.compile;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 import com.github.tomboyo.lily.ast.OasSchemaToAst;
 import com.github.tomboyo.lily.render.AstToJava;
 import com.github.tomboyo.lily.render.Source;
@@ -8,7 +12,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +39,6 @@ public class LilyCompiler {
       throw new OasParseException("OAS version 3 or higher required. Got version=" + version);
     }
 
-    // TODO: render source instead of printing.
     OasSchemaToAst.generateAst(basePackage, openApi.getComponents())
         .map(AstToJava::renderAst)
         .forEach(rendering -> persistSource(output, rendering));
@@ -46,7 +48,7 @@ public class LilyCompiler {
     var destination = outputDirectory.resolve(rendering.relativePath());
     try {
       Files.createDirectories(destination.getParent());
-      Files.writeString(destination, rendering.contents(), StandardOpenOption.CREATE);
+      Files.writeString(destination, rendering.contents(), CREATE, WRITE, TRUNCATE_EXISTING);
     } catch (IOException e) {
       throw new UncheckedIOException(
           "Failed to write source file to path '" + destination + "'", e);
