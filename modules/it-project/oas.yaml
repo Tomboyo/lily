@@ -98,12 +98,10 @@ components:
       items:
         type: number
     # An alias for arrays of the in-lined type
-    MyArrayAlias2:
+    MyInlineObjectArrayAlias:
       type: array
       items:
         type: object
         properties:
           foo:
             type: string
-          bar:
-            type: integer

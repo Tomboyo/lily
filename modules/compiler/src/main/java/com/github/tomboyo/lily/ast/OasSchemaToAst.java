@@ -83,7 +83,7 @@ public class OasSchemaToAst {
               new AstReference(
                   "java.util", "List", List.of(toBasePackageClassReference(constants, ref)))));
     } else {
-      switch (itemType.toLowerCase()) {
+      switch (itemType) {
         case "integer":
         case "number":
         case "string":
@@ -97,6 +97,18 @@ public class OasSchemaToAst {
                       "java.util",
                       "List",
                       List.of(toStdLibAstReference(constants, itemType, itemFormat)))));
+        case "object":
+          var itemPackage = joinPackages(currentPackage, schemaName.toLowerCase());
+          var itemName = schemaName + "Item";
+          var objectSchema = ((ArraySchema) schema).getItems();
+          var inlineAst = generateObjectAst(constants, itemPackage, itemName, objectSchema);
+          var aliasAst =
+              new AstClassAlias(
+                  currentPackage,
+                  schemaName,
+                  new AstReference(
+                      "java.util", "List", List.of(new AstReference(itemPackage, itemName))));
+          return Stream.concat(Stream.of(aliasAst), inlineAst);
         default:
           // TODO
           return Stream.of();
@@ -134,7 +146,7 @@ public class OasSchemaToAst {
     // Only append "Item" to the name if the nested type is actually an object. Otherwise, we end up
     // with
     // ThingItemItem...Item in the presence of nested array definitions.
-    if (itemType != null && itemType.equalsIgnoreCase("object")) {
+    if ("object".equals(itemType)) {
       return generateAstInternalComponent(
           constants, currentPackage, schemaName + "Item", itemSchema);
     } else {
@@ -145,8 +157,7 @@ public class OasSchemaToAst {
   private static Stream<Ast> generateObjectAst(
       Constants constants, String currentPackage, String schemaName, Schema schema) {
     // This package is "nested" beneath this class. Any nested in-line class definitions are
-    // generated within the
-    // interior package.
+    // generated within the interior package.
     var interiorPackage = joinPackages(currentPackage, schemaName.toLowerCase());
 
     // 1. Define a new class for this object.

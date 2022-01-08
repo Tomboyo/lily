@@ -230,6 +230,39 @@ class OasSchemaToAstTest {
           ast,
           "Array components of strings evaluate to aliases of lists of strings");
     }
+
+    @Test
+    public void arrayOfInlineObjects() {
+      var ast =
+          OasSchemaToAst.generateAst(
+                  "com.foo",
+                  new Components()
+                      .schemas(
+                          Map.of(
+                              "MyAlias",
+                              new ArraySchema()
+                                  .items(
+                                      new ObjectSchema()
+                                          .properties(
+                                              Map.of("foo", new Schema().type("string")))))))
+              .collect(toSet());
+
+      assertEquals(
+          Set.of(
+              new AstClassAlias(
+                  "com.foo",
+                  "MyAlias",
+                  new AstReference(
+                      "java.util",
+                      "List",
+                      List.of(new AstReference("com.foo.myalias", "MyAliasItem")))),
+              new AstClass(
+                  "com.foo.myalias",
+                  "MyAliasItem",
+                  List.of(new AstField(new AstReference("java.lang", "String"), "foo")))),
+          ast,
+          "Array components of inlined objects evaluate to aliases of lists of objects");
+    }
   }
 
   @Test

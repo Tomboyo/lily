@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import com.example.MyInlineObjectArrayAlias;
 import com.example.MyNumberArrayAlias;
 import com.example.MyObject;
 import com.example.MyObject2;
 import com.example.MyRefArrayAlias;
 import com.example.MySimpleAlias;
+import com.example.myinlineobjectarrayalias.MyInlineObjectArrayAliasItem;
 import com.example.myobject2.Foo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,7 +72,8 @@ public class SerializationTest {
             myObject2TestParameter(),
             mySimpleAliasTestParameter(),
             myRefArrayAliasTestParameter(),
-            myNumberArrayAliasTestParameter())
+            myNumberArrayAliasTestParameter(),
+            myInlineObjectArrayAliasTestParameter())
         .map(x -> arguments(Named.of(x.type.getSimpleName(), x)));
   }
 
@@ -155,5 +158,11 @@ public class SerializationTest {
 
   private static TestParameter<MyNumberArrayAlias> myNumberArrayAliasTestParameter() {
     return new TestParameter<>("[123]", new MyNumberArrayAlias(List.of(BigDecimal.valueOf(123))));
+  }
+
+  private static TestParameter<MyInlineObjectArrayAlias> myInlineObjectArrayAliasTestParameter() {
+    return new TestParameter<>(
+        "[{\"foo\": \"foo!\"}]",
+        new MyInlineObjectArrayAlias(List.of(new MyInlineObjectArrayAliasItem("foo!"))));
   }
 }
