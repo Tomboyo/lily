@@ -55,8 +55,10 @@ public class OasSchemaToAst {
             generateScalarAlias(constants, constants.basePackage(), schemaName, schema));
       case "array":
         return generateArrayAlias(constants, constants.basePackage(), schemaName, schema);
-      default:
+      case "object":
         return generateAstInternalComponent(constants, constants.basePackage(), schemaName, schema);
+      default:
+        throw new IllegalArgumentException(("Unexpected type: " + type));
     }
   }
 
