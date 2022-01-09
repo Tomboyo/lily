@@ -13,6 +13,7 @@ import com.github.tomboyo.lily.ast.type.AstReference;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,7 +55,8 @@ public class OasSchemaToAst {
         return Stream.of(
             generateScalarAlias(constants, constants.basePackage(), schemaName, schema));
       case "array":
-        return generateArrayAlias(constants, constants.basePackage(), schemaName, schema);
+        return generateArrayAlias(
+            constants, constants.basePackage(), schemaName, (ArraySchema) schema);
       case "object":
         return generateAstInternalComponent(constants, constants.basePackage(), schemaName, schema);
       default:
@@ -71,49 +73,129 @@ public class OasSchemaToAst {
   }
 
   private static Stream<Ast> generateArrayAlias(
-      Constants constants, String currentPackage, String schemaName, Schema schema) {
-    var arraySchema = (ArraySchema) schema;
-    var itemType = arraySchema.getItems().getType();
+      Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
+    var itemType = schema.getItems().getType();
     if (itemType == null) {
-      var ref = requireNonNull(arraySchema.getItems().get$ref());
-      return Stream.of(
-          new AstClassAlias(
-              currentPackage,
-              schemaName,
-              new AstReference(
-                  "java.util", "List", List.of(toBasePackageClassReference(constants, ref)))));
+      return generateRefListAlias(constants, currentPackage, schemaName, schema);
     } else {
       switch (itemType) {
         case "integer":
         case "number":
         case "string":
         case "boolean":
-          var itemFormat = arraySchema.getItems().getFormat();
-          return Stream.of(
-              new AstClassAlias(
-                  currentPackage,
-                  schemaName,
-                  new AstReference(
-                      "java.util",
-                      "List",
-                      List.of(toStdLibAstReference(constants, itemType, itemFormat)))));
+          return generateStdlibListAlias(constants, currentPackage, schemaName, schema);
+        case "array":
+          return generateCompoundListAlias(constants, currentPackage, schemaName, schema);
         case "object":
-          var itemPackage = joinPackages(currentPackage, schemaName.toLowerCase());
-          var itemName = schemaName + "Item";
-          var objectSchema = ((ArraySchema) schema).getItems();
-          var inlineAst = generateObjectAst(constants, itemPackage, itemName, objectSchema);
-          var aliasAst =
-              new AstClassAlias(
-                  currentPackage,
-                  schemaName,
-                  new AstReference(
-                      "java.util", "List", List.of(new AstReference(itemPackage, itemName))));
-          return Stream.concat(Stream.of(aliasAst), inlineAst);
+          return generateInlineObjectListAlias(constants, currentPackage, schemaName, schema);
         default:
-          // TODO
-          return Stream.of();
+          throw new IllegalArgumentException(("Unexpected type: " + itemType));
       }
     }
+  }
+
+  private static Stream<Ast> generateRefListAlias(
+      Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
+    var ref = requireNonNull(schema.getItems().get$ref());
+    return Stream.of(
+        new AstClassAlias(
+            currentPackage,
+            schemaName,
+            new AstReference(
+                "java.util", "List", List.of(toBasePackageClassReference(constants, ref)))));
+  }
+
+  private static Stream<Ast> generateStdlibListAlias(
+      Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
+    var itemType = schema.getItems().getType();
+    var itemFormat = schema.getItems().getFormat();
+    return Stream.of(
+        new AstClassAlias(
+            currentPackage,
+            schemaName,
+            new AstReference(
+                "java.util",
+                "List",
+                List.of(toStdLibAstReference(constants, itemType, itemFormat)))));
+  }
+
+  /**
+   * A top-level composite array (an array schema whose immediate child or children are also array
+   * schemas) evaluates to an alias of a composite list (A {@code List<List<...<List<T>...>>}) of
+   * some type T. The component of T is evaluated like any other non-root component.
+   */
+  private static Stream<Ast> generateCompoundListAlias(
+      Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
+    // schema: points to the top-level array alias component
+    // schemaBackPath: contains the array-typed child components of schema, in reverse hierarchical
+    // order.
+    // currentNode: after the loop exits, this holds the non-array child.
+    var schemaBackPath = new ArrayList<ArraySchema>();
+    var currentNode = schema.getItems();
+    while ("array".equals(currentNode.getType())) {
+      var currentArraySchema = (ArraySchema) currentNode;
+      schemaBackPath.add(currentArraySchema);
+      currentNode = currentArraySchema.getItems();
+    }
+
+    AstReference astReference;
+    Stream<Ast> innerTypes;
+    var type = currentNode.getType();
+    if (type == null) {
+      var ref = requireNonNull(currentNode.get$ref());
+      innerTypes = Stream.of();
+      astReference = toBasePackageClassReference(constants, ref);
+    } else {
+      var format = currentNode.getFormat();
+      // current node is not an array schema.
+      switch (currentNode.getType()) {
+        case "integer":
+        case "number":
+        case "string":
+        case "boolean":
+          innerTypes = Stream.of();
+          astReference = toStdLibAstReference(constants, type, format);
+          break;
+        case "object":
+          var innerTypePackage = joinPackages(currentPackage, schemaName.toLowerCase());
+          var innerTypeName = schemaName + "Item";
+          innerTypes = generateObjectAst(constants, innerTypePackage, innerTypeName, currentNode);
+          astReference = new AstReference(innerTypePackage, innerTypeName);
+          break;
+        default:
+          throw new IllegalArgumentException(("Unexpected type: " + type));
+      }
+    }
+
+    // Use the back-reference list to construct the composite astReference chain (List of list of
+    // list of Foo).
+    // A list of this result is what we are creating an alias of.
+    for (var backSchema : schemaBackPath) {
+      astReference = new AstReference("java.util", "List", List.of(astReference));
+    }
+
+    var alias =
+        new AstClassAlias(
+            currentPackage,
+            schemaName,
+            new AstReference("java.util", "List", List.of(astReference)));
+
+    return Stream.concat(Stream.of(alias), innerTypes);
+  }
+
+  private static Stream<Ast> generateInlineObjectListAlias(
+      Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
+    var itemPackage = joinPackages(currentPackage, schemaName.toLowerCase());
+    var itemName = schemaName + "Item";
+    var objectSchema = schema.getItems();
+    var inlineAst = generateObjectAst(constants, itemPackage, itemName, objectSchema);
+    var aliasAst =
+        new AstClassAlias(
+            currentPackage,
+            schemaName,
+            new AstReference(
+                "java.util", "List", List.of(new AstReference(itemPackage, itemName))));
+    return Stream.concat(Stream.of(aliasAst), inlineAst);
   }
 
   private static Stream<Ast> generateAstInternalComponent(

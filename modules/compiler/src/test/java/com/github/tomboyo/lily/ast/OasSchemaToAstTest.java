@@ -263,6 +263,110 @@ class OasSchemaToAstTest {
           ast,
           "Array components of inlined objects evaluate to aliases of lists of objects");
     }
+
+    @Test
+    public void compositeRefArray() {
+      var ast =
+          OasSchemaToAst.generateAst(
+                  "com.foo",
+                  new Components()
+                      .schemas(
+                          Map.of(
+                              "MyAlias",
+                              new ArraySchema()
+                                  .items(
+                                      new ArraySchema()
+                                          .items(
+                                              new Schema<>()
+                                                  .$ref("#/components/schemas/MyComponent"))))))
+              .collect(toSet());
+
+      assertEquals(
+          Set.of(
+              new AstClassAlias(
+                  "com.foo",
+                  "MyAlias",
+                  new AstReference(
+                      "java.util",
+                      "List",
+                      List.of(
+                          new AstReference(
+                              "java.util",
+                              "List",
+                              List.of(new AstReference("com.foo", "MyComponent"))))))),
+          ast,
+          "Array components of arrays evaluate to aliases of lists of lists");
+    }
+
+    @Test
+    public void compositeStdlibArray() {
+      var ast =
+          OasSchemaToAst.generateAst(
+                  "com.foo",
+                  new Components()
+                      .schemas(
+                          Map.of(
+                              "MyAlias",
+                              new ArraySchema()
+                                  .items(new ArraySchema().items(new Schema<>().type("string"))))))
+              .collect(toSet());
+
+      assertEquals(
+          Set.of(
+              new AstClassAlias(
+                  "com.foo",
+                  "MyAlias",
+                  new AstReference(
+                      "java.util",
+                      "List",
+                      List.of(
+                          new AstReference(
+                              "java.util",
+                              "List",
+                              List.of(new AstReference("java.lang", "String"))))))),
+          ast,
+          "Array components of arrays evaluate to aliases of lists of lists");
+    }
+
+    @Test
+    public void compositeInlineObjectArray() {
+      var ast =
+          OasSchemaToAst.generateAst(
+                  "com.foo",
+                  new Components()
+                      .schemas(
+                          Map.of(
+                              "MyAlias",
+                              new ArraySchema()
+                                  .items(
+                                      new ArraySchema()
+                                          .items(
+                                              new ObjectSchema()
+                                                  .properties(
+                                                      Map.of(
+                                                          "foo", new Schema().type("string"))))))))
+              .collect(toSet());
+
+      assertEquals(
+          Set.of(
+              new AstClass(
+                  "com.foo.myalias",
+                  "MyAliasItem",
+                  List.of(new AstField(new AstReference("java.lang", "String"), "foo"))),
+              new AstClassAlias(
+                  "com.foo",
+                  "MyAlias",
+                  new AstReference(
+                      "java.util",
+                      "List",
+                      List.of(
+                          new AstReference(
+                              "java.util",
+                              "List",
+                              List.of(new AstReference("com.foo.myalias", "MyAliasItem"))))))),
+          ast,
+          "Array components of arrays evaluate to aliases of lists of lists");
+    }
   }
 
   @Test

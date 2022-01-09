@@ -36,7 +36,7 @@ paths:
           description: Validation exception
 components:
   schemas:
-    # An object with fields of every standard type
+    # An object with fields of every scalar type
     MyObject:
       type: object
       properties:
@@ -75,7 +75,7 @@ components:
         m:
           type: string
           format: date-time
-    # An object with an in-line object definition
+    # An object with an in-lined object definition
     MyObject2:
       type: object
       properties:
@@ -84,20 +84,20 @@ components:
           properties:
             bar:
               type: string
-    # An alias for the simple/standard String type.
+    # An alias for arrays of a scalar type.
     MySimpleAlias:
       type: string
-    # An alias for lists of MyObject2 instances
+    # An alias for arrays of a referenced type.
     MyRefArrayAlias:
       type: array
       items:
         $ref: "#/components/schemas/MyObject2"
-    # An alias for arrays of simple/standard number type.
+    # An alias for arrays of a scalar type.
     MyNumberArrayAlias:
       type: array
       items:
         type: number
-    # An alias for arrays of the in-lined type
+    # An alias for arrays of an in-lined object type
     MyInlineObjectArrayAlias:
       type: array
       items:
@@ -105,3 +105,27 @@ components:
         properties:
           foo:
             type: string
+    # An alias for composite arrays of a referenced type
+    MyCompositeRefArrayAlias:
+      type: array
+      items:
+        type: array
+        items:
+          $ref: '#/components/schemas/MyObject2'
+    # An alias for composite arrays of a scalar type
+    MyCompositeScalarArrayAlias:
+      type: array
+      items:
+        type: array
+        items:
+          type: string
+    # An alias for composite arrays of an in-lined object type
+    MyCompositeInlineObjectArrayAlias:
+      type: array
+      items:
+        type: array
+        items:
+          type: object
+          properties:
+            foo:
+              type: string

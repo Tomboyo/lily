@@ -5,12 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import com.example.MyCompositeInlineObjectArrayAlias;
+import com.example.MyCompositeRefArrayAlias;
+import com.example.MyCompositeScalarArrayAlias;
 import com.example.MyInlineObjectArrayAlias;
 import com.example.MyNumberArrayAlias;
 import com.example.MyObject;
 import com.example.MyObject2;
 import com.example.MyRefArrayAlias;
 import com.example.MySimpleAlias;
+import com.example.mycompositeinlineobjectarrayalias.MyCompositeInlineObjectArrayAliasItem;
 import com.example.myinlineobjectarrayalias.MyInlineObjectArrayAliasItem;
 import com.example.myobject2.Foo;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -73,7 +77,10 @@ public class SerializationTest {
             mySimpleAliasTestParameter(),
             myRefArrayAliasTestParameter(),
             myNumberArrayAliasTestParameter(),
-            myInlineObjectArrayAliasTestParameter())
+            myInlineObjectArrayAliasTestParameter(),
+            myCompositeRefArrayAliasTestParameter(),
+            myCompositeScalarArrayAliasTestParameter(),
+            myCompositeInlineObjectArrayAliasTestParameter())
         .map(x -> arguments(Named.of(x.type.getSimpleName(), x)));
   }
 
@@ -164,5 +171,25 @@ public class SerializationTest {
     return new TestParameter<>(
         "[{\"foo\": \"foo!\"}]",
         new MyInlineObjectArrayAlias(List.of(new MyInlineObjectArrayAliasItem("foo!"))));
+  }
+
+  private static TestParameter<MyCompositeRefArrayAlias> myCompositeRefArrayAliasTestParameter() {
+    return new TestParameter<>(
+        "[[{\"foo\": { \"bar\": \"value\"}}]]",
+        new MyCompositeRefArrayAlias(List.of(List.of(new MyObject2(new Foo("value"))))));
+  }
+
+  private static TestParameter<MyCompositeScalarArrayAlias>
+      myCompositeScalarArrayAliasTestParameter() {
+    return new TestParameter<>(
+        "[[\"foo\"]]", new MyCompositeScalarArrayAlias(List.of(List.of("foo"))));
+  }
+
+  private static TestParameter<MyCompositeInlineObjectArrayAlias>
+      myCompositeInlineObjectArrayAliasTestParameter() {
+    return new TestParameter<>(
+        "[[{\"foo\": \"foo!\"}]]",
+        new MyCompositeInlineObjectArrayAlias(
+            List.of(List.of(new MyCompositeInlineObjectArrayAliasItem("foo!")))));
   }
 }
