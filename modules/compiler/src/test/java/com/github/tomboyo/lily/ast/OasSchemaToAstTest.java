@@ -1,13 +1,5 @@
 package com.github.tomboyo.lily.ast;
 
-import static java.util.stream.Collectors.toSet;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstField;
@@ -17,10 +9,6 @@ import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,6 +16,19 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class OasSchemaToAstTest {
 
@@ -143,42 +144,83 @@ class OasSchemaToAstTest {
           "Top-level components with standard types evaluate to type aliases");
     }
 
-    // Lists
-    @ParameterizedTest
-    @MethodSource("scalars")
-    public void inLineArraysWithScalarItems(
-        String type, String format, String javaPackage, String javaClass) {
-      var ast =
-          OasSchemaToAst.generateAst(
-                  "com.foo",
-                  new Components()
-                      .schemas(
-                          Map.of(
-                              "MyComponent",
-                              new ObjectSchema()
-                                  .name("MyComponent")
-                                  .properties(
-                                      Map.of(
-                                          "myField",
-                                          new ArraySchema()
-                                              .type("array")
-                                              .items(new Schema().type(type).format(format)))))))
-              .collect(toSet());
+    @Nested
+    public static class NestedArrayComponents {
+      @ParameterizedTest
+      @MethodSource("OasSchemaToAstTest.scalars")
+      public void inLineArraysWithScalarItems(
+          String type, String format, String javaPackage, String javaClass) {
+        var ast =
+            OasSchemaToAst.generateAst(
+                    "com.foo",
+                    new Components()
+                        .schemas(
+                            Map.of(
+                                "MyComponent",
+                                new ObjectSchema()
+                                    .name("MyComponent")
+                                    .properties(
+                                        Map.of(
+                                            "myField",
+                                            new ArraySchema()
+                                                .type("array")
+                                                .items(new Schema().type(type).format(format)))))))
+                .collect(toSet());
 
-      assertEquals(
-          Set.of(
-              new AstClass(
-                  "com.foo",
-                  "MyComponent",
-                  List.of(
-                      new AstField(
-                          new AstReference(
-                              "java.util",
-                              "List",
-                              List.of(new AstReference(javaPackage, javaClass))),
-                          "myField")))),
-          ast,
-          "In-line arrays of scalar items evaluate to Lists with type parameters");
+        assertEquals(
+            Set.of(
+                new AstClass(
+                    "com.foo",
+                    "MyComponent",
+                    List.of(
+                        new AstField(
+                            new AstReference(
+                                "java.util",
+                                "List",
+                                List.of(new AstReference(javaPackage, javaClass))),
+                            "myField")))),
+            ast,
+            "In-line arrays of scalar items evaluate to Lists with type parameters");
+      }
+
+      @Test
+      public void compositeArrays() {
+        var ast =
+            OasSchemaToAst.generateAst(
+                    "com.foo",
+                    new Components()
+                        .schemas(
+                            Map.of(
+                                "MyComponent",
+                                new ObjectSchema()
+                                    .properties(
+                                        Map.of(
+                                            "foo",
+                                            new ArraySchema()
+                                                .items(
+                                                    new ArraySchema()
+                                                        .items(new Schema<>().type("string"))))))))
+                .collect(toSet());
+
+        assertEquals(
+            Set.of(
+                new AstClass(
+                    "com.foo",
+                    "MyComponent",
+                    List.of(
+                        new AstField(
+                            new AstReference(
+                                "java.util",
+                                "List",
+                                List.of(
+                                    new AstReference(
+                                        "java.util",
+                                        "List",
+                                        List.of(new AstReference("java.lang", "String"))))),
+                            "foo")))),
+            ast,
+            "Components with composite array properties evaluate to objects with composite List fields");
+      }
     }
   }
 
