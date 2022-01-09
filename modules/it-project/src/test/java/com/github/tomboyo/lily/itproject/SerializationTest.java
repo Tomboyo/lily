@@ -9,11 +9,11 @@ import com.example.MyCompositeInlineObjectArrayAlias;
 import com.example.MyCompositeRefArrayAlias;
 import com.example.MyCompositeScalarArrayAlias;
 import com.example.MyInlineObjectArrayAlias;
-import com.example.MyNumberArrayAlias;
 import com.example.MyObject;
 import com.example.MyObject2;
 import com.example.MyRefArrayAlias;
-import com.example.MySimpleAlias;
+import com.example.MyScalarAlias;
+import com.example.MyScalarArrayAlias;
 import com.example.mycompositeinlineobjectarrayalias.MyCompositeInlineObjectArrayAliasItem;
 import com.example.myinlineobjectarrayalias.MyInlineObjectArrayAliasItem;
 import com.example.myobject2.Foo;
@@ -74,9 +74,9 @@ public class SerializationTest {
     return Stream.of(
             myObjectTestParameter(),
             myObject2TestParameter(),
-            mySimpleAliasTestParameter(),
+            myScalarAliasTestParameter(),
             myRefArrayAliasTestParameter(),
-            myNumberArrayAliasTestParameter(),
+            myScalarArrayAliasTestParameter(),
             myInlineObjectArrayAliasTestParameter(),
             myCompositeRefArrayAliasTestParameter(),
             myCompositeScalarArrayAliasTestParameter(),
@@ -153,8 +153,8 @@ public class SerializationTest {
         "{ \"foo\": { \"bar\": \"value\" } }", new MyObject2(new Foo("value")));
   }
 
-  private static TestParameter<MySimpleAlias> mySimpleAliasTestParameter() {
-    return new TestParameter<>("\"value\"", new MySimpleAlias("value"));
+  private static TestParameter<MyScalarAlias> myScalarAliasTestParameter() {
+    return new TestParameter<>("\"value\"", new MyScalarAlias("value"));
   }
 
   private static TestParameter<MyRefArrayAlias> myRefArrayAliasTestParameter() {
@@ -163,8 +163,8 @@ public class SerializationTest {
         new MyRefArrayAlias(List.of(new MyObject2(new Foo("value")))));
   }
 
-  private static TestParameter<MyNumberArrayAlias> myNumberArrayAliasTestParameter() {
-    return new TestParameter<>("[123]", new MyNumberArrayAlias(List.of(BigDecimal.valueOf(123))));
+  private static TestParameter<MyScalarArrayAlias> myScalarArrayAliasTestParameter() {
+    return new TestParameter<>("[123]", new MyScalarArrayAlias(List.of(BigDecimal.valueOf(123))));
   }
 
   private static TestParameter<MyInlineObjectArrayAlias> myInlineObjectArrayAliasTestParameter() {

@@ -11,23 +11,23 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MySimpleAlias'
+              $ref: '#/components/schemas/MyObject'
           application/xml:
             schema:
-              $ref: '#/components/schemas/MySimpleAlias'
+              $ref: '#/components/schemas/MyObject'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/MySimpleAlias'
+              $ref: '#/components/schemas/MyObject'
       responses:
         "200":
           description: Successful operation
           content:
             application/xml:
               schema:
-                $ref: '#/components/schemas/MySimpleAlias'
+                $ref: '#/components/schemas/MyObject'
             application/json:
               schema:
-                $ref: '#/components/schemas/MySimpleAlias'
+                $ref: '#/components/schemas/MyObject'
         "400":
           description: Invalid ID supplied
         "404":
@@ -85,7 +85,7 @@ components:
             bar:
               type: string
     # An alias for arrays of a scalar type.
-    MySimpleAlias:
+    MyScalarAlias:
       type: string
     # An alias for arrays of a referenced type.
     MyRefArrayAlias:
@@ -93,7 +93,7 @@ components:
       items:
         $ref: "#/components/schemas/MyObject2"
     # An alias for arrays of a scalar type.
-    MyNumberArrayAlias:
+    MyScalarArrayAlias:
       type: array
       items:
         type: number
