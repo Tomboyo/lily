@@ -1,5 +1,17 @@
 package com.github.tomboyo.lily.ast;
 
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astBigDecimal;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astBigInteger;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astBoolean;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astByteArray;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astDouble;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astFloat;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astInteger;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astListOf;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astLocalDate;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astLong;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astOffsetDateTime;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astString;
 import static com.github.tomboyo.lily.ast.Support.capitalCamelCase;
 import static com.github.tomboyo.lily.ast.Support.joinPackages;
 import static java.util.Objects.requireNonNull;
@@ -27,19 +39,20 @@ public class OasSchemaToAst {
 
   private static record Constants(Logger logger, String basePackage) {}
 
-  public static Stream<Ast> generateAst(String basePackage, Components components) {
-    return generateAst(DEFAULT_LOGGER, basePackage, components);
+  public static Stream<Ast> evaluateComponents(String basePackage, Components components) {
+    return evaluateComponents(DEFAULT_LOGGER, basePackage, components);
   }
 
-  public static Stream<Ast> generateAst(Logger logger, String basePackage, Components components) {
+  public static Stream<Ast> evaluateComponents(
+      Logger logger, String basePackage, Components components) {
     return components.getSchemas().entrySet().stream()
         .flatMap(
             entry ->
-                generateAstRootComponent(
+                evaluateRootComponent(
                     new Constants(logger, basePackage), entry.getKey(), entry.getValue()));
   }
 
-  private static Stream<Ast> generateAstRootComponent(
+  private static Stream<Ast> evaluateRootComponent(
       Constants constants, String schemaName, Schema schema) {
     var type = schema.getType();
     if (type == null) {
@@ -53,18 +66,21 @@ public class OasSchemaToAst {
       case "string":
       case "boolean":
         return Stream.of(
-            generateScalarAlias(constants, constants.basePackage(), schemaName, schema));
+            evaluateRootScalar(constants, constants.basePackage(), schemaName, schema));
       case "array":
-        return generateArrayAlias(
+        return evaluateRootArray(
             constants, constants.basePackage(), schemaName, (ArraySchema) schema);
       case "object":
-        return generateAstInternalComponent(constants, constants.basePackage(), schemaName, schema);
+        return evaluateInteriorComponent(constants, constants.basePackage(), schemaName, schema);
       default:
         throw new IllegalArgumentException(("Unexpected type: " + type));
     }
   }
 
-  private static AstClassAlias generateScalarAlias(
+  /**
+   * Evaluate a root scalar component (i.e. not an object or array) to an alias of some stdlib type.
+   */
+  private static AstClassAlias evaluateRootScalar(
       Constants constants, String currentPackage, String schemaName, Schema schema) {
     var type = schema.getType();
     var format = schema.getFormat();
@@ -72,40 +88,43 @@ public class OasSchemaToAst {
         currentPackage, schemaName, toStdLibAstReference(constants, type, format));
   }
 
-  private static Stream<Ast> generateArrayAlias(
+  /** Evaluate a root array component to an alias of {@code List<T>} type. */
+  private static Stream<Ast> evaluateRootArray(
       Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
     var itemType = schema.getItems().getType();
     if (itemType == null) {
-      return generateRefListAlias(constants, currentPackage, schemaName, schema);
+      return evaluateRootRefArray(constants, currentPackage, schemaName, schema);
     } else {
       switch (itemType) {
         case "integer":
         case "number":
         case "string":
         case "boolean":
-          return generateStdlibListAlias(constants, currentPackage, schemaName, schema);
+          return evaluateRootScalarArray(constants, currentPackage, schemaName, schema);
         case "array":
-          return generateCompoundListAlias(constants, currentPackage, schemaName, schema);
+          return evaluateRootCompositeArray(constants, currentPackage, schemaName, schema);
         case "object":
-          return generateInlineObjectListAlias(constants, currentPackage, schemaName, schema);
+          return evaluateRootInlineObjectArray(constants, currentPackage, schemaName, schema);
         default:
           throw new IllegalArgumentException(("Unexpected type: " + itemType));
       }
     }
   }
 
-  private static Stream<Ast> generateRefListAlias(
+  /** Evaluate a root array whose items are a component $ref to an alias of the referenced type. */
+  private static Stream<Ast> evaluateRootRefArray(
       Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
     var ref = requireNonNull(schema.getItems().get$ref());
     return Stream.of(
         new AstClassAlias(
-            currentPackage,
-            schemaName,
-            new AstReference(
-                "java.util", "List", List.of(toBasePackageClassReference(constants, ref)))));
+            currentPackage, schemaName, astListOf(toBasePackageClassReference(constants, ref))));
   }
 
-  private static Stream<Ast> generateStdlibListAlias(
+  /**
+   * Evaluate a root array whose items are a scalar to an alias of {@code List<S>}, where {@code S}
+   * is the scalar type.
+   */
+  private static Stream<Ast> evaluateRootScalarArray(
       Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
     var itemType = schema.getItems().getType();
     var itemFormat = schema.getItems().getFormat();
@@ -113,18 +132,14 @@ public class OasSchemaToAst {
         new AstClassAlias(
             currentPackage,
             schemaName,
-            new AstReference(
-                "java.util",
-                "List",
-                List.of(toStdLibAstReference(constants, itemType, itemFormat)))));
+            astListOf(toStdLibAstReference(constants, itemType, itemFormat))));
   }
 
   /**
-   * A top-level composite array (an array schema whose immediate child or children are also array
-   * schemas) evaluates to an alias of a composite list (A {@code List<List<...<List<T>...>>}) of
-   * some type T. The component of T is evaluated like any other non-root component.
+   * Evaluate a root array-of-arrays into an alias of a composite list {@code
+   * List<List<...List<T>...>>}.
    */
-  private static Stream<Ast> generateCompoundListAlias(
+  private static Stream<Ast> evaluateRootCompositeArray(
       Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
     // schema: points to the top-level array alias component
     // schemaBackPath: contains the array-typed child components of schema, in reverse hierarchical
@@ -159,7 +174,8 @@ public class OasSchemaToAst {
         case "object":
           var innerTypePackage = joinPackages(currentPackage, schemaName.toLowerCase());
           var innerTypeName = schemaName + "Item";
-          innerTypes = generateObjectAst(constants, innerTypePackage, innerTypeName, currentNode);
+          innerTypes =
+              evaluateInteriorObject(constants, innerTypePackage, innerTypeName, currentNode);
           astReference = new AstReference(innerTypePackage, innerTypeName);
           break;
         default:
@@ -171,34 +187,32 @@ public class OasSchemaToAst {
     // list of Foo).
     // A list of this result is what we are creating an alias of.
     for (var backSchema : schemaBackPath) {
-      astReference = new AstReference("java.util", "List", List.of(astReference));
+      astReference = astListOf(astReference);
     }
 
-    var alias =
-        new AstClassAlias(
-            currentPackage,
-            schemaName,
-            new AstReference("java.util", "List", List.of(astReference)));
+    var alias = new AstClassAlias(currentPackage, schemaName, astListOf(astReference));
 
     return Stream.concat(Stream.of(alias), innerTypes);
   }
 
-  private static Stream<Ast> generateInlineObjectListAlias(
+  /**
+   * Evaluate a root array whose items are in-line defined objects into an alias of {@code List<T>},
+   * where {@code T} is the in-line object type.
+   */
+  private static Stream<Ast> evaluateRootInlineObjectArray(
       Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
     var itemPackage = joinPackages(currentPackage, schemaName.toLowerCase());
     var itemName = schemaName + "Item";
     var objectSchema = schema.getItems();
-    var inlineAst = generateObjectAst(constants, itemPackage, itemName, objectSchema);
+    var inlineAst = evaluateInteriorObject(constants, itemPackage, itemName, objectSchema);
     var aliasAst =
         new AstClassAlias(
-            currentPackage,
-            schemaName,
-            new AstReference(
-                "java.util", "List", List.of(new AstReference(itemPackage, itemName))));
+            currentPackage, schemaName, astListOf(new AstReference(itemPackage, itemName)));
     return Stream.concat(Stream.of(aliasAst), inlineAst);
   }
 
-  private static Stream<Ast> generateAstInternalComponent(
+  /** Evaluate any interior (i.e. non-root) component. */
+  private static Stream<Ast> evaluateInteriorComponent(
       Constants constants, String currentPackage, String schemaName, Schema schema) {
     var type = schema.getType();
     if (type == null) {
@@ -212,15 +226,16 @@ public class OasSchemaToAst {
       case "boolean":
         return Stream.of();
       case "object":
-        return generateObjectAst(constants, currentPackage, schemaName, schema);
+        return evaluateInteriorObject(constants, currentPackage, schemaName, schema);
       case "array":
-        return generateListAst(constants, currentPackage, schemaName, schema);
+        return evaluateInteriorArray(constants, currentPackage, schemaName, schema);
       default:
         throw new IllegalArgumentException(("Unexpected type: " + type));
     }
   }
 
-  private static Stream<Ast> generateListAst(
+  /** Evaluate any interior (e.g. non-root) component of array type. */
+  private static Stream<Ast> evaluateInteriorArray(
       Constants constants, String currentPackage, String schemaName, Schema schema) {
     var itemSchema = ((ArraySchema) schema).getItems();
     var itemType = itemSchema.getType();
@@ -229,14 +244,14 @@ public class OasSchemaToAst {
     // with
     // ThingItemItem...Item in the presence of nested array definitions.
     if ("object".equals(itemType)) {
-      return generateAstInternalComponent(
-          constants, currentPackage, schemaName + "Item", itemSchema);
+      return evaluateInteriorComponent(constants, currentPackage, schemaName + "Item", itemSchema);
     } else {
-      return generateAstInternalComponent(constants, currentPackage, schemaName, itemSchema);
+      return evaluateInteriorComponent(constants, currentPackage, schemaName, itemSchema);
     }
   }
 
-  private static Stream<Ast> generateObjectAst(
+  /** Evaluate any interior (e.g. non-root) component of object type */
+  private static Stream<Ast> evaluateInteriorObject(
       Constants constants, String currentPackage, String schemaName, Schema schema) {
     // This package is "nested" beneath this class. Any nested in-line class definitions are
     // generated within the interior package.
@@ -262,7 +277,7 @@ public class OasSchemaToAst {
         properties.entrySet().stream()
             .flatMap(
                 entry ->
-                    generateAstInternalComponent(
+                    evaluateInteriorComponent(
                         constants,
                         interiorPackage,
                         capitalCamelCase(entry.getKey()),
@@ -306,62 +321,60 @@ public class OasSchemaToAst {
     switch (type) {
       case "integer":
         if (format == null) {
-          return new AstReference("java.math", "BigInteger");
+          return astBigInteger();
         }
 
         switch (format) {
           case "int64":
-            return new AstReference("java.lang", "Long");
+            return astLong();
           case "int32":
-            return new AstReference("java.lang", "Integer");
+            return astInteger();
           default:
-            return defaultType(
-                constants, type, format, new AstReference("java.math", "BigInteger"));
+            return defaultForUnsupportedFormat(constants, type, format, astBigInteger());
         }
       case "number":
         if (format == null) {
-          return new AstReference("java.math", "BigDecimal");
+          return astBigDecimal();
         }
 
         switch (format) {
           case "double":
-            return new AstReference("java.lang", "Double");
+            return astDouble();
           case "float":
-            return new AstReference("java.lang", "Float");
+            return astFloat();
           default:
-            return defaultType(
-                constants, type, format, new AstReference("java.math", "BigDecimal"));
+            return defaultForUnsupportedFormat(constants, type, format, astBigDecimal());
         }
       case "string":
         if (format == null) {
-          return new AstReference("java.lang", "String");
+          return astString();
         }
 
         switch (format) {
           case "password":
-            return new AstReference("java.lang", "String");
+            return astString();
           case "byte":
           case "binary":
-            return new AstReference("java.lang", "Byte[]");
+            return astByteArray();
           case "date":
-            return new AstReference("java.time", "LocalDate");
+            return astLocalDate();
           case "date-time":
-            return new AstReference("java.time", "OffsetDateTime");
+            return astOffsetDateTime();
           default:
-            return defaultType(constants, type, format, new AstReference("java.lang", "String"));
+            return defaultForUnsupportedFormat(constants, type, format, astString());
         }
       case "boolean":
         if (format == null) {
-          return new AstReference("java.lang", "Boolean");
+          return astBoolean();
         } else {
-          return defaultType(constants, type, format, new AstReference("java.lang", "Boolean"));
+          return defaultForUnsupportedFormat(constants, type, format, astBoolean());
         }
       default:
         throw new IllegalArgumentException("Unexpected type: " + type);
     }
   }
 
-  private static AstReference defaultType(
+  private static AstReference defaultForUnsupportedFormat(
       Constants constants, String type, String format, AstReference defaultAst) {
     if (format != null) {
       constants

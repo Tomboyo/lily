@@ -10,6 +10,10 @@ public final record AstReference(
     this(packageName, className, List.of());
   }
 
+  public AstReference(String packageName, String className, AstReference typeParameter) {
+    this(packageName, className, List.of(typeParameter));
+  }
+
   public AstReference(String packageName, String className, List<AstReference> typeParameters) {
     this.packageName = packageName;
     this.className = capitalCamelCase(className);

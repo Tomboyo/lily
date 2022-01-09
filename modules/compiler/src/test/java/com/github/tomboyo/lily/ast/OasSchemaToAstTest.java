@@ -1,5 +1,15 @@
 package com.github.tomboyo.lily.ast;
 
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astListOf;
+import static com.github.tomboyo.lily.ast.StdlibAstReferences.astString;
+import static java.util.stream.Collectors.toSet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.github.tomboyo.lily.ast.type.AstClass;
 import com.github.tomboyo.lily.ast.type.AstClassAlias;
 import com.github.tomboyo.lily.ast.type.AstField;
@@ -9,6 +19,10 @@ import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,19 +30,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toSet;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 class OasSchemaToAstTest {
 
@@ -58,7 +59,7 @@ class OasSchemaToAstTest {
     public void scalarObjectProperties(
         String type, String format, String javaPackage, String javaClass) {
       var ast =
-          OasSchemaToAst.generateAst(
+          OasSchemaToAst.evaluateComponents(
                   "com.foo",
                   new Components()
                       .schemas(
@@ -92,7 +93,7 @@ class OasSchemaToAstTest {
       Logger logger = mock(Logger.class);
 
       var ast =
-          OasSchemaToAst.generateAst(
+          OasSchemaToAst.evaluateComponents(
                   logger,
                   "com.foo",
                   new Components()
@@ -130,7 +131,7 @@ class OasSchemaToAstTest {
     public void componentsOfScalarType(
         String type, String format, String javaPackage, String javaClass) {
       var ast =
-          OasSchemaToAst.generateAst(
+          OasSchemaToAst.evaluateComponents(
                   "com.foo",
                   new Components()
                       .schemas(Map.of("MyAliasComponent", new Schema().type(type).format(format))))
@@ -151,7 +152,7 @@ class OasSchemaToAstTest {
       public void inLineArraysWithScalarItems(
           String type, String format, String javaPackage, String javaClass) {
         var ast =
-            OasSchemaToAst.generateAst(
+            OasSchemaToAst.evaluateComponents(
                     "com.foo",
                     new Components()
                         .schemas(
@@ -174,11 +175,7 @@ class OasSchemaToAstTest {
                     "MyComponent",
                     List.of(
                         new AstField(
-                            new AstReference(
-                                "java.util",
-                                "List",
-                                List.of(new AstReference(javaPackage, javaClass))),
-                            "myField")))),
+                            astListOf(new AstReference(javaPackage, javaClass)), "myField")))),
             ast,
             "In-line arrays of scalar items evaluate to Lists with type parameters");
       }
@@ -186,7 +183,7 @@ class OasSchemaToAstTest {
       @Test
       public void compositeArrays() {
         var ast =
-            OasSchemaToAst.generateAst(
+            OasSchemaToAst.evaluateComponents(
                     "com.foo",
                     new Components()
                         .schemas(
@@ -207,19 +204,10 @@ class OasSchemaToAstTest {
                 new AstClass(
                     "com.foo",
                     "MyComponent",
-                    List.of(
-                        new AstField(
-                            new AstReference(
-                                "java.util",
-                                "List",
-                                List.of(
-                                    new AstReference(
-                                        "java.util",
-                                        "List",
-                                        List.of(new AstReference("java.lang", "String"))))),
-                            "foo")))),
+                    List.of(new AstField(astListOf(astListOf(astString())), "foo")))),
             ast,
-            "Components with composite array properties evaluate to objects with composite List fields");
+            "Components with composite array properties evaluate to objects with composite List"
+                + " fields");
       }
     }
   }
@@ -230,7 +218,7 @@ class OasSchemaToAstTest {
     @Test
     public void arraysOfRefs() {
       var ast =
-          OasSchemaToAst.generateAst(
+          OasSchemaToAst.evaluateComponents(
                   "com.foo",
                   new Components()
                       .schemas(
@@ -243,10 +231,7 @@ class OasSchemaToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  "com.foo",
-                  "MyAlias",
-                  new AstReference(
-                      "java.util", "List", List.of(new AstReference("com.foo", "MyComponent"))))),
+                  "com.foo", "MyAlias", astListOf(new AstReference("com.foo", "MyComponent")))),
           ast,
           "Array components of $refs evaluate to aliases of lists of the referenced type");
     }
@@ -254,7 +239,7 @@ class OasSchemaToAstTest {
     @Test
     public void arrayOfStandardType() {
       var ast =
-          OasSchemaToAst.generateAst(
+          OasSchemaToAst.evaluateComponents(
                   "com.foo",
                   new Components()
                       .schemas(
@@ -263,12 +248,7 @@ class OasSchemaToAstTest {
               .collect(toSet());
 
       assertEquals(
-          Set.of(
-              new AstClassAlias(
-                  "com.foo",
-                  "MyAlias",
-                  new AstReference(
-                      "java.util", "List", List.of(new AstReference("java.lang", "String"))))),
+          Set.of(new AstClassAlias("com.foo", "MyAlias", astListOf(astString()))),
           ast,
           "Array components of strings evaluate to aliases of lists of strings");
     }
@@ -276,7 +256,7 @@ class OasSchemaToAstTest {
     @Test
     public void arrayOfInlineObjects() {
       var ast =
-          OasSchemaToAst.generateAst(
+          OasSchemaToAst.evaluateComponents(
                   "com.foo",
                   new Components()
                       .schemas(
@@ -294,14 +274,9 @@ class OasSchemaToAstTest {
               new AstClassAlias(
                   "com.foo",
                   "MyAlias",
-                  new AstReference(
-                      "java.util",
-                      "List",
-                      List.of(new AstReference("com.foo.myalias", "MyAliasItem")))),
+                  astListOf(new AstReference("com.foo.myalias", "MyAliasItem"))),
               new AstClass(
-                  "com.foo.myalias",
-                  "MyAliasItem",
-                  List.of(new AstField(new AstReference("java.lang", "String"), "foo")))),
+                  "com.foo.myalias", "MyAliasItem", List.of(new AstField(astString(), "foo")))),
           ast,
           "Array components of inlined objects evaluate to aliases of lists of objects");
     }
@@ -309,7 +284,7 @@ class OasSchemaToAstTest {
     @Test
     public void compositeRefArray() {
       var ast =
-          OasSchemaToAst.generateAst(
+          OasSchemaToAst.evaluateComponents(
                   "com.foo",
                   new Components()
                       .schemas(
@@ -328,14 +303,7 @@ class OasSchemaToAstTest {
               new AstClassAlias(
                   "com.foo",
                   "MyAlias",
-                  new AstReference(
-                      "java.util",
-                      "List",
-                      List.of(
-                          new AstReference(
-                              "java.util",
-                              "List",
-                              List.of(new AstReference("com.foo", "MyComponent"))))))),
+                  astListOf(astListOf(new AstReference("com.foo", "MyComponent"))))),
           ast,
           "Array components of arrays evaluate to aliases of lists of lists");
     }
@@ -343,7 +311,7 @@ class OasSchemaToAstTest {
     @Test
     public void compositeStdlibArray() {
       var ast =
-          OasSchemaToAst.generateAst(
+          OasSchemaToAst.evaluateComponents(
                   "com.foo",
                   new Components()
                       .schemas(
@@ -354,18 +322,7 @@ class OasSchemaToAstTest {
               .collect(toSet());
 
       assertEquals(
-          Set.of(
-              new AstClassAlias(
-                  "com.foo",
-                  "MyAlias",
-                  new AstReference(
-                      "java.util",
-                      "List",
-                      List.of(
-                          new AstReference(
-                              "java.util",
-                              "List",
-                              List.of(new AstReference("java.lang", "String"))))))),
+          Set.of(new AstClassAlias("com.foo", "MyAlias", astListOf(astListOf(astString())))),
           ast,
           "Array components of arrays evaluate to aliases of lists of lists");
     }
@@ -373,7 +330,7 @@ class OasSchemaToAstTest {
     @Test
     public void compositeInlineObjectArray() {
       var ast =
-          OasSchemaToAst.generateAst(
+          OasSchemaToAst.evaluateComponents(
                   "com.foo",
                   new Components()
                       .schemas(
@@ -392,20 +349,11 @@ class OasSchemaToAstTest {
       assertEquals(
           Set.of(
               new AstClass(
-                  "com.foo.myalias",
-                  "MyAliasItem",
-                  List.of(new AstField(new AstReference("java.lang", "String"), "foo"))),
+                  "com.foo.myalias", "MyAliasItem", List.of(new AstField(astString(), "foo"))),
               new AstClassAlias(
                   "com.foo",
                   "MyAlias",
-                  new AstReference(
-                      "java.util",
-                      "List",
-                      List.of(
-                          new AstReference(
-                              "java.util",
-                              "List",
-                              List.of(new AstReference("com.foo.myalias", "MyAliasItem"))))))),
+                  astListOf(astListOf(new AstReference("com.foo.myalias", "MyAliasItem"))))),
           ast,
           "Array components of arrays evaluate to aliases of lists of lists");
     }
@@ -416,7 +364,7 @@ class OasSchemaToAstTest {
     assertThrows(
         IllegalArgumentException.class,
         () ->
-            OasSchemaToAst.generateAst(
+            OasSchemaToAst.evaluateComponents(
                     "com.foo",
                     new Components()
                         .schemas(
@@ -433,7 +381,7 @@ class OasSchemaToAstTest {
   @Test
   public void inLineObjectDefinition() {
     var ast =
-        OasSchemaToAst.generateAst(
+        OasSchemaToAst.evaluateComponents(
                 "com.foo",
                 new Components()
                     .schemas(
@@ -461,7 +409,7 @@ class OasSchemaToAstTest {
             new AstClass(
                 "com.foo.mycomponent",
                 "MyField",
-                List.of(new AstField(new AstReference("java.lang", "String"), "myOtherField")))),
+                List.of(new AstField(astString(), "myOtherField")))),
         ast,
         "in-line object definitions evaluate to references to new classes in a nested package");
   }
@@ -469,7 +417,7 @@ class OasSchemaToAstTest {
   @Test
   public void inLineArrayItemDefinition() {
     var ast =
-        OasSchemaToAst.generateAst(
+        OasSchemaToAst.evaluateComponents(
                 "com.foo",
                 new Components()
                     .schemas(
@@ -511,7 +459,7 @@ class OasSchemaToAstTest {
   @Test
   public void componentReferences() {
     var ast =
-        OasSchemaToAst.generateAst(
+        OasSchemaToAst.evaluateComponents(
                 "com.foo",
                 new Components()
                     .schemas(

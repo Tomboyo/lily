@@ -39,7 +39,7 @@ public class LilyCompiler {
       throw new OasParseException("OAS version 3 or higher required. Got version=" + version);
     }
 
-    OasSchemaToAst.generateAst(basePackage, openApi.getComponents())
+    OasSchemaToAst.evaluateComponents(basePackage, openApi.getComponents())
         .map(AstToJava::renderAst)
         .forEach(rendering -> persistSource(output, rendering));
   }
