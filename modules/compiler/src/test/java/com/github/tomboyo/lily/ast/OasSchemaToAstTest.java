@@ -299,6 +299,21 @@ class OasSchemaToAstTest {
    */
   @Nested
   public class Aliases {
+    @Test
+    public void rootRefComponent() {
+      var ast =
+          OasSchemaToAst.evaluateComponents(
+                  "com.foo",
+                  new Components()
+                      .schemas(
+                          Map.of("MyComponent", new Schema().$ref("#/components/schemas/MyRef"))))
+              .collect(toSet());
+
+      assertEquals(
+          Set.of(new AstClassAlias("com.foo", "MyComponent", new AstReference("com.foo", "MyRef"))),
+          ast);
+    }
+
     @ParameterizedTest
     @MethodSource(SCALARS)
     public void rootScalarComponents(

@@ -11,6 +11,7 @@ import com.example.MyCompositeScalarArrayAlias;
 import com.example.MyInlineObjectArrayAlias;
 import com.example.MyObject;
 import com.example.MyObject2;
+import com.example.MyRefAlias;
 import com.example.MyRefArrayAlias;
 import com.example.MyScalarAlias;
 import com.example.MyScalarArrayAlias;
@@ -74,6 +75,7 @@ public class SerializationTest {
     return Stream.of(
             myObjectTestParameter(),
             myObject2TestParameter(),
+            myRefAliasTestParameter(),
             myScalarAliasTestParameter(),
             myRefArrayAliasTestParameter(),
             myScalarArrayAliasTestParameter(),
@@ -151,6 +153,11 @@ public class SerializationTest {
   private static TestParameter<MyObject2> myObject2TestParameter() {
     return new TestParameter<>(
         "{ \"foo\": { \"bar\": \"value\" } }", new MyObject2(new Foo("value")));
+  }
+
+  private static TestParameter<MyRefAlias> myRefAliasTestParameter() {
+    return new TestParameter<>(
+        "{\"foo\": {\"bar\": \"value\"}}", new MyRefAlias(new MyObject2(new Foo("value"))));
   }
 
   private static TestParameter<MyScalarAlias> myScalarAliasTestParameter() {

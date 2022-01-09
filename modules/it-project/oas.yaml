@@ -87,6 +87,9 @@ components:
     # An alias for arrays of a scalar type.
     MyScalarAlias:
       type: string
+    # An alias for some other component.
+    MyRefAlias:
+      $ref: '#/components/schemas/MyObject2'
     # An alias for arrays of a referenced type.
     MyRefArrayAlias:
       type: array

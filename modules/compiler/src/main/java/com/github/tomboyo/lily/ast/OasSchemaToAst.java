@@ -56,8 +56,7 @@ public class OasSchemaToAst {
       Constants constants, String schemaName, Schema schema) {
     var type = schema.getType();
     if (type == null) {
-      // TODO: Alias of $ref
-      return Stream.of();
+      return Stream.of(evaluateRootRef(constants, constants.basePackage(), schemaName, schema));
     }
 
     switch (type) {
@@ -75,6 +74,14 @@ public class OasSchemaToAst {
       default:
         throw new IllegalArgumentException(("Unexpected type: " + type));
     }
+  }
+
+  private static AstClassAlias evaluateRootRef(
+      Constants constants, String currentPackage, String schemaName, Schema schema) {
+    return new AstClassAlias(
+        currentPackage,
+        schemaName,
+        toBasePackageClassReference(constants, requireNonNull(schema.get$ref())));
   }
 
   /**
