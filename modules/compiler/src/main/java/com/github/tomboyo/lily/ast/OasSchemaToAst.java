@@ -25,7 +25,6 @@ import com.github.tomboyo.lily.ast.type.AstReference;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -113,7 +112,7 @@ public class OasSchemaToAst {
         case "object":
           return evaluateRootInlineObjectArray(constants, currentPackage, schemaName, schema);
         default:
-          throw new IllegalArgumentException(("Unexpected type: " + itemType));
+          throw new IllegalArgumentException("Unexpected type: " + itemType);
       }
     }
   }
@@ -148,58 +147,62 @@ public class OasSchemaToAst {
    */
   private static Stream<Ast> evaluateRootCompositeArray(
       Constants constants, String currentPackage, String schemaName, ArraySchema schema) {
-    // schema: points to the top-level array alias component
-    // schemaBackPath: contains the array-typed child components of schema, in reverse hierarchical
-    // order.
-    // currentNode: after the loop exits, this holds the non-array child.
-    var schemaBackPath = new ArrayList<ArraySchema>();
-    var currentNode = schema.getItems();
-    while ("array".equals(currentNode.getType())) {
-      var currentArraySchema = (ArraySchema) currentNode;
-      schemaBackPath.add(currentArraySchema);
-      currentNode = currentArraySchema.getItems();
-    }
+    var interiorSchema = getFirstNonArrayChildSchema(schema);
 
-    AstReference astReference;
-    Stream<Ast> innerTypes;
-    var type = currentNode.getType();
+    AstReference astReference; // The `T` in List<List<...List<T>...>>
+    Stream<Ast> interiorAst; // The definition of `T` and subordinate types
+    var type = interiorSchema.getType();
     if (type == null) {
-      var ref = requireNonNull(currentNode.get$ref());
-      innerTypes = Stream.of();
+      var ref = requireNonNull(interiorSchema.get$ref());
+      interiorAst = Stream.of();
       astReference = toBasePackageClassReference(constants, ref);
     } else {
-      var format = currentNode.getFormat();
-      // current node is not an array schema.
-      switch (currentNode.getType()) {
+      var format = interiorSchema.getFormat();
+      switch (type) {
         case "integer":
         case "number":
         case "string":
         case "boolean":
-          innerTypes = Stream.of();
+          interiorAst = Stream.of();
           astReference = toStdLibAstReference(constants, type, format);
           break;
         case "object":
-          var innerTypePackage = joinPackages(currentPackage, schemaName.toLowerCase());
-          var innerTypeName = schemaName + "Item";
-          innerTypes =
-              evaluateInteriorObject(constants, innerTypePackage, innerTypeName, currentNode);
-          astReference = new AstReference(innerTypePackage, innerTypeName);
+          var interiorPackage = joinPackages(currentPackage, schemaName.toLowerCase());
+          var interiorTypeName = schemaName + "Item";
+          interiorAst =
+              evaluateInteriorObject(constants, interiorPackage, interiorTypeName, interiorSchema);
+          astReference = new AstReference(interiorPackage, interiorTypeName);
           break;
         default:
-          throw new IllegalArgumentException(("Unexpected type: " + type));
+          throw new IllegalArgumentException("Unexpected type: " + type);
       }
     }
 
-    // Use the back-reference list to construct the composite astReference chain (List of list of
-    // list of Foo).
-    // A list of this result is what we are creating an alias of.
-    for (var backSchema : schemaBackPath) {
+    for (int i = 0; i < numberOfArrayChildren(schema); i += 1) {
       astReference = astListOf(astReference);
     }
 
     var alias = new AstClassAlias(currentPackage, schemaName, astListOf(astReference));
 
-    return Stream.concat(Stream.of(alias), innerTypes);
+    return Stream.concat(Stream.of(alias), interiorAst);
+  }
+
+  private static Schema<?> getFirstNonArrayChildSchema(ArraySchema root) {
+    Schema<?> current = root;
+    while ("array".equals(current.getType())) {
+      current = ((ArraySchema) current).getItems();
+    }
+    return current;
+  }
+
+  private static int numberOfArrayChildren(ArraySchema root) {
+    int result = 0;
+    Schema<?> current = root.getItems();
+    while ("array".equals(current.getType())) {
+      current = ((ArraySchema) current).getItems();
+      result += 1;
+    }
+    return result;
   }
 
   /**
@@ -237,7 +240,7 @@ public class OasSchemaToAst {
       case "array":
         return evaluateInteriorArray(constants, currentPackage, schemaName, schema);
       default:
-        throw new IllegalArgumentException(("Unexpected type: " + type));
+        throw new IllegalArgumentException("Unexpected type: " + type);
     }
   }
 
