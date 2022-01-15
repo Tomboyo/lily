@@ -1,13 +1,13 @@
-package com.github.tomboyo.lily.render;
+package com.github.tomboyo.lily.cg;
 
-import static com.github.tomboyo.lily.ast.Support.capitalCamelCase;
-import static com.github.tomboyo.lily.ast.Support.lowerCamelCase;
+import static com.github.tomboyo.lily.icg.Support.capitalCamelCase;
+import static com.github.tomboyo.lily.icg.Support.lowerCamelCase;
 
-import com.github.tomboyo.lily.ast.type.Ast;
-import com.github.tomboyo.lily.ast.type.AstClass;
-import com.github.tomboyo.lily.ast.type.AstClassAlias;
-import com.github.tomboyo.lily.ast.type.AstField;
-import com.github.tomboyo.lily.ast.type.AstReference;
+import com.github.tomboyo.lily.ast.Ast;
+import com.github.tomboyo.lily.ast.AstClass;
+import com.github.tomboyo.lily.ast.AstClassAlias;
+import com.github.tomboyo.lily.ast.AstField;
+import com.github.tomboyo.lily.ast.AstReference;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;

@@ -1,4 +1,4 @@
-package com.github.tomboyo.lily.ast.type;
+package com.github.tomboyo.lily.ast;
 
 import java.util.List;
 

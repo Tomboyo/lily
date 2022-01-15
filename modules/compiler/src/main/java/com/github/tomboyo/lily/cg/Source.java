@@ -1,4 +1,4 @@
-package com.github.tomboyo.lily.render;
+package com.github.tomboyo.lily.cg;
 
 import java.nio.file.Path;
 

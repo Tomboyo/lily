@@ -1,4 +1,4 @@
-package com.github.tomboyo.lily.compile;
+package com.github.tomboyo.lily;
 
 public class OasParseException extends Exception {
   public OasParseException(String message, Throwable cause) {

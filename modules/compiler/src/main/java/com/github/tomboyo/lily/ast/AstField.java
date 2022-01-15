@@ -1,4 +1,4 @@
-package com.github.tomboyo.lily.ast.type;
+package com.github.tomboyo.lily.ast;
 
 /** A field of an AstClass. */
 public record AstField(AstReference astReference, String name) {

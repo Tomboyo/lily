@@ -1,4 +1,4 @@
-package com.github.tomboyo.lily.ast;
+package com.github.tomboyo.lily.icg;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;

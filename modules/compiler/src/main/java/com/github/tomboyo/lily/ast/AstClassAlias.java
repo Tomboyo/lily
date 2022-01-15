@@ -1,4 +1,4 @@
-package com.github.tomboyo.lily.ast.type;
+package com.github.tomboyo.lily.ast;
 
 /**
  * A type alias, or alternative name, for some other type.

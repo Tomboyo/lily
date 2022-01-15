@@ -1,7 +1,7 @@
-package com.github.tomboyo.lily.ast;
+package com.github.tomboyo.lily.icg;
 
-import static com.github.tomboyo.lily.ast.StdlibAstReferences.astListOf;
-import static com.github.tomboyo.lily.ast.StdlibAstReferences.astString;
+import static com.github.tomboyo.lily.icg.StdlibAstReferences.astListOf;
+import static com.github.tomboyo.lily.icg.StdlibAstReferences.astString;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,10 +10,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.github.tomboyo.lily.ast.type.AstClass;
-import com.github.tomboyo.lily.ast.type.AstClassAlias;
-import com.github.tomboyo.lily.ast.type.AstField;
-import com.github.tomboyo.lily.ast.type.AstReference;
+import com.github.tomboyo.lily.ast.AstClass;
+import com.github.tomboyo.lily.ast.AstClassAlias;
+import com.github.tomboyo.lily.ast.AstField;
+import com.github.tomboyo.lily.ast.AstReference;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 class OasSchemaToAstTest {
 
   /** FQ name for the scalars parameter source. */
-  private static final String SCALARS = "com.github.tomboyo.lily.ast.OasSchemaToAstTest#scalars";
+  private static final String SCALARS = "com.github.tomboyo.lily.icg.OasSchemaToAstTest#scalars";
 
   /** A list of scalar types and formats, and the java types they evaluate to. * */
   public static Stream<Arguments> scalars() {

@@ -1,6 +1,6 @@
-package com.github.tomboyo.lily.ast;
+package com.github.tomboyo.lily.icg;
 
-import com.github.tomboyo.lily.ast.type.AstReference;
+import com.github.tomboyo.lily.ast.AstReference;
 
 public class StdlibAstReferences {
 

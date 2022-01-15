@@ -1,12 +1,12 @@
-package com.github.tomboyo.lily.compile;
+package com.github.tomboyo.lily;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-import com.github.tomboyo.lily.ast.OasSchemaToAst;
-import com.github.tomboyo.lily.render.AstToJava;
-import com.github.tomboyo.lily.render.Source;
+import com.github.tomboyo.lily.cg.AstToJava;
+import com.github.tomboyo.lily.cg.Source;
+import com.github.tomboyo.lily.icg.OasSchemaToAst;
 import io.swagger.parser.OpenAPIParser;
 import java.io.IOException;
 import java.io.UncheckedIOException;

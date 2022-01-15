@@ -1,6 +1,6 @@
-package com.github.tomboyo.lily.ast.type;
+package com.github.tomboyo.lily.ast;
 
-import static com.github.tomboyo.lily.ast.Support.capitalCamelCase;
+import static com.github.tomboyo.lily.icg.Support.capitalCamelCase;
 
 import java.util.List;
 

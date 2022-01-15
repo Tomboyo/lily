@@ -1,11 +1,11 @@
-package com.github.tomboyo.lily.render;
+package com.github.tomboyo.lily.cg;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.github.tomboyo.lily.ast.type.AstClass;
-import com.github.tomboyo.lily.ast.type.AstClassAlias;
-import com.github.tomboyo.lily.ast.type.AstField;
-import com.github.tomboyo.lily.ast.type.AstReference;
+import com.github.tomboyo.lily.ast.AstClass;
+import com.github.tomboyo.lily.ast.AstClassAlias;
+import com.github.tomboyo.lily.ast.AstField;
+import com.github.tomboyo.lily.ast.AstReference;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
