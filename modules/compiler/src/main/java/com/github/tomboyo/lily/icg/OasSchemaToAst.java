@@ -64,19 +64,13 @@ public class OasSchemaToAst {
       return Stream.of(evaluateRootRef(basePackage, schemaName, schema));
     }
 
-    switch (type) {
-      case "integer":
-      case "number":
-      case "string":
-      case "boolean":
-        return Stream.of(evaluateRootScalar(basePackage, schemaName, schema));
-      case "array":
-        return evaluateRootArray(basePackage, schemaName, (ArraySchema) schema);
-      case "object":
-        return evaluateInteriorComponent(basePackage, schemaName, schema);
-      default:
-        throw new IllegalArgumentException(("Unexpected type: " + type));
-    }
+    return switch (type) {
+      case "integer", "number", "string", "boolean" -> Stream.of(
+          evaluateRootScalar(basePackage, schemaName, schema));
+      case "array" -> evaluateRootArray(basePackage, schemaName, (ArraySchema) schema);
+      case "object" -> evaluateInteriorComponent(basePackage, schemaName, schema);
+      default -> throw new IllegalArgumentException(("Unexpected type: " + type));
+    };
   }
 
   private AstClassAlias evaluateRootRef(
@@ -102,19 +96,13 @@ public class OasSchemaToAst {
     if (itemType == null) {
       return evaluateRootRefArray(currentPackage, schemaName, schema);
     } else {
-      switch (itemType) {
-        case "integer":
-        case "number":
-        case "string":
-        case "boolean":
-          return evaluateRootScalarArray(currentPackage, schemaName, schema);
-        case "array":
-          return evaluateRootCompositeArray(currentPackage, schemaName, schema);
-        case "object":
-          return evaluateRootInlineObjectArray(currentPackage, schemaName, schema);
-        default:
-          throw new IllegalArgumentException("Unexpected type: " + itemType);
-      }
+      return switch (itemType) {
+        case "integer", "number", "string", "boolean" -> evaluateRootScalarArray(
+            currentPackage, schemaName, schema);
+        case "array" -> evaluateRootCompositeArray(currentPackage, schemaName, schema);
+        case "object" -> evaluateRootInlineObjectArray(currentPackage, schemaName, schema);
+        default -> throw new IllegalArgumentException("Unexpected type: " + itemType);
+      };
     }
   }
 
@@ -157,21 +145,17 @@ public class OasSchemaToAst {
     } else {
       var format = interiorSchema.getFormat();
       switch (type) {
-        case "integer":
-        case "number":
-        case "string":
-        case "boolean":
+        case "integer", "number", "string", "boolean" -> {
           interiorAst = Stream.of();
           astReference = toStdLibAstReference(type, format);
-          break;
-        case "object":
+        }
+        case "object" -> {
           var interiorPackage = joinPackages(currentPackage, schemaName.toLowerCase());
           var interiorTypeName = schemaName + "Item";
           interiorAst = evaluateInteriorObject(interiorPackage, interiorTypeName, interiorSchema);
           astReference = new AstReference(interiorPackage, interiorTypeName);
-          break;
-        default:
-          throw new IllegalArgumentException("Unexpected type: " + type);
+        }
+        default -> throw new IllegalArgumentException("Unexpected type: " + type);
       }
     }
 
@@ -226,19 +210,12 @@ public class OasSchemaToAst {
       return Stream.of();
     }
 
-    switch (type) {
-      case "integer":
-      case "number":
-      case "string":
-      case "boolean":
-        return Stream.of();
-      case "object":
-        return evaluateInteriorObject(currentPackage, schemaName, schema);
-      case "array":
-        return evaluateInteriorArray(currentPackage, schemaName, (ArraySchema) schema);
-      default:
-        throw new IllegalArgumentException("Unexpected type: " + type);
-    }
+    return switch (type) {
+      case "integer", "number", "string", "boolean" -> Stream.of();
+      case "object" -> evaluateInteriorObject(currentPackage, schemaName, schema);
+      case "array" -> evaluateInteriorArray(currentPackage, schemaName, (ArraySchema) schema);
+      default -> throw new IllegalArgumentException("Unexpected type: " + type);
+    };
   }
 
   /** Evaluate any interior (e.g. non-root) component of array type. */
@@ -299,19 +276,12 @@ public class OasSchemaToAst {
       return toBasePackageClassReference(ref);
     }
 
-    switch (type) {
-      case "integer":
-      case "number":
-      case "string":
-      case "boolean":
-        return toStdLibAstReference(type, format);
-      case "array":
-        return toListReference(referentPackage, schemaName, schema);
-      case "object":
-        return new AstReference(referentPackage, schemaName);
-      default:
-        throw new IllegalArgumentException("Unexpected type: " + type);
-    }
+    return switch (type) {
+      case "integer", "number", "string", "boolean" -> toStdLibAstReference(type, format);
+      case "array" -> toListReference(referentPackage, schemaName, schema);
+      case "object" -> new AstReference(referentPackage, schemaName);
+      default -> throw new IllegalArgumentException("Unexpected type: " + type);
+    };
   }
 
   private AstReference toBasePackageClassReference(String $ref) {
@@ -325,45 +295,33 @@ public class OasSchemaToAst {
           return astBigInteger();
         }
 
-        switch (format) {
-          case "int64":
-            return astLong();
-          case "int32":
-            return astInteger();
-          default:
-            return defaultForUnsupportedFormat(type, format, astBigInteger());
-        }
+        return switch (format) {
+          case "int64" -> astLong();
+          case "int32" -> astInteger();
+          default -> defaultForUnsupportedFormat(type, format, astBigInteger());
+        };
       case "number":
         if (format == null) {
           return astBigDecimal();
         }
 
-        switch (format) {
-          case "double":
-            return astDouble();
-          case "float":
-            return astFloat();
-          default:
-            return defaultForUnsupportedFormat(type, format, astBigDecimal());
-        }
+        return switch (format) {
+          case "double" -> astDouble();
+          case "float" -> astFloat();
+          default -> defaultForUnsupportedFormat(type, format, astBigDecimal());
+        };
       case "string":
         if (format == null) {
           return astString();
         }
 
-        switch (format) {
-          case "password":
-            return astString();
-          case "byte":
-          case "binary":
-            return astByteArray();
-          case "date":
-            return astLocalDate();
-          case "date-time":
-            return astOffsetDateTime();
-          default:
-            return defaultForUnsupportedFormat(type, format, astString());
-        }
+        return switch (format) {
+          case "password" -> astString();
+          case "byte", "binary" -> astByteArray();
+          case "date" -> astLocalDate();
+          case "date-time" -> astOffsetDateTime();
+          default -> defaultForUnsupportedFormat(type, format, astString());
+        };
       case "boolean":
         if (format == null) {
           return astBoolean();
