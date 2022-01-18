@@ -7,6 +7,9 @@ import com.github.tomboyo.lily.ast.Ast;
 import com.github.tomboyo.lily.ast.AstClass;
 import com.github.tomboyo.lily.ast.AstClassAlias;
 import com.github.tomboyo.lily.ast.AstField;
+import com.github.tomboyo.lily.ast.AstOperation;
+import com.github.tomboyo.lily.ast.AstOperationsClass;
+import com.github.tomboyo.lily.ast.AstOperationsClassAlias;
 import com.github.tomboyo.lily.ast.AstReference;
 import java.nio.file.Path;
 import java.util.List;
@@ -18,6 +21,10 @@ public class AstToJava {
       return renderClass(astClass);
     } else if (ast instanceof AstClassAlias astClassAlias) {
       return renderAstClassAlias(astClassAlias);
+    } else if (ast instanceof AstOperationsClass astOperationsClass) {
+      return renderAstOperationClass(astOperationsClass);
+    } else if (ast instanceof AstOperationsClassAlias astOperationsClassAlias) {
+      return renderAstOperationClassAlias(astOperationsClassAlias);
     } else {
       throw new IllegalArgumentException("Unsupported AST: " + ast);
     }
@@ -96,5 +103,62 @@ public class AstToJava {
                 className,
                 valueType);
     return new Source(path, content);
+  }
+
+  private static Source renderAstOperationClass(AstOperationsClass ast) {
+    var path =
+        Path.of(".", ast.packageName().split("\\."))
+            .normalize()
+            .resolve(capitalCamelCase(ast.name()) + ".java");
+    var content =
+        """
+        package %s;
+        public class %s {
+          %s
+        }
+        """
+            .formatted(
+                ast.packageName(),
+                capitalCamelCase(ast.name()),
+                ast.operations().stream()
+                    .map(AstToJava::renderOperation)
+                    .collect(Collectors.joining("\n  ")));
+
+    return new Source(path, content);
+  }
+
+  private static String renderOperation(AstOperation ast) {
+    return "public static Void %s() { return null; }".formatted(lowerCamelCase(ast.id()));
+  }
+
+  private static Source renderAstOperationClassAlias(AstOperationsClassAlias ast) {
+    var path =
+        Path.of(".", ast.packageName().split("\\."))
+            .normalize()
+            .resolve(capitalCamelCase(ast.name()) + ".java");
+    var content =
+        """
+        package %s;
+        public class %s {
+          %s
+        }
+        """
+            .formatted(
+                ast.packageName(),
+                capitalCamelCase(ast.name()),
+                ast.aliasedOperations().stream()
+                    .map(operation -> renderOperationAlias(ast, operation))
+                    .collect(Collectors.joining("\n  ")));
+
+    return new Source(path, content);
+  }
+
+  private static String renderOperationAlias(
+      AstOperationsClassAlias alias, AstOperation operation) {
+    return "public static Void %s() { return %s.%s(); }"
+        .formatted(
+            lowerCamelCase(operation.id()),
+            fullyQualifiedType(alias.operationsSingleton()),
+            lowerCamelCase(operation.id()));
   }
 }

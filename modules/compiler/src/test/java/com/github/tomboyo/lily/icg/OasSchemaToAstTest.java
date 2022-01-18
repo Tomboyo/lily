@@ -14,7 +14,6 @@ import com.github.tomboyo.lily.ast.AstClass;
 import com.github.tomboyo.lily.ast.AstClassAlias;
 import com.github.tomboyo.lily.ast.AstField;
 import com.github.tomboyo.lily.ast.AstReference;
-import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -62,16 +61,13 @@ class OasSchemaToAstTest {
     public void scalarObjectProperties(
         String type, String format, String javaPackage, String javaClass) {
       var ast =
-          OasSchemaToAst.evaluateComponents(
+          OasSchemaToAst.evaluate(
                   "com.foo",
-                  new Components()
-                      .schemas(
-                          Map.of(
-                              "MyComponent",
-                              new ObjectSchema()
-                                  .name("MyComponent")
-                                  .properties(
-                                      Map.of("myField", new Schema().type(type).format(format))))))
+                  Map.of(
+                      "MyComponent",
+                      new ObjectSchema()
+                          .name("MyComponent")
+                          .properties(Map.of("myField", new Schema().type(type).format(format)))))
               .collect(toSet());
 
       assertEquals(
@@ -96,19 +92,17 @@ class OasSchemaToAstTest {
       Logger logger = mock(Logger.class);
 
       var ast =
-          OasSchemaToAst.evaluateComponents(
+          OasSchemaToAst.evaluate(
                   logger,
                   "com.foo",
-                  new Components()
-                      .schemas(
-                          Map.of(
-                              "MyComponent",
-                              new ObjectSchema()
-                                  .name("MyComponent")
-                                  .properties(
-                                      Map.of(
-                                          "myField",
-                                          new Schema().type(type).format("unsupported-format"))))))
+                  Map.of(
+                      "MyComponent",
+                      new ObjectSchema()
+                          .name("MyComponent")
+                          .properties(
+                              Map.of(
+                                  "myField",
+                                  new Schema().type(type).format("unsupported-format")))))
               .collect(toSet());
 
       assertEquals(
@@ -131,20 +125,17 @@ class OasSchemaToAstTest {
     @Test
     public void componentReferences() {
       var ast =
-          OasSchemaToAst.evaluateComponents(
+          OasSchemaToAst.evaluate(
                   "com.foo",
-                  new Components()
-                      .schemas(
-                          Map.of(
-                              "MyComponent",
-                              new ObjectSchema()
-                                  .properties(
-                                      Map.of(
-                                          "myRef",
-                                          new Schema()
-                                              .$ref("#/components/schemas/MyReferencedComponent"))),
-                              "MyReferencedComponent",
-                              new ObjectSchema())))
+                  Map.of(
+                      "MyComponent",
+                      new ObjectSchema()
+                          .properties(
+                              Map.of(
+                                  "myRef",
+                                  new Schema().$ref("#/components/schemas/MyReferencedComponent"))),
+                      "MyReferencedComponent",
+                      new ObjectSchema()))
               .collect(toSet());
 
       assertEquals(
@@ -164,16 +155,13 @@ class OasSchemaToAstTest {
       @Test
       public void inlineRefArray() {
         var ast =
-            OasSchemaToAst.evaluateComponents(
+            OasSchemaToAst.evaluate(
                     "com.foo",
-                    new Components()
-                        .schemas(
-                            Map.of(
-                                "MyComponent",
-                                new ObjectSchema()
-                                    .properties(
-                                        Map.of(
-                                            "foo", new ArraySchema().items(new StringSchema()))))))
+                    Map.of(
+                        "MyComponent",
+                        new ObjectSchema()
+                            .properties(
+                                Map.of("foo", new ArraySchema().items(new StringSchema())))))
                 .collect(toSet());
 
         assertEquals(
@@ -190,20 +178,18 @@ class OasSchemaToAstTest {
       public void inlineScalarArrays(
           String type, String format, String javaPackage, String javaClass) {
         var ast =
-            OasSchemaToAst.evaluateComponents(
+            OasSchemaToAst.evaluate(
                     "com.foo",
-                    new Components()
-                        .schemas(
-                            Map.of(
-                                "MyComponent",
-                                new ObjectSchema()
-                                    .name("MyComponent")
-                                    .properties(
-                                        Map.of(
-                                            "myField",
-                                            new ArraySchema()
-                                                .type("array")
-                                                .items(new Schema().type(type).format(format)))))))
+                    Map.of(
+                        "MyComponent",
+                        new ObjectSchema()
+                            .name("MyComponent")
+                            .properties(
+                                Map.of(
+                                    "myField",
+                                    new ArraySchema()
+                                        .type("array")
+                                        .items(new Schema().type(type).format(format))))))
                 .collect(toSet());
 
         assertEquals(
@@ -221,24 +207,20 @@ class OasSchemaToAstTest {
       @Test
       public void inlineObjectArrays() {
         var ast =
-            OasSchemaToAst.evaluateComponents(
+            OasSchemaToAst.evaluate(
                     "com.foo",
-                    new Components()
-                        .schemas(
-                            Map.of(
-                                "MyComponent",
-                                new ObjectSchema()
-                                    .name("MyComponent")
-                                    .properties(
-                                        Map.of(
-                                            "myItems",
-                                            new ArraySchema()
-                                                .items(
-                                                    new ObjectSchema()
-                                                        .properties(
-                                                            Map.of(
-                                                                "myString",
-                                                                new StringSchema()))))))))
+                    Map.of(
+                        "MyComponent",
+                        new ObjectSchema()
+                            .name("MyComponent")
+                            .properties(
+                                Map.of(
+                                    "myItems",
+                                    new ArraySchema()
+                                        .items(
+                                            new ObjectSchema()
+                                                .properties(
+                                                    Map.of("myString", new StringSchema())))))))
                 .collect(toSet());
 
         assertEquals(
@@ -265,20 +247,18 @@ class OasSchemaToAstTest {
       @Test
       public void compositeInlineArrays() {
         var ast =
-            OasSchemaToAst.evaluateComponents(
+            OasSchemaToAst.evaluate(
                     "com.foo",
-                    new Components()
-                        .schemas(
-                            Map.of(
-                                "MyComponent",
-                                new ObjectSchema()
-                                    .properties(
-                                        Map.of(
-                                            "foo",
+                    Map.of(
+                        "MyComponent",
+                        new ObjectSchema()
+                            .properties(
+                                Map.of(
+                                    "foo",
+                                    new ArraySchema()
+                                        .items(
                                             new ArraySchema()
-                                                .items(
-                                                    new ArraySchema()
-                                                        .items(new Schema<>().type("string"))))))))
+                                                .items(new Schema<>().type("string")))))))
                 .collect(toSet());
 
         assertEquals(
@@ -302,11 +282,8 @@ class OasSchemaToAstTest {
     @Test
     public void rootRefComponent() {
       var ast =
-          OasSchemaToAst.evaluateComponents(
-                  "com.foo",
-                  new Components()
-                      .schemas(
-                          Map.of("MyComponent", new Schema().$ref("#/components/schemas/MyRef"))))
+          OasSchemaToAst.evaluate(
+                  "com.foo", Map.of("MyComponent", new Schema().$ref("#/components/schemas/MyRef")))
               .collect(toSet());
 
       assertEquals(
@@ -319,10 +296,8 @@ class OasSchemaToAstTest {
     public void rootScalarComponents(
         String type, String format, String javaPackage, String javaClass) {
       var ast =
-          OasSchemaToAst.evaluateComponents(
-                  "com.foo",
-                  new Components()
-                      .schemas(Map.of("MyAliasComponent", new Schema().type(type).format(format))))
+          OasSchemaToAst.evaluate(
+                  "com.foo", Map.of("MyAliasComponent", new Schema().type(type).format(format)))
               .collect(toSet());
 
       assertEquals(
@@ -336,14 +311,12 @@ class OasSchemaToAstTest {
     @Test
     public void rootRefArray() {
       var ast =
-          OasSchemaToAst.evaluateComponents(
+          OasSchemaToAst.evaluate(
                   "com.foo",
-                  new Components()
-                      .schemas(
-                          Map.of(
-                              "MyAlias",
-                              new ArraySchema()
-                                  .items(new Schema().$ref("#/components/schemas/MyComponent")))))
+                  Map.of(
+                      "MyAlias",
+                      new ArraySchema()
+                          .items(new Schema().$ref("#/components/schemas/MyComponent"))))
               .collect(toSet());
 
       assertEquals(
@@ -357,12 +330,9 @@ class OasSchemaToAstTest {
     @Test
     public void rootScalarArray() {
       var ast =
-          OasSchemaToAst.evaluateComponents(
+          OasSchemaToAst.evaluate(
                   "com.foo",
-                  new Components()
-                      .schemas(
-                          Map.of(
-                              "MyAlias", new ArraySchema().items(new Schema<>().type("string")))))
+                  Map.of("MyAlias", new ArraySchema().items(new Schema<>().type("string"))))
               .collect(toSet());
 
       assertEquals(
@@ -374,17 +344,14 @@ class OasSchemaToAstTest {
     @Test
     public void rootInlineObjectArray() {
       var ast =
-          OasSchemaToAst.evaluateComponents(
+          OasSchemaToAst.evaluate(
                   "com.foo",
-                  new Components()
-                      .schemas(
-                          Map.of(
-                              "MyAlias",
-                              new ArraySchema()
-                                  .items(
-                                      new ObjectSchema()
-                                          .properties(
-                                              Map.of("foo", new Schema().type("string")))))))
+                  Map.of(
+                      "MyAlias",
+                      new ArraySchema()
+                          .items(
+                              new ObjectSchema()
+                                  .properties(Map.of("foo", new Schema().type("string"))))))
               .collect(toSet());
 
       assertEquals(
@@ -405,18 +372,15 @@ class OasSchemaToAstTest {
       @Test
       public void rootCompositeRefArray() {
         var ast =
-            OasSchemaToAst.evaluateComponents(
+            OasSchemaToAst.evaluate(
                     "com.foo",
-                    new Components()
-                        .schemas(
-                            Map.of(
-                                "MyAlias",
+                    Map.of(
+                        "MyAlias",
+                        new ArraySchema()
+                            .items(
                                 new ArraySchema()
                                     .items(
-                                        new ArraySchema()
-                                            .items(
-                                                new Schema<>()
-                                                    .$ref("#/components/schemas/MyComponent"))))))
+                                        new Schema<>().$ref("#/components/schemas/MyComponent")))))
                 .collect(toSet());
 
         assertEquals(
@@ -432,15 +396,12 @@ class OasSchemaToAstTest {
       @Test
       public void rootCompositeScalarArray() {
         var ast =
-            OasSchemaToAst.evaluateComponents(
+            OasSchemaToAst.evaluate(
                     "com.foo",
-                    new Components()
-                        .schemas(
-                            Map.of(
-                                "MyAlias",
-                                new ArraySchema()
-                                    .items(
-                                        new ArraySchema().items(new Schema<>().type("string"))))))
+                    Map.of(
+                        "MyAlias",
+                        new ArraySchema()
+                            .items(new ArraySchema().items(new Schema<>().type("string")))))
                 .collect(toSet());
 
         assertEquals(
@@ -452,21 +413,17 @@ class OasSchemaToAstTest {
       @Test
       public void rootCompositeInlineObjectArray() {
         var ast =
-            OasSchemaToAst.evaluateComponents(
+            OasSchemaToAst.evaluate(
                     "com.foo",
-                    new Components()
-                        .schemas(
-                            Map.of(
-                                "MyAlias",
+                    Map.of(
+                        "MyAlias",
+                        new ArraySchema()
+                            .items(
                                 new ArraySchema()
                                     .items(
-                                        new ArraySchema()
-                                            .items(
-                                                new ObjectSchema()
-                                                    .properties(
-                                                        Map.of(
-                                                            "foo",
-                                                            new Schema().type("string"))))))))
+                                        new ObjectSchema()
+                                            .properties(
+                                                Map.of("foo", new Schema().type("string")))))))
                 .collect(toSet());
 
         assertEquals(
@@ -488,16 +445,13 @@ class OasSchemaToAstTest {
     assertThrows(
         IllegalArgumentException.class,
         () ->
-            OasSchemaToAst.evaluateComponents(
+            OasSchemaToAst.evaluate(
                     "com.foo",
-                    new Components()
-                        .schemas(
-                            Map.of(
-                                "MyComponent",
-                                new ObjectSchema()
-                                    .name("MyComponent")
-                                    .properties(
-                                        Map.of("myField", new Schema().type("unsupported-type"))))))
+                    Map.of(
+                        "MyComponent",
+                        new ObjectSchema()
+                            .name("MyComponent")
+                            .properties(Map.of("myField", new Schema().type("unsupported-type")))))
                 .toList(),
         "Unsupported types trigger runtime exceptions.");
   }
@@ -505,22 +459,18 @@ class OasSchemaToAstTest {
   @Test
   public void inLineObjectDefinition() {
     var ast =
-        OasSchemaToAst.evaluateComponents(
+        OasSchemaToAst.evaluate(
                 "com.foo",
-                new Components()
-                    .schemas(
-                        Map.of(
-                            "MyComponent",
-                            new ObjectSchema()
-                                .name("MyComponent")
-                                .properties(
-                                    Map.of(
-                                        "myField",
-                                        new ObjectSchema()
-                                            .properties(
-                                                Map.of(
-                                                    "myOtherField",
-                                                    new Schema().type("string"))))))))
+                Map.of(
+                    "MyComponent",
+                    new ObjectSchema()
+                        .name("MyComponent")
+                        .properties(
+                            Map.of(
+                                "myField",
+                                new ObjectSchema()
+                                    .properties(
+                                        Map.of("myOtherField", new Schema().type("string")))))))
             .collect(toSet());
 
     assertEquals(

@@ -22,7 +22,6 @@ import com.github.tomboyo.lily.ast.AstClass;
 import com.github.tomboyo.lily.ast.AstClassAlias;
 import com.github.tomboyo.lily.ast.AstField;
 import com.github.tomboyo.lily.ast.AstReference;
-import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.List;
@@ -44,21 +43,21 @@ public class OasSchemaToAst {
     this.basePackage = basePackage;
   }
 
-  public static Stream<Ast> evaluateComponents(String basePackage, Components components) {
-    return evaluateComponents(DEFAULT_LOGGER, basePackage, components);
+  public static Stream<Ast> evaluate(String basePackage, Map<String, Schema> schema) {
+    return evaluate(DEFAULT_LOGGER, basePackage, schema);
   }
 
-  public static Stream<Ast> evaluateComponents(
-      Logger logger, String basePackage, Components components) {
-    return new OasSchemaToAst(logger, basePackage).evaluateComponents(components);
+  public static Stream<Ast> evaluate(
+      Logger logger, String basePackage, Map<String, Schema> schema) {
+    return new OasSchemaToAst(logger, basePackage).evaluate(schema);
   }
 
-  private Stream<Ast> evaluateComponents(Components components) {
-    return components.getSchemas().entrySet().stream()
-        .flatMap(entry -> evaluateRootComponent(entry.getKey(), entry.getValue()));
+  private Stream<Ast> evaluate(Map<String, Schema> schema) {
+    return schema.entrySet().stream()
+        .flatMap(entry -> evaluateRootSchema(entry.getKey(), entry.getValue()));
   }
 
-  private Stream<Ast> evaluateRootComponent(String schemaName, Schema<?> schema) {
+  private Stream<Ast> evaluateRootSchema(String schemaName, Schema<?> schema) {
     var type = schema.getType();
     if (type == null) {
       return Stream.of(evaluateRootRef(basePackage, schemaName, schema));

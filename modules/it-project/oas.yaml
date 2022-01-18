@@ -7,33 +7,21 @@ paths:
   /foo:
     get:
       operationId: getFoo
+      tags:
+        - tagA
+        - tagB
       requestBody:
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/MyObject'
-          application/xml:
-            schema:
-              $ref: '#/components/schemas/MyObject'
-          application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/MyObject'
       responses:
         "200":
           description: Successful operation
           content:
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/MyObject'
             application/json:
               schema:
                 $ref: '#/components/schemas/MyObject'
-        "400":
-          description: Invalid ID supplied
-        "404":
-          description: MySimpleAlias not found
-        "405":
-          description: Validation exception
 components:
   schemas:
     # An object with fields of every scalar type

@@ -6,7 +6,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 import com.github.tomboyo.lily.cg.AstToJava;
 import com.github.tomboyo.lily.cg.Source;
-import com.github.tomboyo.lily.icg.OasSchemaToAst;
+import com.github.tomboyo.lily.icg.AstGenerator;
 import io.swagger.parser.OpenAPIParser;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,7 +39,7 @@ public class LilyCompiler {
       throw new OasParseException("OAS version 3 or higher required. Got version=" + version);
     }
 
-    OasSchemaToAst.evaluateComponents(basePackage, openApi.getComponents())
+    AstGenerator.evaluate(basePackage, openApi)
         .map(AstToJava::renderAst)
         .forEach(rendering -> persistSource(output, rendering));
   }
