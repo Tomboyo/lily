@@ -11,6 +11,7 @@ import com.github.tomboyo.lily.ast.AstOperationsClassAlias;
 import com.github.tomboyo.lily.ast.AstReference;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +33,9 @@ public class OasPathsToAst {
 
   private Stream<Ast> evaluate(Map<String, PathItem> paths) {
     var operations =
-        paths.entrySet().stream().flatMap(entry -> evaluate(entry.getValue())).collect(toSet());
+        paths.entrySet().stream()
+            .flatMap(entry -> evaluate(entry.getKey(), entry.getValue()))
+            .collect(toSet());
 
     var operationsByTag =
         operations.stream()
@@ -53,11 +56,12 @@ public class OasPathsToAst {
         Stream.of(new AstOperationsClass(basePackage, "Operations", operations)), aliases);
   }
 
-  private Stream<AstOperation> evaluate(PathItem pathItem) {
-    return pathItem.readOperations().stream().map(OasPathsToAst::evaluate);
+  private Stream<AstOperation> evaluate(String path, PathItem pathItem) {
+    return pathItem.readOperationsMap().entrySet().stream()
+        .map(entry -> evaluate(path, entry.getKey(), entry.getValue()));
   }
 
-  private static AstOperation evaluate(Operation operation) {
+  private static AstOperation evaluate(String path, HttpMethod httpMethod, Operation operation) {
     Set<String> tags;
     if (operation.getTags() != null) {
       tags = new HashSet<>(operation.getTags());
@@ -65,6 +69,18 @@ public class OasPathsToAst {
       tags = Set.of("defaultTag");
     }
 
-    return new AstOperation(tags, operation.getOperationId());
+    var method =
+        switch (httpMethod) {
+          case DELETE -> AstOperation.Method.DELETE;
+          case GET -> AstOperation.Method.GET;
+          case HEAD -> AstOperation.Method.HEAD;
+          case OPTIONS -> AstOperation.Method.OPTIONS;
+          case PATCH -> AstOperation.Method.PATCH;
+          case POST -> AstOperation.Method.POST;
+          case PUT -> AstOperation.Method.PUT;
+          case TRACE -> AstOperation.Method.TRACE;
+        };
+
+    return new AstOperation(tags, operation.getOperationId(), method, path);
   }
 }
