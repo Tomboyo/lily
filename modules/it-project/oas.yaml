@@ -4,12 +4,27 @@ info:
   description: "An example OAS document to be compiled to Java source"
   version: 0.1.0
 paths:
-  /foo:
+  /multipleTags:
     get:
-      operationId: getFoo
+      operationId: getMultipleTags
       tags:
         - tagA
         - tagB
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MyObject'
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyObject'
+  /noTags:
+    get:
+      operationId: getNoTags
       requestBody:
         content:
           application/json:

@@ -14,7 +14,6 @@ import io.swagger.v3.oas.models.PathItem;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class OasPathsToAst {
@@ -32,17 +31,14 @@ public class OasPathsToAst {
   }
 
   private Stream<Ast> evaluate(Map<String, PathItem> paths) {
-    return paths.entrySet().stream().flatMap(entry -> evaluate(entry.getValue()));
-  }
-
-  private Stream<Ast> evaluate(PathItem pathItem) {
     var operations =
-        pathItem.readOperations().stream().map(OasPathsToAst::evaluate).collect(Collectors.toSet());
+        paths.entrySet().stream().flatMap(entry -> evaluate(entry.getValue())).collect(toSet());
 
     var operationsByTag =
         operations.stream()
             .flatMap(operation -> operation.tags().stream().map(tag -> new Pair<>(tag, operation)))
             .collect(groupingBy(Pair::key, mapping(Pair::value, toSet())));
+
     var aliases =
         operationsByTag.entrySet().stream()
             .map(
@@ -57,12 +53,16 @@ public class OasPathsToAst {
         Stream.of(new AstOperationsClass(basePackage, "Operations", operations)), aliases);
   }
 
+  private Stream<AstOperation> evaluate(PathItem pathItem) {
+    return pathItem.readOperations().stream().map(OasPathsToAst::evaluate);
+  }
+
   private static AstOperation evaluate(Operation operation) {
     Set<String> tags;
     if (operation.getTags() != null) {
       tags = new HashSet<>(operation.getTags());
     } else {
-      tags = Set.of();
+      tags = Set.of("defaultTag");
     }
 
     return new AstOperation(tags, operation.getOperationId());
