@@ -112,23 +112,43 @@ public class AstToJava {
             .resolve(capitalCamelCase(ast.name()) + ".java");
     var content =
         """
-        package %s;
-        public class %s {
-          %s
+        package {package};
+        public class {className} {
+          private {className}() {}
+
+          {operations}
         }
         """
-            .formatted(
-                ast.packageName(),
-                capitalCamelCase(ast.name()),
+            .replaceAll("\\{package\\}", ast.packageName())
+            .replaceAll("\\{className\\}", capitalCamelCase(ast.name()))
+            .replaceAll(
+                "\\{operations\\}",
                 ast.operations().stream()
                     .map(AstToJava::renderOperation)
-                    .collect(Collectors.joining("\n  ")));
+                    .collect(Collectors.joining("\n")));
 
     return new Source(path, content);
   }
 
   private static String renderOperation(AstOperation ast) {
-    return "public static Void %s() { return null; }".formatted(lowerCamelCase(ast.id()));
+    return """
+      public static com.github.tomboyo.lily.http.HttpHelper<{responseType}> {operationName}(
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+        java.net.http.HttpClient httpClient
+      ) {
+        return new com.github.tomboyo.lily.http.HttpHelper(
+          httpClient,
+          new com.github.tomboyo.lily.http.JacksonBodyHandler(
+            objectMapper,
+            new com.fasterxml.jackson.core.type.TypeReference<{responseType}>() {}
+          ),
+          // TODO: parameterize builder
+          java.net.http.HttpRequest.newBuilder()
+        );
+      }"""
+        .replaceAll("\\{operationName\\}", lowerCamelCase(ast.id()))
+        // TODO: use actual response type
+        .replaceAll("\\{responseType\\}", "String");
   }
 
   private static Source renderAstOperationClassAlias(AstOperationsClassAlias ast) {
@@ -138,27 +158,43 @@ public class AstToJava {
             .resolve(capitalCamelCase(ast.name()) + ".java");
     var content =
         """
-        package %s;
-        public class %s {
-          %s
+        package {package};
+        public class {className} {
+          private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+          private final java.net.http.HttpClient httpClient;
+
+          public {className}(
+              com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+              java.net.http.HttpClient httpClient
+          ) {
+            this.objectMapper = objectMapper;
+            this.httpClient = httpClient;
+          }
+
+          {methods}
         }
         """
-            .formatted(
-                ast.packageName(),
-                capitalCamelCase(ast.name()),
+            .replaceAll("\\{package\\}", ast.packageName())
+            .replaceAll("\\{className\\}", capitalCamelCase(ast.name()))
+            .replaceAll(
+                "\\{methods\\}",
                 ast.aliasedOperations().stream()
                     .map(operation -> renderOperationAlias(ast, operation))
-                    .collect(Collectors.joining("\n  ")));
+                    .collect(Collectors.joining("\n")));
 
     return new Source(path, content);
   }
 
   private static String renderOperationAlias(
       AstOperationsClassAlias alias, AstOperation operation) {
-    return "public static Void %s() { return %s.%s(); }"
-        .formatted(
-            lowerCamelCase(operation.id()),
-            fullyQualifiedType(alias.operationsSingleton()),
-            lowerCamelCase(operation.id()));
+    return """
+        public com.github.tomboyo.lily.http.HttpHelper<{responseType}> {operationName}() {
+          return {operationsClass}.{operationName}(this.objectMapper, this.httpClient);
+        }
+        """
+        // TODO: use actual response type
+        .replaceAll("\\{responseType\\}", "String")
+        .replaceAll("\\{operationName\\}", lowerCamelCase(operation.id()))
+        .replaceAll("\\{operationsClass\\}", fullyQualifiedType(alias.operationsSingleton()));
   }
 }
