@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>modules/compiler</module>
+        <module>modules/lily-compiler</module>
         <module>modules/lily-compiler-maven-plugin</module>
         <module>modules/it-project</module>
         <module>modules/lily-http</module>
