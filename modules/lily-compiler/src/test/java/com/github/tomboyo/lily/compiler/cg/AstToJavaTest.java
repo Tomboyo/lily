@@ -24,7 +24,8 @@ public class AstToJavaTest {
                 public record MyClass(
                     java.lang.String myString,
                     java.util.List<com.foo.myclass.MyListItem> myList
-                ) {}"""),
+                ) {}
+                """),
         AstToJava.renderAst(
             new AstClass(
                 "com.foo",
@@ -47,14 +48,20 @@ public class AstToJavaTest {
             """
                 package com.foo;
                 public record MyAlias(
-                    java.lang.String value
+                    java.util.List<java.lang.String> value
                 ) {
                   @com.fasterxml.jackson.annotation.JsonCreator
-                  public static MyAlias creator(java.lang.String value) { return new MyAlias(value); }
+                  public static MyAlias creator(java.util.List<java.lang.String> value) { return new MyAlias(value); }
+
                   @com.fasterxml.jackson.annotation.JsonValue
-                  public java.lang.String value() { return value; }
-                }"""),
+                  public java.util.List<java.lang.String> value() { return value; }
+                }
+                """),
         AstToJava.renderAst(
-            new AstClassAlias("com.foo", "MyAlias", new AstReference("java.lang", "String"))));
+            new AstClassAlias(
+                "com.foo",
+                "MyAlias",
+                new AstReference(
+                    "java.util", "List", List.of(new AstReference("java.lang", "String"))))));
   }
 }

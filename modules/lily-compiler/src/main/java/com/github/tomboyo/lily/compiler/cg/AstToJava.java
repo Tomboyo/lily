@@ -1,10 +1,7 @@
 package com.github.tomboyo.lily.compiler.cg;
 
-import static com.github.tomboyo.lily.compiler.cg.Fqns.filePath;
-import static com.github.tomboyo.lily.compiler.cg.Fqns.fqn;
-import static com.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
-import static com.github.tomboyo.lily.compiler.icg.Support.lowerCamelCase;
-
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.MustacheFactory;
 import com.github.tomboyo.lily.compiler.ast.Ast;
 import com.github.tomboyo.lily.compiler.ast.AstApi;
 import com.github.tomboyo.lily.compiler.ast.AstClass;
@@ -14,50 +11,86 @@ import com.github.tomboyo.lily.compiler.ast.AstOperation;
 import com.github.tomboyo.lily.compiler.ast.AstOperationsClass;
 import com.github.tomboyo.lily.compiler.ast.AstOperationsClassAlias;
 import com.github.tomboyo.lily.compiler.ast.AstReference;
-import java.util.List;
+
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.github.tomboyo.lily.compiler.cg.Fqns.filePath;
+import static com.github.tomboyo.lily.compiler.cg.Fqns.fqn;
+import static com.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
+import static com.github.tomboyo.lily.compiler.icg.Support.lowerCamelCase;
+import static java.util.stream.Collectors.toList;
+
 public class AstToJava {
+
+  private final MustacheFactory mustacheFactory;
+
+  private AstToJava(MustacheFactory mustacheFactory) {
+    this.mustacheFactory = mustacheFactory;
+  }
+
+  private <T> String writeString(String template, String name, T scopes) {
+    var mustache = mustacheFactory.compile(new StringReader(template), name);
+    var stringWriter = new StringWriter();
+    mustache.execute(stringWriter, scopes);
+    return stringWriter.toString();
+  }
+
   public static Source renderAst(Ast ast) {
+    var self = new AstToJava(new DefaultMustacheFactory());
+
     if (ast instanceof AstClass astClass) {
-      return renderClass(astClass);
+      return self.renderClass(astClass);
     } else if (ast instanceof AstClassAlias astClassAlias) {
-      return renderAstClassAlias(astClassAlias);
+      return self.renderAstClassAlias(astClassAlias);
     } else if (ast instanceof AstApi astApi) {
-      return renderAstAPi(astApi);
+      return self.renderAstAPi(astApi);
     } else if (ast instanceof AstOperationsClass astOperationsClass) {
-      return renderAstOperationClass(astOperationsClass);
+      return self.renderAstOperationClass(astOperationsClass);
     } else if (ast instanceof AstOperationsClassAlias astOperationsClassAlias) {
-      return renderAstOperationClassAlias(astOperationsClassAlias);
+      return self.renderAstOperationClassAlias(astOperationsClassAlias);
     } else {
       throw new IllegalArgumentException("Unsupported AST: " + ast);
     }
   }
 
-  private static Source renderClass(AstClass ast) {
+  private Source renderClass(AstClass ast) {
+    var fields = ast.fields().size();
+    var lastField = ast.fields().get(fields - 1);
     var content =
-        """
-        package %s;
-        public record %s(
-        %s
-        ) {}"""
-            .formatted(
+        writeString(
+            """
+            package {{packageName}};
+            public record {{recordName}}(
+                {{#fields}}
+                {{{fqpt}}} {{name}},
+                {{/fields}}
+                {{#lastField}}{{{fqpt}}} {{name}}{{/lastField}}
+            ) {}
+            """,
+            "renderClass",
+            Map.of(
+                "packageName",
                 ast.packageName(),
+                "recordName",
                 capitalCamelCase(ast.name()),
-                recordFieldDeclaration(ast.fields()));
+                "fields",
+                ast.fields().stream()
+                    .limit(fields - 1)
+                    .map(AstToJava::scopeForField)
+                    .collect(toList()),
+                "lastField",
+                scopeForField(lastField)));
 
     return new Source(filePath(ast), content);
   }
 
-  private static String recordFieldDeclaration(List<AstField> fields) {
-    return fields.stream()
-        .map(
-            field ->
-                "    %s %s"
-                    .formatted(
-                        fullyQualifiedParameterizedType(field.astReference()),
-                        lowerCamelCase(field.name())))
-        .collect(Collectors.joining(",\n"));
+  private static Map<String, String> scopeForField(AstField field) {
+    return Map.of(
+        "fqpt", fullyQualifiedParameterizedType(field.astReference()),
+        "name", lowerCamelCase(field.name()));
   }
 
   private static String fullyQualifiedParameterizedType(AstReference ast) {
@@ -74,154 +107,157 @@ public class AstToJava {
     }
   }
 
-  private static Source renderAstClassAlias(AstClassAlias ast) {
-    var valueType = fullyQualifiedParameterizedType(ast.aliasedType());
-    var className = capitalCamelCase(ast.name());
+  private Source renderAstClassAlias(AstClassAlias ast) {
     var content =
-        """
-        package %s;
-        public record %s(
-            %s value
-        ) {
-          @com.fasterxml.jackson.annotation.JsonCreator
-          public static %s creator(%s value) { return new %s(value); }
-          @com.fasterxml.jackson.annotation.JsonValue
-          public %s value() { return value; }
-        }"""
-            .formatted(
-                ast.packageName(),
-                className,
-                valueType,
-                className,
-                valueType,
-                className,
-                valueType);
+        writeString(
+            """
+            package {{packageName}};
+            public record {{recordName}}(
+                {{{fqpValueName}}} value
+            ) {
+              @com.fasterxml.jackson.annotation.JsonCreator
+              public static {{{recordName}}} creator({{{fqpValueName}}} value) { return new {{recordName}}(value); }
+
+              @com.fasterxml.jackson.annotation.JsonValue
+              public {{{fqpValueName}}} value() { return value; }
+            }
+            """,
+            "renderAstClassAlias",
+            Map.of(
+                "packageName", ast.packageName(),
+                "recordName", capitalCamelCase(ast.name()),
+                "fqpValueName", fullyQualifiedParameterizedType(ast.aliasedType())));
     return new Source(filePath(ast), content);
   }
 
-  private static Source renderAstAPi(AstApi ast) {
+  private Source renderAstAPi(AstApi ast) {
     var content =
-        """
-        package {package};
-        public class {className} {
-          private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
-          private final java.net.http.HttpClient httpClient;
+        writeString(
+            """
+            package {{packageName}};
+            public class {{className}} {
+              private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+              private final java.net.http.HttpClient httpClient;
 
-          public {className}(
-              com.fasterxml.jackson.databind.ObjectMapper objectMapper,
-              java.net.http.HttpClient httpClient
-          ) {
-            this.objectMapper = objectMapper;
-            this.httpClient = httpClient;
+              public {{className}}(
+                  com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+                  java.net.http.HttpClient httpClient
+              ) {
+                this.objectMapper = objectMapper;
+                this.httpClient = httpClient;
+              }
+
+              {{#operations}}
+              {{! Note: Tag types are never parameterized }}
+              public {{fqReturnType}} {{operationName}}() {
+                return new {{fqReturnType}}(this.objectMapper, this.httpClient);
+              }
+
+              {{/operations}}
+            }
+            """,
+            "renderAstApi",
+            Map.of(
+                "packageName", ast.packageName(),
+                "className", capitalCamelCase(ast.name()),
+                "operations",
+                    ast.astOperationsAliases().stream()
+                        .map(
+                            alias ->
+                                Map.of(
+                                    "fqReturnType", fqn(alias),
+                                    "operationName", lowerCamelCase(alias.name())))
+                        .collect(toList())));
+
+    return new Source(filePath(ast), content);
+  }
+
+  private Source renderAstOperationClass(AstOperationsClass ast) {
+    var content =
+        writeString(
+            """
+            package {{packageName}};
+            public class {{className}} {
+              private {{className}}() {}
+
+            {{! Operations are complex, so render them separately. }}
+            {{{operations}}}
+            }
+            """,
+            "renderAstOperationClass",
+            Map.of(
+                "packageName", ast.packageName(),
+                "className", capitalCamelCase(ast.name()),
+                "operations",
+                    ast.operations().stream()
+                        .map(this::renderOperation)
+                        .collect(Collectors.joining("\n"))));
+
+    return new Source(filePath(ast), content);
+  }
+
+  private String renderOperation(AstOperation ast) {
+    return writeString(
+        """
+              public static com.github.tomboyo.lily.http.HttpHelper<
+                  {{{fqpResponseName}}}
+              > {{operationName}}(
+                  com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+                  java.net.http.HttpClient httpClient
+              ) {
+                return new com.github.tomboyo.lily.http.HttpHelper(
+                    httpClient,
+                    new com.github.tomboyo.lily.http.JacksonBodyHandler(
+                        objectMapper,
+                        new com.fasterxml.jackson.core.type.TypeReference<{{{fqpResponseName}}}>(){}),
+                    java.net.http.HttpRequest.newBuilder());
+              }
+            """,
+        "renderOperation",
+        Map.of(
+            // TODO: real response type
+            "fqpResponseName", "java.lang.String", "operationName", lowerCamelCase(ast.id())));
+  }
+
+  private Source renderAstOperationClassAlias(AstOperationsClassAlias ast) {
+    var content =
+        writeString(
+            """
+          package {{packageName}};
+          public class {{className}} {
+            private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+            private final java.net.http.HttpClient httpClient;
+
+            public {{className}}(
+                com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+                java.net.http.HttpClient httpClient
+            ) {
+              this.objectMapper = objectMapper;
+              this.httpClient = httpClient;
+            }
+
+            {{#operations}}
+            public com.github.tomboyo.lily.http.HttpHelper<{{{fqpResponseName}}}> {{operationName}}() {
+              return {{operationsClassName}}.{{operationName}}(this.objectMapper, this.httpClient);
+            }
+            {{/operations}}
           }
-
-          {methods}
-        }
-        """
-            .replaceAll("\\{package\\}", ast.packageName())
-            .replaceAll("\\{className\\}", ast.name())
-            .replaceAll(
-                "\\{methods\\}",
-                ast.astOperationsAliases().stream()
-                    .map(alias -> "  " + renderObjectMotherMethod(alias))
-                    .collect(Collectors.joining()));
-    return new Source(filePath(ast), content);
-  }
-
-  private static String renderObjectMotherMethod(AstReference ast) {
-    return """
-        public {parameterizedClassName} {methodName}() {
-          return new {className}(this.objectMapper, this.httpClient);
-        }
-        """
-        .replaceAll("\\{parameterizedClassName\\}", fullyQualifiedParameterizedType(ast))
-        .replaceAll("\\{methodName\\}", lowerCamelCase(ast.name()))
-        .replaceAll("\\{className\\}", fqn(ast));
-  }
-
-  private static Source renderAstOperationClass(AstOperationsClass ast) {
-    var content =
-        """
-        package {package};
-        public class {className} {
-          private {className}() {}
-
-          {operations}
-        }
-        """
-            .replaceAll("\\{package\\}", ast.packageName())
-            .replaceAll("\\{className\\}", capitalCamelCase(ast.name()))
-            .replaceAll(
-                "\\{operations\\}",
-                ast.operations().stream()
-                    .map(AstToJava::renderOperation)
-                    .collect(Collectors.joining("\n")));
+          """,
+            "renderAstOperationClassAlias",
+            Map.of(
+                "packageName", ast.packageName(),
+                "className", capitalCamelCase(ast.name()),
+                "operations",
+                    ast.aliasedOperations().stream()
+                        .map(
+                            operation ->
+                                Map.of(
+                                    // TODO: use real response type
+                                    "fqpResponseName", "java.lang.String",
+                                    "operationsClassName", fqn(ast.operationsSingleton()),
+                                    "operationName", lowerCamelCase(operation.id())))
+                        .collect(toList())));
 
     return new Source(filePath(ast), content);
-  }
-
-  private static String renderOperation(AstOperation ast) {
-    return """
-      public static com.github.tomboyo.lily.http.HttpHelper<{responseType}> {operationName}(
-        com.fasterxml.jackson.databind.ObjectMapper objectMapper,
-        java.net.http.HttpClient httpClient
-      ) {
-        return new com.github.tomboyo.lily.http.HttpHelper(
-          httpClient,
-          new com.github.tomboyo.lily.http.JacksonBodyHandler(
-            objectMapper,
-            new com.fasterxml.jackson.core.type.TypeReference<{responseType}>() {}
-          ),
-          // TODO: parameterize builder
-          java.net.http.HttpRequest.newBuilder()
-        );
-      }"""
-        .replaceAll("\\{operationName\\}", lowerCamelCase(ast.id()))
-        // TODO: use actual response type
-        .replaceAll("\\{responseType\\}", "String");
-  }
-
-  private static Source renderAstOperationClassAlias(AstOperationsClassAlias ast) {
-    var content =
-        """
-        package {package};
-        public class {className} {
-          private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
-          private final java.net.http.HttpClient httpClient;
-
-          public {className}(
-              com.fasterxml.jackson.databind.ObjectMapper objectMapper,
-              java.net.http.HttpClient httpClient
-          ) {
-            this.objectMapper = objectMapper;
-            this.httpClient = httpClient;
-          }
-
-          {methods}
-        }
-        """
-            .replaceAll("\\{package\\}", ast.packageName())
-            .replaceAll("\\{className\\}", capitalCamelCase(ast.name()))
-            .replaceAll(
-                "\\{methods\\}",
-                ast.aliasedOperations().stream()
-                    .map(operation -> renderOperationAlias(ast, operation))
-                    .collect(Collectors.joining("\n")));
-
-    return new Source(filePath(ast), content);
-  }
-
-  private static String renderOperationAlias(
-      AstOperationsClassAlias alias, AstOperation operation) {
-    return """
-        public com.github.tomboyo.lily.http.HttpHelper<{responseType}> {operationName}() {
-          return {operationsClass}.{operationName}(this.objectMapper, this.httpClient);
-        }
-        """
-        // TODO: use actual response type
-        .replaceAll("\\{responseType\\}", "String")
-        .replaceAll("\\{operationName\\}", lowerCamelCase(operation.id()))
-        .replaceAll(
-            "\\{operationsClass\\}", fullyQualifiedParameterizedType(alias.operationsSingleton()));
   }
 }
