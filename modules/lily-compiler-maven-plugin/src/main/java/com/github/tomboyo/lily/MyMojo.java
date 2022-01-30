@@ -2,6 +2,8 @@ package com.github.tomboyo.lily;
 
 import static org.apache.maven.plugins.annotations.LifecyclePhase.GENERATE_SOURCES;
 
+import com.github.tomboyo.lily.compiler.LilyCompiler;
+import com.github.tomboyo.lily.compiler.OasParseException;
 import java.nio.file.Paths;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;

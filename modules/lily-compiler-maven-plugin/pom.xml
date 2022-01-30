@@ -25,7 +25,7 @@
     <dependencies>
         <dependency>
             <groupId>com.github.tomboyo.lily</groupId>
-            <artifactId>compiler</artifactId>
+            <artifactId>lily-compiler</artifactId>
             <version>${project.version}</version>
         </dependency>
 
