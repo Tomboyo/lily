@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
 import com.github.tomboyo.lily.compiler.ast.Ast;
+import com.github.tomboyo.lily.compiler.ast.AstApi;
 import com.github.tomboyo.lily.compiler.ast.AstOperation;
 import com.github.tomboyo.lily.compiler.ast.AstOperationsClass;
 import com.github.tomboyo.lily.compiler.ast.AstOperationsClassAlias;
@@ -50,10 +51,20 @@ public class OasPathsToAst {
                         basePackage,
                         entry.getKey(),
                         new AstReference(basePackage, "Operations"),
-                        entry.getValue()));
+                        entry.getValue()))
+            .collect(toSet());
+
+    var api =
+        new AstApi(
+            basePackage,
+            "Api",
+            aliases.stream()
+                .map(alias -> new AstReference(alias.packageName(), alias.name()))
+                .collect(toSet()));
 
     return Stream.concat(
-        Stream.of(new AstOperationsClass(basePackage, "Operations", operations)), aliases);
+        Stream.of(api, new AstOperationsClass(basePackage, "Operations", operations)),
+        aliases.stream());
   }
 
   private Stream<AstOperation> evaluate(String path, PathItem pathItem) {

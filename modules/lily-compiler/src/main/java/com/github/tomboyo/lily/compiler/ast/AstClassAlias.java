@@ -7,4 +7,4 @@ package com.github.tomboyo.lily.compiler.ast;
  * by substituting for the referent type, or as a "wrapper" class.
  */
 public record AstClassAlias(String packageName, String name, AstReference aliasedType)
-    implements Ast {}
+    implements Ast, Fqn {}

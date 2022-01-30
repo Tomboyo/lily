@@ -81,7 +81,7 @@
         <dependency>
             <groupId>com.github.tomboyo.lily</groupId>
             <artifactId>lily-http</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

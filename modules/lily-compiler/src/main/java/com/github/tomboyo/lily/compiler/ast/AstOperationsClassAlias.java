@@ -11,4 +11,4 @@ public record AstOperationsClassAlias(
     String name,
     AstReference operationsSingleton,
     Set<AstOperation> aliasedOperations)
-    implements Ast {}
+    implements Ast, Fqn {}
