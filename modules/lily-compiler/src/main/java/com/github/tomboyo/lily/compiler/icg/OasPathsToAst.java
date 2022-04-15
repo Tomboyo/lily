@@ -1,5 +1,6 @@
 package com.github.tomboyo.lily.compiler.icg;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
@@ -92,6 +93,7 @@ public class OasPathsToAst {
           case TRACE -> AstOperation.Method.TRACE;
         };
 
+    requireNonNull(operation.getOperationId(), "TODO: support paths without operations IDs");
     return new AstOperation(tags, operation.getOperationId(), method, path);
   }
 }

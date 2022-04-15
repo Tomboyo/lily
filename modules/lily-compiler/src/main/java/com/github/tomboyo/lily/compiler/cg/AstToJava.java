@@ -1,5 +1,11 @@
 package com.github.tomboyo.lily.compiler.cg;
 
+import static com.github.tomboyo.lily.compiler.cg.Fqns.filePath;
+import static com.github.tomboyo.lily.compiler.cg.Fqns.fqn;
+import static com.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
+import static com.github.tomboyo.lily.compiler.icg.Support.lowerCamelCase;
+import static java.util.stream.Collectors.toList;
+
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.MustacheFactory;
 import com.github.tomboyo.lily.compiler.ast.Ast;
@@ -11,17 +17,10 @@ import com.github.tomboyo.lily.compiler.ast.AstOperation;
 import com.github.tomboyo.lily.compiler.ast.AstOperationsClass;
 import com.github.tomboyo.lily.compiler.ast.AstOperationsClassAlias;
 import com.github.tomboyo.lily.compiler.ast.AstReference;
-
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static com.github.tomboyo.lily.compiler.cg.Fqns.filePath;
-import static com.github.tomboyo.lily.compiler.cg.Fqns.fqn;
-import static com.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
-import static com.github.tomboyo.lily.compiler.icg.Support.lowerCamelCase;
-import static java.util.stream.Collectors.toList;
 
 public class AstToJava {
 

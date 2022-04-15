@@ -12,6 +12,7 @@
         <module>modules/lily-compiler</module>
         <module>modules/lily-compiler-maven-plugin</module>
         <module>modules/it-project</module>
+        <module>modules/examples</module>
         <module>modules/lily-http</module>
     </modules>
 

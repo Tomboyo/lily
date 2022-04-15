@@ -1,0 +1,35 @@
+openapi: 3.0.2
+info:
+  title: Example
+  description: "An example OAS document to be compiled to Java source"
+  version: 0.1.0
+paths:
+  /foo/bar:
+    post:
+      operationId: 'postFooBar'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostFooBarBody'
+      responses:
+        "200":
+          description: "Success!"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostFooBarResponse'
+components:
+  schemas:
+    PostFooBarBody:
+      type: object
+      properties:
+        foo:
+          type: string
+        bar:
+          type: string
+    PostFooBarResponse:
+      type: object
+      properties:
+        baz:
+          type: string
