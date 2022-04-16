@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomboyo.lily.http.JacksonBodyHandler;
+import com.github.tomboyo.lily.http.JacksonBodyPublisher;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -53,10 +54,9 @@ public class WorkflowTest {
                 .uri(URI.create(info.getHttpBaseUrl() + "/foo/x?queryOption=true"))
                 // "simple" header parameter style (default)
                 .header("My-Header", "myHeader")
+                // "form" and "explode" cookie parameter style (default)
                 .header("Cookie", "MyCookie=MyCookie")
-                .POST(
-                    HttpRequest.BodyPublishers.ofByteArray(
-                        objectMapper.writeValueAsBytes(new PostFooBody("bar"))))
+                .POST(JacksonBodyPublisher.of(objectMapper, new PostFooBody("bar")))
                 .build(),
             new JacksonBodyHandler<>(new ObjectMapper(), new TypeReference<PostFooResponse>() {}));
 
