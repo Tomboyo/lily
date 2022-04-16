@@ -20,6 +20,16 @@ Options become confusing to maintain -- prefer opinionated code that works for m
 . Do not support generate-and-check-in workflows.
 Treat the OAS document as source code.
 
+== Plan
+
+. Generate models first, since this is probably the most laborious part of hand-writing client code. Start with request/response bodies, then add support for complex objects in other locations.
+. Create request "templates" next, which should populate HttpRequest.Builder instances with URLs and required API parameters (e.g. required headers). These should _yield_ the builder so that the user can customize further, such as to work around flaws in the specification or our implementation.
+. Create HTTP "helpers" that hold the ObjectMappers, HttpClients, and Jackson support types necessary to send and receive requests. This should help the user with send/sendAsync workflows that match the 80% use-case.
+
+== Design
+
+. Lily should expose a layered API, where "high-level" layers can be used to quickly orchestrate full requests using generated code, and "lower-level" layers can be used to facilitate hand-written requests. In other words, Lily should absolutely not encapsulate underlying HTTP details like the HttpClient, because the user may need access to those details in order to work around flaws in their upstream OAS specification or in Lily generated code. Lily should help where it can, and let hte user do the rest; simple things should be easy, and complex things should be possible.
+
 == Quick Tour
 
 Lily is composed of three modules in the `modules` directory:
