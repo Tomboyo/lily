@@ -1,13 +1,15 @@
 package com.github.tomboyo.lily.examples;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.any;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.example.PostFooBarBody;
-import com.example.PostFooBarResponse;
+import com.example.PostFooBody;
+import com.example.PostFooResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
@@ -32,8 +34,11 @@ public class WorkflowTest {
   @Test
   public void test(WireMockRuntimeInfo info) throws Exception {
     stubFor(
-        post("/foo/bar/")
-            .withRequestBody(equalToJson("{\"foo\": \"foo\", \"bar\": \"bar\"}"))
+        any(urlPathEqualTo("/foo/x"))
+            .withRequestBody(equalToJson("{\"bar\": \"bar\"}"))
+            .withHeader("My-Header", equalTo("myHeader"))
+            .withQueryParam("queryOption", equalTo("true"))
+            .withCookie("MyCookie", equalTo("MyCookie"))
             .willReturn(ok("""
         {
           "baz": "baz"
@@ -43,13 +48,17 @@ public class WorkflowTest {
     var response =
         client.send(
             HttpRequest.newBuilder()
-                .uri(URI.create(info.getHttpBaseUrl() + "/foo/bar/"))
+                // "simple" path parameter style (default),
+                // "form" query parameter style (default)
+                .uri(URI.create(info.getHttpBaseUrl() + "/foo/x?queryOption=true"))
+                // "simple" header parameter style (default)
+                .header("My-Header", "myHeader")
+                .header("Cookie", "MyCookie=MyCookie")
                 .POST(
                     HttpRequest.BodyPublishers.ofByteArray(
-                        objectMapper.writeValueAsBytes(new PostFooBarBody("foo", "bar"))))
+                        objectMapper.writeValueAsBytes(new PostFooBody("bar"))))
                 .build(),
-            new JacksonBodyHandler<>(
-                new ObjectMapper(), new TypeReference<PostFooBarResponse>() {}));
+            new JacksonBodyHandler<>(new ObjectMapper(), new TypeReference<PostFooResponse>() {}));
 
     assertEquals(200, response.statusCode());
     assertEquals("baz", response.body().get().baz());

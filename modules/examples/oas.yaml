@@ -4,31 +4,50 @@ info:
   description: "An example OAS document to be compiled to Java source"
   version: 0.1.0
 paths:
-  /foo/bar:
+  /foo/{foo}:
     post:
-      operationId: 'postFooBar'
+      operationId: 'postFoo'
+      parameters:
+        - name: foo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: My-Header
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: queryOption
+          in: query
+          required: true
+          schema:
+            type: boolean
+        - name: MyCookie
+          in: cookie
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PostFooBarBody'
+              $ref: '#/components/schemas/PostFooBody'
       responses:
         "200":
           description: "Success!"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PostFooBarResponse'
+                $ref: '#/components/schemas/PostFooResponse'
 components:
   schemas:
-    PostFooBarBody:
+    PostFooBody:
       type: object
       properties:
-        foo:
-          type: string
         bar:
           type: string
-    PostFooBarResponse:
+    PostFooResponse:
       type: object
       properties:
         baz:
