@@ -4,6 +4,42 @@ info:
   description: "An example OAS document to be compiled to Java source"
   version: 0.1.0
 paths:
+  /requestAndResponseInline:
+    post:
+      operationId: requestAndResponseInline
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                foo:
+                  type: string
+      responses:
+        200:
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bar:
+                    type: string
+  /requestAndResponseRef:
+    post:
+      operationId: requestAndResponseRef
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: RequestAndResponseRequest
+      responses:
+        200:
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: RequestAndResponseResponse
   /multipleTags:
     get:
       operationId: getMultipleTags
@@ -135,3 +171,13 @@ components:
           properties:
             foo:
               type: string
+    RequestAndResponseRequest:
+      type: object
+      properties:
+        foo:
+          type: string
+    RequestAndResponseResponse:
+      type: object
+      properties:
+        foo:
+          type: string
