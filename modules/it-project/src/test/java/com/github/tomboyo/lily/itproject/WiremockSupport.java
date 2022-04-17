@@ -12,6 +12,6 @@ public class WiremockSupport {
   }
 
   public static HttpRequest.Builder newBuilder(WireMockRuntimeInfo info, String path) {
-    return HttpRequest.newBuilder(URI.create(info.getHttpBaseUrl() + "/" + path));
+    return HttpRequest.newBuilder(URI.create(info.getHttpBaseUrl() + path));
   }
 }

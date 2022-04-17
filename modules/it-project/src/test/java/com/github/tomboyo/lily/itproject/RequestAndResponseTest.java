@@ -20,6 +20,7 @@ import com.github.tomboyo.lily.http.JacksonBodyPublisher;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -52,10 +53,11 @@ public class RequestAndResponseTest {
   @Nested
   public class Inline {
     @Test
+    @Disabled
     public void postRequestAndResponse(WireMockRuntimeInfo info) throws Exception {
       var response =
           client.send(
-              newBuilder(info, "requestAndResponse/")
+              newBuilder(info, "/requestAndResponse/")
                   .POST(
                       HttpRequest.BodyPublishers.ofString(
                           """
@@ -79,7 +81,7 @@ public class RequestAndResponseTest {
     public void postRequestAndResponse(WireMockRuntimeInfo info) throws Exception {
       var response =
           client.send(
-              newBuilder(info, "requestAndResponse/")
+              newBuilder(info, "/requestAndResponse/")
                   .POST(
                       JacksonBodyPublisher.of(
                           objectMapper, new RequestAndResponseRequest("request")))
