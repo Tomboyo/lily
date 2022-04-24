@@ -22,20 +22,22 @@ Treat the OAS document as source code.
 
 == Plan
 
-. Generate models first, since this is probably the most laborious part of hand-writing client code. Start with request/response bodies, then add support for complex objects in other locations.
-. Create request "templates" next, which should populate HttpRequest.Builder instances with URLs and required API parameters (e.g. required headers). These should _yield_ the builder so that the user can customize further, such as to work around flaws in the specification or our implementation.
-. Create HTTP "helpers" that hold the ObjectMappers, HttpClients, and Jackson support types necessary to send and receive requests. This should help the user with send/sendAsync workflows that match the 80% use-case.
+We will follow an iterative approach from this point forward. To start, we define integration tests in the `it-project` module which demonstrate realistic use-cases based on hand-written java.net.http code. Once we have captured a use-case, we then add support to Lily which makes (part of) that case easier to implement, such as by adding support functions or new categories of code generation. After many iterations, these cases will largely be implemented using generated code and Lily support. At this point, Lily will be a mature solution.
 
 == Design
 
-. Lily should expose a layered API, where "high-level" layers can be used to quickly orchestrate full requests using generated code, and "lower-level" layers can be used to facilitate hand-written requests. In other words, Lily should absolutely not encapsulate underlying HTTP details like the HttpClient, because the user may need access to those details in order to work around flaws in their upstream OAS specification or in Lily generated code. Lily should help where it can, and let hte user do the rest; simple things should be easy, and complex things should be possible.
+Lily is a layered API with "high-level" layers that orchestrate full requests using generated code and "low-level" layers that help the developer implement requests from scratch if necessary. High-level layers always allow the developer to move into lower-levels so that the developer can override Lily to work around flaws in Lily, the upstream OAS, or other environmental issues.
+
+Lily helps the developer where it is able, but gets out of the way when requested. With Lily, simple things are _easy_, and complex things are _possible_.
 
 == Quick Tour
 
 Lily is composed of three modules in the `modules` directory:
 
-- `it-project` is an integration test project and living example of the compiler in action. The pom shows how to configure Lily in a maven build. The OAS shows what Lily supports. Check out the generated-sources directory under `target/` to see how it compiles OAS definitions.
+- `it-project` is an integration test project and living example of the compiler in action. The pom shows how to configure Lily in a maven build. The OAS shows what Lily supports. Test cases demonstrate where Lily lends support to HTTP clients. Check out the generated-sources directory under `target/` to see how it compiles OAS definitions.
 
 - `lily-compiler-maven-plugin` is a teensy-weensy Maven plugin that reads configuration from the pom and hands it off to the compiler project.
 
-- `compiler` is responsible for reading an OAS document, translating it to an intermediary AST (abstract syntax tree), rendering the AST as source code, and finally saving source code to disc.
+- `lily-compiler` is responsible for reading an OAS document, translating it to an intermediary AST (abstract syntax tree), rendering the AST as source code, and finally saving source code to disc.
+
+- `lily-http` defines classes to help use the java.net.http API. For example, this contains the JacksonBodyPublisher and JacksonBodyHandler for sending and receiving Json-serialized content.
