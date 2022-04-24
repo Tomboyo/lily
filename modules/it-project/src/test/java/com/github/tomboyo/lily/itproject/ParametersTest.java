@@ -6,6 +6,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomboyo.lily.itproject.WiremockSupport.newBuilder;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 
+import com.example.RGB;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import java.net.http.HttpClient;
@@ -39,26 +40,22 @@ public class ParametersTest {
   }
 
   @Nested
-  public class Simple {
-    @Test
-    @Disabled
-    public void simplePathObject(WireMockRuntimeInfo info) throws Exception {
-      client.send(newBuilder(info, "/parametersSimple/R,255,G,255,B,255").build(), discarding());
+  public class InPath {
 
-      verify(anyRequestedFor(urlPathEqualTo("/parametersSimple/R,255,G,255,B,255")));
+    @Nested
+    public class Simple {
+
+      @Test
+      public void object(WireMockRuntimeInfo info) throws Exception {
+        client.send(
+            newBuilder(
+                    info,
+                    "/parametersSimpleObjectRef/" + new RGB(100, 200, 255).simplePathEncoding())
+                .build(),
+            discarding());
+
+        verify(anyRequestedFor(urlPathEqualTo("/parametersSimpleObjectRef/r,100,g,200,b,255")));
+      }
     }
-
-    // TODO: explode is not supported.
-    @Test
-    @Disabled
-    public void simplePathObjectExplode(WireMockRuntimeInfo info) throws Exception {
-      client.send(newBuilder(info, "/parametersSimple/R=255,G=255,B=255").build(), discarding());
-
-      verify(anyRequestedFor(urlPathEqualTo("/parametersSimple/R=255,G=255,B=255")));
-    }
-
-    // TODO: query
-    // TODO: header
-    // TODO: cookie
   }
 }

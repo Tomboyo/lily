@@ -56,18 +56,15 @@ public class AstToJava {
   }
 
   private Source renderClass(AstClass ast) {
-    var fields = ast.fields().size();
-    var lastField = ast.fields().get(fields - 1);
     var content =
         writeString(
             """
             package {{packageName}};
             public record {{recordName}}(
-                {{#fields}}
-                {{{fqpt}}} {{name}},
-                {{/fields}}
-                {{#lastField}}{{{fqpt}}} {{name}}{{/lastField}}
-            ) {}
+                {{{fields}}}
+            ) {
+              {{{encodePathSimple}}}
+            }
             """,
             "renderClass",
             Map.of(
@@ -76,20 +73,44 @@ public class AstToJava {
                 "recordName",
                 capitalCamelCase(ast.name()),
                 "fields",
-                ast.fields().stream()
-                    .limit(fields - 1)
-                    .map(AstToJava::scopeForField)
-                    .collect(toList()),
-                "lastField",
-                scopeForField(lastField)));
+                ast.fields().stream().map(this::recordField).collect(Collectors.joining(",\n")),
+                "encodePathSimple",
+                encodePathSimple(ast)));
 
     return new Source(filePath(ast), content);
   }
 
-  private static Map<String, String> scopeForField(AstField field) {
-    return Map.of(
-        "fqpt", fullyQualifiedParameterizedType(field.astReference()),
-        "name", lowerCamelCase(field.name()));
+  private String recordField(AstField field) {
+    return writeString(
+        "{{{fqpt}}} {{name}}",
+        "recordField",
+        Map.of(
+            "fqpt", fullyQualifiedParameterizedType(field.astReference()),
+            "name", lowerCamelCase(field.name())));
+  }
+
+  // explode? empty string array            object
+  // n        n/a   blue   blue,black,brown R,100,G,200,B,150
+  // y        n/a   blue   blue,black,brown R=100,G=200,B=150
+  private String encodePathSimple(AstClass ast) {
+    return writeString(
+        """
+        public String simplePathEncoding() {
+          return
+              {{{expression}}};
+        }
+        """,
+        "simplePathEncoding",
+        Map.of(
+            "expression",
+            ast.fields().stream()
+                .map(this::encodePathSimplePart)
+                .collect(Collectors.joining(" + \",\" + \n"))));
+  }
+
+  private String encodePathSimplePart(AstField field) {
+    return writeString("""
+        "{{name}}" + ","  + {{name}}""", "encodePathSimplePart", field);
   }
 
   private static String fullyQualifiedParameterizedType(AstReference ast) {

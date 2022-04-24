@@ -40,6 +40,19 @@ paths:
             application/json:
               schema:
                 $ref: RequestAndResponseResponse
+  /parametersSimpleObjectRef/{pathParam}:
+    get:
+      operationId: parametersSimpleObjectRef
+      parameters:
+        - name: pathParam
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/RGB'
+          style: simple
+      responses:
+        204:
+          description: 'Success'
   /multipleTags:
     get:
       operationId: getMultipleTags
@@ -181,3 +194,15 @@ components:
       properties:
         foo:
           type: string
+    RGB:
+      type: object
+      properties:
+        r:
+          type: integer
+          format: int32
+        g:
+          type: integer
+          format: int32
+        b:
+          type: integer
+          format: int32
