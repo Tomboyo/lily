@@ -53,6 +53,20 @@ paths:
       responses:
         204:
           description: 'Success'
+  /parametersSimpleExplodeObjectRef/{pathParam}:
+    get:
+      operationId: parametersSimpleExplodeObjectRef
+      parameters:
+        - name: pathParam
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/RGB'
+          style: simple
+          explode: true
+      responses:
+        204:
+          description: 'Success'
   /multipleTags:
     get:
       operationId: getMultipleTags

@@ -56,6 +56,20 @@ public class ParametersTest {
 
         verify(anyRequestedFor(urlPathEqualTo("/parametersSimpleObjectRef/r,100,g,200,b,255")));
       }
+
+      @Test
+      public void objectExplode(WireMockRuntimeInfo info) throws Exception {
+        client.send(
+            newBuilder(
+                    info,
+                    "/parametersSimpleExplodeObjectRef/"
+                        + new RGB(100, 200, 255).simpleExplodePathEncoding())
+                .build(),
+            discarding());
+
+        verify(
+            anyRequestedFor(urlPathEqualTo("/parametersSimpleExplodeObjectRef/r=100,g=200,b=255")));
+      }
     }
   }
 }
