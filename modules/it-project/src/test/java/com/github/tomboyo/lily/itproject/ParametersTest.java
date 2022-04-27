@@ -9,6 +9,7 @@ import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import com.example.RGB;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.github.tomboyo.lily.http.Encoding;
 import java.net.http.HttpClient;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -49,8 +50,7 @@ public class ParametersTest {
       public void object(WireMockRuntimeInfo info) throws Exception {
         client.send(
             newBuilder(
-                    info,
-                    "/parametersSimpleObjectRef/" + new RGB(100, 200, 255).simplePathEncoding())
+                    info, "/parametersSimpleObjectRef/" + Encoding.simple(new RGB(100, 200, 255)))
                 .build(),
             discarding());
 
