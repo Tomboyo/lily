@@ -9,7 +9,7 @@ import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import com.example.RGB;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import com.github.tomboyo.lily.http.Encoding;
+import com.github.tomboyo.lily.http.encoding.Encoding;
 import java.net.http.HttpClient;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -63,7 +63,7 @@ public class ParametersTest {
             newBuilder(
                     info,
                     "/parametersSimpleExplodeObjectRef/"
-                        + new RGB(100, 200, 255).simpleExplodePathEncoding())
+                        + Encoding.simpleExplode(new RGB(100, 200, 255)))
                 .build(),
             discarding());
 
