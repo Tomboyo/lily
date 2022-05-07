@@ -5,9 +5,9 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import java.io.Writer;
 
 class SimpleFactory extends JsonFactory {
+
   @Override
   public JsonGenerator createGenerator(Writer w) {
-    // TODO: feature AUTO_CLOSE_TARGET?
-    return new SimpleGenerator(w);
+    return new SimpleGenerator(w, ",");
   }
 }

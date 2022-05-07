@@ -7,7 +7,6 @@ import java.io.Writer;
 class SimpleExplodeFactory extends JsonFactory {
   @Override
   public JsonGenerator createGenerator(Writer w) {
-    // TODO: feature AUTO_CLOSE_TARGET?
-    return new SimpleExplodeGenerator(w);
+    return new SimpleGenerator(w, "=");
   }
 }

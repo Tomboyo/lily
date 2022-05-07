@@ -1,62 +1,81 @@
 package com.github.tomboyo.lily.http.encoding;
 
 import com.fasterxml.jackson.core.Base64Variant;
-import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.base.GeneratorBase;
 import java.io.IOException;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-// explode? empty string array            object
-// y        n/a   blue   blue,black,brown R=100,G=200,B=150
-// n        n/a   blue   blue,black,brown R,100,G,200,B,150
+/**
+ * Implements simple parameter encoding.
+ *
+ * <p>See https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#style-examples.
+ */
 public class SimpleGenerator extends GeneratorBase {
 
   private final Writer writer;
+  private final String fieldSeparator;
 
-  private boolean inObject = false;
-  private boolean tailField = false;
+  private boolean inArray = false;
+  private boolean isFirstArrayElement = true;
+  private boolean isFirstObjectField = true;
 
-  public SimpleGenerator(Writer writer) {
-    super(0, (ObjectCodec) null);
+  public SimpleGenerator(Writer writer, String fieldSeparator) {
+    super(0, null);
     this.writer = writer;
+    this.fieldSeparator = fieldSeparator;
+  }
+
+  private void writeSeparator() throws IOException {
+    if (inArray) {
+      if (isFirstArrayElement) {
+        isFirstArrayElement = false;
+      } else {
+        writer.write(",");
+      }
+    }
   }
 
   @Override
-  public void writeStartArray() throws IOException {}
+  public void writeStartArray() throws IOException {
+    inArray = true;
+    isFirstArrayElement = true;
+  }
 
   @Override
-  public void writeEndArray() throws IOException {}
+  public void writeEndArray() throws IOException {
+    inArray = false;
+  }
 
   @Override
   public void writeStartObject() throws IOException {
-    inObject = true;
+    isFirstObjectField = true;
   }
 
   @Override
-  public void writeEndObject() throws IOException {
-    inObject = false;
-  }
+  public void writeEndObject() throws IOException {}
 
   @Override
   public void writeFieldName(String name) throws IOException {
-    if (tailField) {
-      writer.write(",");
+    if (isFirstObjectField) {
+      isFirstObjectField = false;
+    } else {
+      writer.write(fieldSeparator);
     }
     writer.write(name);
-    writer.write(",");
-    tailField = true;
+    writer.write("=");
   }
 
   @Override
   public void writeString(String text) throws IOException {
+    writeSeparator();
     writer.write(text);
   }
 
   @Override
   public void writeString(char[] buffer, int offset, int len) throws IOException {
-    writer.write(buffer, offset, len);
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -96,31 +115,37 @@ public class SimpleGenerator extends GeneratorBase {
 
   @Override
   public void writeNumber(int v) throws IOException {
+    writeSeparator();
     writer.write(Integer.toString(v));
   }
 
   @Override
   public void writeNumber(long v) throws IOException {
+    writeSeparator();
     writer.write(Long.toString(v));
   }
 
   @Override
   public void writeNumber(BigInteger v) throws IOException {
+    writeSeparator();
     writer.write(v.toString());
   }
 
   @Override
   public void writeNumber(double v) throws IOException {
+    writeSeparator();
     writer.write(Double.toString(v));
   }
 
   @Override
   public void writeNumber(float v) throws IOException {
+    writeSeparator();
     writer.write(Float.toString(v));
   }
 
   @Override
   public void writeNumber(BigDecimal v) throws IOException {
+    writeSeparator();
     writer.write(v.toString());
   }
 
@@ -130,10 +155,15 @@ public class SimpleGenerator extends GeneratorBase {
   }
 
   @Override
-  public void writeBoolean(boolean state) throws IOException {}
+  public void writeBoolean(boolean state) throws IOException {
+    writeSeparator();
+    writer.write(Boolean.toString(state));
+  }
 
   @Override
-  public void writeNull() throws IOException {}
+  public void writeNull() throws IOException {
+    throw new UnsupportedOperationException();
+  }
 
   @Override
   public void flush() throws IOException {
