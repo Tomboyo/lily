@@ -1,7 +1,6 @@
 package com.github.toboyo.lily.http.encoding;
 
 import static com.github.tomboyo.lily.http.encoding.Encoding.simple;
-import static com.github.tomboyo.lily.http.encoding.Encoding.simpleExplode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
@@ -54,50 +53,10 @@ public class EncodingTest {
             arguments("number,7", new Singleton(7))));
   }
 
-  /** The same as simpleSource, but objects use `k=v,k=v` format instead of `k,v,k,v`. */
-  static Stream<Arguments> simpleExplodeSource() {
-    return Stream.of(
-        /*
-         * Primitives
-         */
-        arguments("101", BigInteger.valueOf(101)),
-        arguments("101", 101L),
-        arguments("1", 1),
-        arguments("10.1", BigDecimal.valueOf(10.1)),
-        arguments("1.2", 1.2d),
-        arguments("1.2", 1.2f),
-        arguments("Foo", "Foo"),
-        // RFC3339 (ISO8601) full-date
-        arguments("2000-10-01", LocalDate.of(2000, 10, 1)),
-        // RFC3339 (ISO8601) date-time
-        arguments(
-            "2000-10-01T06:30:25.00052Z",
-            OffsetDateTime.of(2000, 10, 1, 6, 30, 25, 520_000, ZoneOffset.UTC)),
-        arguments("false", false),
-        /*
-         * Arrays
-         */
-        arguments("123,cats,22.34", List.of(123, "cats", 22.34)),
-        arguments(
-            "123",
-            List.of(123),
-            /*
-             * Objects
-             */
-            arguments("number=5,text=Foo", new Multiton(5, "Foo")),
-            arguments("number=7", new Singleton(7))));
-  }
-
   @ParameterizedTest
   @MethodSource("simpleSource")
   public void simpleTest(String expected, Object actual) throws JsonProcessingException {
     assertEquals(expected, simple(actual));
-  }
-
-  @ParameterizedTest
-  @MethodSource("simpleExplodeSource")
-  public void simpleExplodeTest(String expected, Object actual) throws JsonProcessingException {
-    assertEquals(expected, simpleExplode(actual));
   }
 
   @JsonPropertyOrder({"number", "text"})

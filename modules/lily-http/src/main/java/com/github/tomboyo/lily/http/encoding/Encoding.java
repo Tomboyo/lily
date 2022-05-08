@@ -12,19 +12,10 @@ public class Encoding {
       new ObjectMapper(new SimpleFactory())
           .registerModule(new JavaTimeModule())
           .configure(WRITE_DATES_AS_TIMESTAMPS, false);
-  private static final ObjectMapper simpleExplodeMapper =
-      new ObjectMapper(new SimpleExplodeFactory())
-          .registerModule(new JavaTimeModule())
-          .configure(WRITE_DATES_AS_TIMESTAMPS, false);
 
   private Encoding() {}
 
-  // TODO: this api
   public static String simple(Object o) throws JsonProcessingException {
     return simpleMapper.writer().writeValueAsString(o);
-  }
-
-  public static String simpleExplode(Object o) throws JsonProcessingException {
-    return simpleExplodeMapper.writeValueAsString(o);
   }
 }

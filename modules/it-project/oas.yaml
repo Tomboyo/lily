@@ -40,9 +40,9 @@ paths:
             application/json:
               schema:
                 $ref: RequestAndResponseResponse
-  /parametersSimpleObjectRef/{pathParam}:
+  /simpleParameterStyle/{pathParam}:
     get:
-      operationId: parametersSimpleObjectRef
+      operationId: simpleParameterStyle
       parameters:
         - name: pathParam
           in: path
@@ -50,20 +50,13 @@ paths:
           schema:
             $ref: '#/components/schemas/RGB'
           style: simple
-      responses:
-        204:
-          description: 'Success'
-  /parametersSimpleExplodeObjectRef/{pathParam}:
-    get:
-      operationId: parametersSimpleExplodeObjectRef
-      parameters:
-        - name: pathParam
-          in: path
+        - name: headerParam
+          in: header
           required: true
           schema:
-            $ref: '#/components/schemas/RGB'
-          style: simple
-          explode: true
+            type: array
+            items:
+              type: number
       responses:
         204:
           description: 'Success'
