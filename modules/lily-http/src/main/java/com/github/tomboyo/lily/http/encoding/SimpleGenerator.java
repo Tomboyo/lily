@@ -8,23 +8,22 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 /**
- * Implements simple parameter encoding.
+ * Expands all objects according to RFC6570 simple string expansion.
  *
- * <p>See https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#style-examples.
+ * <p>See https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#style-examples
+ * and https://datatracker.ietf.org/doc/html/rfc6570#section-3.2.2.
  */
 public class SimpleGenerator extends GeneratorBase {
 
   private final Writer writer;
-  private final String fieldSeparator;
 
   private boolean inArray = false;
   private boolean isFirstArrayElement = true;
   private boolean isFirstObjectField = true;
 
-  public SimpleGenerator(Writer writer, String fieldSeparator) {
+  public SimpleGenerator(Writer writer) {
     super(0, null);
     this.writer = writer;
-    this.fieldSeparator = fieldSeparator;
   }
 
   private void writeSeparator() throws IOException {
@@ -61,10 +60,10 @@ public class SimpleGenerator extends GeneratorBase {
     if (isFirstObjectField) {
       isFirstObjectField = false;
     } else {
-      writer.write(fieldSeparator);
+      writer.write(",");
     }
     writer.write(name);
-    writer.write("=");
+    writer.write(",");
   }
 
   @Override
