@@ -143,7 +143,7 @@ components:
           properties:
             bar:
               type: string
-    # An alias for arrays of a scalar type.
+    # An alias for a scalar type.
     MyScalarAlias:
       type: string
     # An alias for some other component.
