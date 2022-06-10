@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 'Check formatting'
-      - uses: actions/checkout@v3
-      - run: |
+        uses: actions/checkout@v3
+        run: |
           ./mvnw spotless:check
   mvn-verify:
     name: 'Run tests'
     runs-on: ubuntu-latest
     steps:
       - name: 'mvn verify'
-      - uses: actions/checkout@v3
-      - run: |
+        uses: actions/checkout@v3
+        run: |
           ./mvnw verify
