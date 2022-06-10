@@ -14,14 +14,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - run: './mvnw spotless:check'
-  format-comment:
-    name: 'Add spotless:apply comment'
-    runs-on: ubuntu-latest
-    if: ${{ github.event.spotless-check.conclusion != 'success' }}
-    steps:
+      - id: spotless-check
+        run: './mvnw spotless:check'
       - name: Comment on PR
         uses: peter-evans/commit-comment@v1
+        if: ${{steps.spotless-check.conclusion == 'failure'}}
         with: 
           body: |
             `./mvnw spotless:check` failed. Please run `./mvnw spotless:apply` and update your PR.
