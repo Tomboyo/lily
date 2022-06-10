@@ -15,6 +15,24 @@ jobs:
           distribution: temurin
           java-version: '17'
       - run: './mvnw spotless:check'
+  format-comment:
+    name: 'Add spotless:apply comment'
+    runs-on: ubuntu-latest
+    if: ${{ github.event.spotless-check.conclusion != 'success' }}
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v3
+        with: 
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            var fs = require('fs');
+            var issue_number = Number(fs.readFileSync('./NR'));
+            await github.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue_number,
+              body: '`./mvnw spotless:check` failed. Please run `./mvnw spotless:apply` and update your PR.'
+            });
   mvn-verify:
     name: 'Run tests'
     runs-on: ubuntu-latest
