@@ -9,17 +9,17 @@ jobs:
     name: 'spotless:check'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out branch
-        uses: actions/checkout@v3
-      - name: Check formatting
-        run: |
-          ./mvnw spotless:check
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+      - run: './mvnw spotless:check'
   mvn-verify:
     name: 'Run tests'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out branch
-        uses: actions/checkout@v3
-      - name: mvn verify
-        run: |
-          ./mvnw verify
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+      - run: './mvnw verify'
