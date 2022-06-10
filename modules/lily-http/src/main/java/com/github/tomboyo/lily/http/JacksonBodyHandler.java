@@ -11,12 +11,10 @@ import java.util.function.Supplier;
 /** Deserialize a response body with a Jackson {@Code ObjectMapper}. */
 public class JacksonBodyHandler<T> implements HttpResponse.BodyHandler<Supplier<T>> {
 
-  private final ObjectMapper      objectMapper;
-  private final TypeReference<T>
-          type;
+  private final ObjectMapper objectMapper;
+  private final TypeReference<T> type;
 
-  public JacksonBodyHandler(ObjectMapper objectMapper, 
-              TypeReference<T> type) {
+  public JacksonBodyHandler(ObjectMapper objectMapper, TypeReference<T> type) {
     this.objectMapper = objectMapper;
     this.type = type;
   }
