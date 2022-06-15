@@ -13,9 +13,18 @@ public class Encoding {
           .registerModule(new JavaTimeModule())
           .configure(WRITE_DATES_AS_TIMESTAMPS, false);
 
+  private static final ObjectMapper formExplodeMapper =
+      new ObjectMapper(new FormExplodeFactory())
+          .registerModule(new JavaTimeModule())
+          .configure(WRITE_DATES_AS_TIMESTAMPS, false);
+
   private Encoding() {}
 
   public static String simple(Object o) throws JsonProcessingException {
     return simpleMapper.writer().writeValueAsString(o);
+  }
+
+  public static String formExplode(Object o) throws JsonProcessingException {
+    return formExplodeMapper.writer().writeValueAsString(o);
   }
 }
