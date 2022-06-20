@@ -22,17 +22,62 @@ Treat the OAS document as source code.
 
 == Plan
 
-We will follow an iterative approach from this point forward. To start, we define integration tests in the `it-project` module which demonstrate realistic use-cases based on hand-written java.net.http code. Once we have captured a use-case, we then add support to Lily which makes (part of) that case easier to implement, such as by adding support functions or new categories of code generation. After many iterations, these cases will largely be implemented using generated code and Lily support. At this point, Lily will be a mature solution.
+Our goal is to create a library that users could reasonably download and use as soon as possible. The library will do very little, but each release will add incremental value to the library. The rough steps along out path are as follows:
+
+. First, establish helper functions in the lily-http project that users can use to simplify using the java.net.http library along with Jackson. For example, this includes RFC6570 parameter encoding (e.g. exploded form style parameter encoding for query parameters) and Jackson-integrated body publishers and body handlers for sending and receiving http requests.
+
+. Next, generate a fluent API from the user's OAS which exposes HttpRequest.Builder factories for each OAS operation. These factories initially do nothing other than instantiate HttpRequest.Builder instances. The api looks something like the following:
++
+[source,java]
+----
+var myService = MyService.builder()
+  .httpClient(createMyHttpClient())
+  .build();
+HttpRequestBuilder request = myService
+  .allOperations()
+  .createBlogPost()
+  .request(); // == HttpRequest.builder().build();
+myService.client() // the java.net.http client myService was built with
+  .send(request);
+----
+
+. From here, successively add features to the API, such as fluent parameter arguments, generated request/response objects, and so on. The API might evolve over time to look like this:
++
+[source,java]
+----
+myService
+  .blogOperations() // operations with the "blog" tag in the OAS
+  .createBlogPost()
+  .author(...)
+  .writtenOn(...)
+  .contents(new BlogPost(...))
+  .send() // returns a HttpResponse<CreateBlogPostResponse> object
+----
 
 == Design
 
-Lily is a layered API with "high-level" layers that orchestrate full requests using generated code and "low-level" layers that help the developer implement requests from scratch if necessary. High-level layers always allow the developer to move into lower-levels so that the developer can override Lily to work around flaws in Lily, the upstream OAS, or other environmental issues.
+Lily is a layered API with "high-level" layers that orchestrate full requests using generated code and "low-level" layers that help the developer implement requests from scratch if necessary. High-level layers always allow the developer to move into lower-levels so that the developer can override Lily to work around flaws in Lily, the upstream OAS, or other environmental issues. For example, a user might write code like the following:
+
+[source,java]
+----
+var request = myService
+  .blogOperations()
+  .createBlogPost()
+  .author(...)
+  .writtenOn(...)
+  .content(...)
+  // Dip into the java.net.http API to work around OAS or Lily limitations
+  .request(builder -> builder // java.net.http.HttpRequest.Builder
+        .header("MissingFromTheOas", "Foo")
+        .header("NotSupportedByLilyYet", "Bar"))
+  .sendAsync();
+----
 
 Lily helps the developer where it is able, but gets out of the way when requested. With Lily, simple things are _easy_, and complex things are _possible_.
 
 == Quick Tour
 
-Lily is composed of three modules in the `modules` directory:
+Lily is composed of four modules in the `modules` directory:
 
 - `it-project` is an integration test project and living example of the compiler in action. The pom shows how to configure Lily in a maven build. The OAS shows what Lily supports. Test cases demonstrate where Lily lends support to HTTP clients. Check out the generated-sources directory under `target/` to see how it compiles OAS definitions.
 
