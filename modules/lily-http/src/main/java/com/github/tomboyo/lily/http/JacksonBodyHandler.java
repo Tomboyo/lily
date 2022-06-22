@@ -8,28 +8,25 @@ import java.io.UncheckedIOException;
 import java.net.http.HttpResponse;
 import java.util.function.Supplier;
 
-/** Deserialize a response body with a Jackson {@Code ObjectMapper}. */
-public class JacksonBodyHandler<T> implements HttpResponse.BodyHandler<Supplier<T>> {
+public class JacksonBodyHandler {
+  private JacksonBodyHandler() {}
 
-  private final ObjectMapper objectMapper;
-  private final TypeReference<T> type;
-
-  public JacksonBodyHandler(ObjectMapper objectMapper, TypeReference<T> type) {
-    this.objectMapper = objectMapper;
-    this.type = type;
-  }
-
-  @Override
-  public HttpResponse.BodySubscriber<Supplier<T>> apply(HttpResponse.ResponseInfo responseInfo) {
-    return HttpResponse.BodySubscribers.<InputStream, Supplier<T>>mapping(
-        HttpResponse.BodySubscribers.ofInputStream(),
-        (InputStream is) ->
-            () -> {
-              try (is) {
-                return objectMapper.readValue(is, type);
-              } catch (IOException e) {
-                throw new UncheckedIOException("Unable to deserialize http response", e);
-              }
-            });
+  /**
+   * Return a body handler which deserializes JSON objects of the given type using the provided
+   * object mapper.
+   */
+  public static <T> HttpResponse.BodyHandler<Supplier<T>> of(
+      ObjectMapper objectMapper, TypeReference<T> type) {
+    return (info) ->
+        HttpResponse.BodySubscribers.<InputStream, Supplier<T>>mapping(
+            HttpResponse.BodySubscribers.ofInputStream(),
+            (InputStream is) ->
+                () -> {
+                  try (is) {
+                    return objectMapper.readValue(is, type);
+                  } catch (IOException e) {
+                    throw new UncheckedIOException("Unable to deserialize http response", e);
+                  }
+                });
   }
 }

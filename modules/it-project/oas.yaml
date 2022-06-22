@@ -4,95 +4,38 @@ info:
   description: "An example OAS document to be compiled to Java source"
   version: 0.1.0
 paths:
-  /requestAndResponseInline:
-    post:
-      operationId: requestAndResponseInline
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                foo:
-                  type: string
+  # This API contains multiple tags
+  /pets/{id}:
+    get:
+      operationId: getPetExists
+      tags:
+        - dogs
+        - cats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        200:
-          description: "Success"
+        "200":
+          description: Pet found
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  bar:
+                  name:
                     type: string
-  /requestAndResponseRef:
-    post:
-      operationId: requestAndResponseRef
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: RequestAndResponseRequest
-      responses:
-        200:
-          description: "Success"
-          content:
-            application/json:
-              schema:
-                $ref: RequestAndResponseResponse
-  /simpleParameterStyle/{pathParam}:
+                  age:
+                    type: integer
+  # This API contains no tags
+  /status:
     get:
-      operationId: simpleParameterStyle
-      parameters:
-        - name: pathParam
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/RGB'
-          style: simple
-        - name: headerParam
-          in: header
-          required: true
-          schema:
-            type: array
-            items:
-              type: number
+      operationId: getStatus
       responses:
-        204:
-          description: 'Success'
-  /multipleTags:
-    get:
-      operationId: getMultipleTags
-      tags:
-        - tagA
-        - tagB
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MyObject'
-      responses:
-        "200":
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MyObject'
-  /noTags:
-    get:
-      operationId: getNoTags
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MyObject'
-      responses:
-        "200":
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MyObject'
+        "204":
+          description: OK
 components:
   schemas:
     # An object with fields of every scalar type

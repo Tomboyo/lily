@@ -14,9 +14,8 @@ import com.github.tomboyo.lily.compiler.ast.AstClass;
 import com.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import com.github.tomboyo.lily.compiler.ast.AstField;
 import com.github.tomboyo.lily.compiler.ast.AstOperation;
-import com.github.tomboyo.lily.compiler.ast.AstOperationsClass;
-import com.github.tomboyo.lily.compiler.ast.AstOperationsClassAlias;
 import com.github.tomboyo.lily.compiler.ast.AstReference;
+import com.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
@@ -46,10 +45,10 @@ public class AstToJava {
       return self.renderAstClassAlias(astClassAlias);
     } else if (ast instanceof AstApi astApi) {
       return self.renderAstAPi(astApi);
-    } else if (ast instanceof AstOperationsClass astOperationsClass) {
-      return self.renderAstOperationClass(astOperationsClass);
-    } else if (ast instanceof AstOperationsClassAlias astOperationsClassAlias) {
-      return self.renderAstOperationClassAlias(astOperationsClassAlias);
+    } else if (ast instanceof AstTaggedOperations astTaggedOperations) {
+      return self.renderAstTaggedOperations(astTaggedOperations);
+    } else if (ast instanceof AstOperation astOperation) {
+      return self.renderAstOperation(astOperation);
     } else {
       throw new IllegalArgumentException("Unsupported AST: " + ast);
     }
@@ -128,127 +127,78 @@ public class AstToJava {
             """
             package {{packageName}};
             public class {{className}} {
-              private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
-              private final java.net.http.HttpClient httpClient;
-
-              public {{className}}(
-                  com.fasterxml.jackson.databind.ObjectMapper objectMapper,
-                  java.net.http.HttpClient httpClient
-              ) {
-                this.objectMapper = objectMapper;
-                this.httpClient = httpClient;
-              }
-
-              {{#operations}}
+              {{#tags}}
               {{! Note: Tag types are never parameterized }}
-              public {{fqReturnType}} {{operationName}}() {
-                return new {{fqReturnType}}(this.objectMapper, this.httpClient);
+              public {{fqReturnType}} {{methodName}}() {
+                return new {{fqReturnType}}();
               }
 
-              {{/operations}}
+              {{/tags}}
             }
             """,
             "renderAstApi",
             Map.of(
                 "packageName", ast.packageName(),
                 "className", capitalCamelCase(ast.name()),
-                "operations",
-                    ast.astOperationsAliases().stream()
+                "tags",
+                    ast.taggedOperations().stream()
                         .map(
-                            alias ->
+                            tag ->
                                 Map.of(
-                                    "fqReturnType", fqn(alias),
-                                    "operationName", lowerCamelCase(alias.name())))
+                                    "fqReturnType", fqn(tag),
+                                    "methodName", lowerCamelCase(tag.name())))
                         .collect(toList())));
 
     return new Source(filePath(ast), content);
   }
 
-  private Source renderAstOperationClass(AstOperationsClass ast) {
+  private Source renderAstTaggedOperations(AstTaggedOperations ast) {
     var content =
         writeString(
             """
             package {{packageName}};
             public class {{className}} {
-              private {{className}}() {}
 
-            {{! Operations are complex, so render them separately. }}
-            {{{operations}}}
+              {{#operations}}
+              {{! Note: Operation types are never parameterized }}
+              public {{fqReturnType}} {{methodName}}() {
+                return new {{fqReturnType}}();
+              }
+
+              {{/operations}}
             }
             """,
-            "renderAstOperationClass",
+            "renderAstTaggedOperations",
             Map.of(
                 "packageName", ast.packageName(),
                 "className", capitalCamelCase(ast.name()),
                 "operations",
                     ast.operations().stream()
-                        .map(this::renderOperation)
-                        .collect(Collectors.joining("\n"))));
+                        .map(
+                            operation ->
+                                Map.of(
+                                    "fqReturnType", fqn(operation),
+                                    "methodName", operation.name()))
+                        .collect(toList())));
 
     return new Source(filePath(ast), content);
   }
 
-  private String renderOperation(AstOperation ast) {
-    return writeString(
-        """
-              public static com.github.tomboyo.lily.http.HttpHelper<
-                  {{{fqpResponseName}}}
-              > {{operationName}}(
-                  com.fasterxml.jackson.databind.ObjectMapper objectMapper,
-                  java.net.http.HttpClient httpClient
-              ) {
-                return new com.github.tomboyo.lily.http.HttpHelper(
-                    httpClient,
-                    new com.github.tomboyo.lily.http.JacksonBodyHandler(
-                        objectMapper,
-                        new com.fasterxml.jackson.core.type.TypeReference<{{{fqpResponseName}}}>(){}),
-                    java.net.http.HttpRequest.newBuilder());
-              }
-            """,
-        "renderOperation",
-        Map.of(
-            // TODO: real response type
-            "fqpResponseName", "java.lang.String", "operationName", lowerCamelCase(ast.id())));
-  }
-
-  private Source renderAstOperationClassAlias(AstOperationsClassAlias ast) {
+  private Source renderAstOperation(AstOperation ast) {
     var content =
         writeString(
             """
-          package {{packageName}};
-          public class {{className}} {
-            private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
-            private final java.net.http.HttpClient httpClient;
-
-            public {{className}}(
-                com.fasterxml.jackson.databind.ObjectMapper objectMapper,
-                java.net.http.HttpClient httpClient
-            ) {
-              this.objectMapper = objectMapper;
-              this.httpClient = httpClient;
-            }
-
-            {{#operations}}
-            public com.github.tomboyo.lily.http.HttpHelper<{{{fqpResponseName}}}> {{operationName}}() {
-              return {{operationsClassName}}.{{operationName}}(this.objectMapper, this.httpClient);
-            }
-            {{/operations}}
+        package {{packageName}};
+        public class {{className}} {
+          public java.net.http.HttpRequest.Builder requestBuilder() {
+            return java.net.http.HttpRequest.newBuilder();
           }
-          """,
-            "renderAstOperationClassAlias",
+        }
+        """,
+            "renderAstOperation",
             Map.of(
                 "packageName", ast.packageName(),
-                "className", capitalCamelCase(ast.name()),
-                "operations",
-                    ast.aliasedOperations().stream()
-                        .map(
-                            operation ->
-                                Map.of(
-                                    // TODO: use real response type
-                                    "fqpResponseName", "java.lang.String",
-                                    "operationsClassName", fqn(ast.operationsSingleton()),
-                                    "operationName", lowerCamelCase(operation.id())))
-                        .collect(toList())));
+                "className", capitalCamelCase(ast.name())));
 
     return new Source(filePath(ast), content);
   }

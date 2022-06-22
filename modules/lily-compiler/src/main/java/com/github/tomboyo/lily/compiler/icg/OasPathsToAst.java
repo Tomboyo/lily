@@ -8,12 +8,9 @@ import static java.util.stream.Collectors.toSet;
 import com.github.tomboyo.lily.compiler.ast.Ast;
 import com.github.tomboyo.lily.compiler.ast.AstApi;
 import com.github.tomboyo.lily.compiler.ast.AstOperation;
-import com.github.tomboyo.lily.compiler.ast.AstOperationsClass;
-import com.github.tomboyo.lily.compiler.ast.AstOperationsClassAlias;
-import com.github.tomboyo.lily.compiler.ast.AstReference;
+import com.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -34,66 +31,41 @@ public class OasPathsToAst {
   }
 
   private Stream<Ast> evaluate(Map<String, PathItem> paths) {
-    var operations =
-        paths.entrySet().stream()
-            .flatMap(entry -> evaluate(entry.getKey(), entry.getValue()))
-            .collect(toSet());
+    var tagsAndOperations =
+        paths.entrySet().stream().flatMap(entry -> evaluate(entry.getValue())).collect(toSet());
 
-    var operationsByTag =
-        operations.stream()
-            .flatMap(operation -> operation.tags().stream().map(tag -> new Pair<>(tag, operation)))
-            .collect(groupingBy(Pair::key, mapping(Pair::value, toSet())));
-
-    var aliases =
-        operationsByTag.entrySet().stream()
+    var operations = tagsAndOperations.stream().map(Pair::value);
+    var taggedOperations =
+        tagsAndOperations.stream()
+            .flatMap(pair -> pair.key().stream().map(tag -> new Pair<>(tag, pair.value)))
+            .collect(groupingBy(Pair::key, mapping(Pair::value, toSet())))
+            .entrySet()
+            .stream()
             .map(
                 entry ->
-                    new AstOperationsClassAlias(
-                        basePackage,
-                        entry.getKey(),
-                        new AstReference(basePackage, "Operations"),
-                        entry.getValue()))
+                    new AstTaggedOperations(
+                        basePackage, entry.getKey() + "Operations", entry.getValue()))
             .collect(toSet());
 
-    var api =
-        new AstApi(
-            basePackage,
-            "Api",
-            aliases.stream()
-                .map(alias -> new AstReference(alias.packageName(), alias.name()))
-                .collect(toSet()));
-
     return Stream.concat(
-        Stream.of(api, new AstOperationsClass(basePackage, "Operations", operations)),
-        aliases.stream());
+        Stream.concat(operations, taggedOperations.stream()),
+        Stream.of(new AstApi(basePackage, "Api", taggedOperations)));
   }
 
-  private Stream<AstOperation> evaluate(String path, PathItem pathItem) {
+  private Stream<Pair<Set<String>, AstOperation>> evaluate(PathItem pathItem) {
     return pathItem.readOperationsMap().entrySet().stream()
-        .map(entry -> evaluate(path, entry.getKey(), entry.getValue()));
+        .map(entry -> evaluate(entry.getValue()));
   }
 
-  private static AstOperation evaluate(String path, HttpMethod httpMethod, Operation operation) {
+  private Pair<Set<String>, AstOperation> evaluate(Operation operation) {
     Set<String> tags;
     if (operation.getTags() != null) {
       tags = new HashSet<>(operation.getTags());
     } else {
-      tags = Set.of("defaultTag");
+      tags = Set.of("other");
     }
 
-    var method =
-        switch (httpMethod) {
-          case DELETE -> AstOperation.Method.DELETE;
-          case GET -> AstOperation.Method.GET;
-          case HEAD -> AstOperation.Method.HEAD;
-          case OPTIONS -> AstOperation.Method.OPTIONS;
-          case PATCH -> AstOperation.Method.PATCH;
-          case POST -> AstOperation.Method.POST;
-          case PUT -> AstOperation.Method.PUT;
-          case TRACE -> AstOperation.Method.TRACE;
-        };
-
-    requireNonNull(operation.getOperationId(), "TODO: support paths without operations IDs");
-    return new AstOperation(tags, operation.getOperationId(), method, path);
+    requireNonNull(operation.getOperationId(), "Operations must have a unique non-null ID");
+    return new Pair(tags, new AstOperation(basePackage, operation.getOperationId() + "Operation"));
   }
 }
