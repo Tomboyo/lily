@@ -15,7 +15,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - id: spotless-check
-        run: './mvnw -B spotless:check'
+        run: './mvnw -B -ntp spotless:check'
       - name: Comment on PR
         uses: peter-evans/commit-comment@v1
         if: failure()
@@ -31,4 +31,4 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - run: './mvnw -B verify'
+      - run: './mvnw -B -ntp verify'
