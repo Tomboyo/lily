@@ -16,6 +16,7 @@ import com.github.tomboyo.lily.compiler.ast.AstField;
 import com.github.tomboyo.lily.compiler.ast.AstOperation;
 import com.github.tomboyo.lily.compiler.ast.AstReference;
 import com.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
+import com.github.tomboyo.lily.compiler.ast.Fqn;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
@@ -72,7 +73,7 @@ public class AstToJava {
                 "fields",
                 ast.fields().stream().map(this::recordField).collect(Collectors.joining(",\n"))));
 
-    return new Source(filePath(ast), content);
+    return sourceForFqn(ast, content);
   }
 
   private String recordField(AstField field) {
@@ -118,7 +119,7 @@ public class AstToJava {
                 "packageName", ast.packageName(),
                 "recordName", capitalCamelCase(ast.name()),
                 "fqpValueName", fullyQualifiedParameterizedType(ast.aliasedType())));
-    return new Source(filePath(ast), content);
+    return sourceForFqn(ast, content);
   }
 
   private Source renderAstAPi(AstApi ast) {
@@ -149,7 +150,7 @@ public class AstToJava {
                                     "methodName", lowerCamelCase(tag.name())))
                         .collect(toList())));
 
-    return new Source(filePath(ast), content);
+    return sourceForFqn(ast, content);
   }
 
   private Source renderAstTaggedOperations(AstTaggedOperations ast) {
@@ -177,11 +178,11 @@ public class AstToJava {
                         .map(
                             operation ->
                                 Map.of(
-                                    "fqReturnType", fqn(operation),
-                                    "methodName", operation.name()))
+                                    "fqReturnType", fqn(operation.operationClass()),
+                                    "methodName", operation.operationName()))
                         .collect(toList())));
 
-    return new Source(filePath(ast), content);
+    return sourceForFqn(ast, content);
   }
 
   private Source renderAstOperation(AstOperation ast) {
@@ -197,9 +198,13 @@ public class AstToJava {
         """,
             "renderAstOperation",
             Map.of(
-                "packageName", ast.packageName(),
-                "className", capitalCamelCase(ast.name())));
+                "packageName", ast.operationClass().packageName(),
+                "className", capitalCamelCase(ast.operationClass().name())));
 
-    return new Source(filePath(ast), content);
+    return sourceForFqn(ast.operationClass(), content);
+  }
+
+  private static Source sourceForFqn(Fqn fqn, String content) {
+    return new Source(filePath(fqn), Fqns.fqn(fqn), content);
   }
 }

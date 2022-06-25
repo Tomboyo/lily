@@ -8,6 +8,7 @@ import static java.util.stream.Collectors.toSet;
 import com.github.tomboyo.lily.compiler.ast.Ast;
 import com.github.tomboyo.lily.compiler.ast.AstApi;
 import com.github.tomboyo.lily.compiler.ast.AstOperation;
+import com.github.tomboyo.lily.compiler.ast.AstReference;
 import com.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
@@ -66,6 +67,10 @@ public class OasPathsToAst {
     }
 
     requireNonNull(operation.getOperationId(), "Operations must have a unique non-null ID");
-    return new Pair(tags, new AstOperation(basePackage, operation.getOperationId() + "Operation"));
+    return new Pair(
+        tags,
+        new AstOperation(
+            operation.getOperationId(),
+            new AstReference(basePackage, operation.getOperationId() + "Operation")));
   }
 }
