@@ -12,6 +12,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -22,16 +23,16 @@ public class LilyCompiler {
   /**
    * Generate java source code from an OpenAPI V3 YAML specification file.
    *
-   * @param oasPath The location of the OpenAPI YAML specification to compile.
+   * @param oasUri The URI of the OpenAPI YAML specification to compile.
    * @param outputDir The parent directory to save java generated source code files.
    * @param basePackage The name of the base package for all generated java source files.
    * @return The set of Path objects for each generated file.
    * @throws OasParseException If compilation fails for any reason.
    */
-  public static Set<Path> compile(Path oasPath, Path outputDir, String basePackage)
+  public static Set<Path> compile(URI oasUri, Path outputDir, String basePackage)
       throws OasParseException {
     var openAPI =
-        requireValidV3OpenAPI(new OpenAPIParser().readLocation(oasPath.toString(), null, null));
+        requireValidV3OpenAPI(new OpenAPIParser().readLocation(oasUri.toString(), null, null));
     return compile(openAPI, outputDir, basePackage);
   }
 

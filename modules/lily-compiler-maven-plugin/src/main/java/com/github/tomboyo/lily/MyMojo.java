@@ -4,6 +4,7 @@ import static org.apache.maven.plugins.annotations.LifecyclePhase.GENERATE_SOURC
 
 import com.github.tomboyo.lily.compiler.LilyCompiler;
 import com.github.tomboyo.lily.compiler.OasParseException;
+import java.net.URI;
 import java.nio.file.Paths;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -16,8 +17,8 @@ public class MyMojo extends AbstractMojo {
   @Parameter(defaultValue = "${project}")
   private MavenProject project;
 
-  @Parameter(property = "source", required = true)
-  private String source;
+  @Parameter(property = "uri", required = true)
+  private String uri;
 
   @Parameter(
       defaultValue = "${project.build.directory}/generated-sources",
@@ -31,7 +32,7 @@ public class MyMojo extends AbstractMojo {
   public void execute() throws MojoExecutionException {
     try {
       getLog().info("Compiling OAS to " + outputDirectory);
-      LilyCompiler.compile(source, Paths.get(outputDirectory), basePackage);
+      LilyCompiler.compile(URI.create(uri), Paths.get(outputDirectory), basePackage);
     } catch (OasParseException | RuntimeException e) {
       throw new MojoExecutionException("Cannot compile OAS document", e);
     }
