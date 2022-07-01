@@ -32,7 +32,7 @@ public class MyMojo extends AbstractMojo {
   public void execute() throws MojoExecutionException {
     try {
       getLog().info("Compiling OAS to " + outputDirectory);
-      LilyCompiler.compile(URI.create(uri), Paths.get(outputDirectory), basePackage);
+      LilyCompiler.compile(URI.create(uri), Paths.get(outputDirectory), basePackage, false);
     } catch (OasParseException | RuntimeException e) {
       throw new MojoExecutionException("Cannot compile OAS document", e);
     }
