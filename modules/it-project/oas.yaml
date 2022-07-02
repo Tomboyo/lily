@@ -1,0 +1,158 @@
+openapi: 3.0.2
+info:
+  title: Example
+  description: "An example OAS document to be compiled to Java source"
+  version: 0.1.0
+paths:
+  # This API contains multiple tags
+  /pets/{id}:
+    get:
+      operationId: getPetExists
+      tags:
+        - dogs
+        - cats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pet found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  age:
+                    type: integer
+  # This API contains no tags
+  /status:
+    get:
+      operationId: getStatus
+      responses:
+        "204":
+          description: OK
+components:
+  schemas:
+    # An object with fields of every scalar type
+    MyObject:
+      type: object
+      properties:
+        a:
+          type: boolean
+        b:
+          type: integer
+        c:
+          type: integer
+          format: int32
+        d:
+          type: integer
+          format: int64
+        e:
+          type: number
+        f:
+          type: number
+          format: double
+        g:
+          type: number
+          format: float
+        h:
+          type: string
+        i:
+          type: string
+          format: password
+        j:
+          type: string
+          format: byte
+        k:
+          type: string
+          format: binary
+        l:
+          type: string
+          format: date
+        m:
+          type: string
+          format: date-time
+    # An object with an in-lined object definition
+    MyObject2:
+      type: object
+      properties:
+        foo:
+          type: object
+          properties:
+            bar:
+              type: string
+    # An alias for a scalar type.
+    MyScalarAlias:
+      type: string
+    # An alias for some other component.
+    MyRefAlias:
+      $ref: '#/components/schemas/MyObject2'
+    # An alias for arrays of a referenced type.
+    MyRefArrayAlias:
+      type: array
+      items:
+        $ref: "#/components/schemas/MyObject2"
+    # An alias for arrays of a scalar type.
+    MyScalarArrayAlias:
+      type: array
+      items:
+        type: number
+    # An alias for arrays of an in-lined object type
+    MyInlineObjectArrayAlias:
+      type: array
+      items:
+        type: object
+        properties:
+          foo:
+            type: string
+    # An alias for composite arrays of a referenced type
+    MyCompositeRefArrayAlias:
+      type: array
+      items:
+        type: array
+        items:
+          $ref: '#/components/schemas/MyObject2'
+    # An alias for composite arrays of a scalar type
+    MyCompositeScalarArrayAlias:
+      type: array
+      items:
+        type: array
+        items:
+          type: string
+    # An alias for composite arrays of an in-lined object type
+    MyCompositeInlineObjectArrayAlias:
+      type: array
+      items:
+        type: array
+        items:
+          type: object
+          properties:
+            foo:
+              type: string
+    RequestAndResponseRequest:
+      type: object
+      properties:
+        foo:
+          type: string
+    RequestAndResponseResponse:
+      type: object
+      properties:
+        foo:
+          type: string
+    RGB:
+      type: object
+      properties:
+        r:
+          type: integer
+          format: int32
+        g:
+          type: integer
+          format: int32
+        b:
+          type: integer
+          format: int32
