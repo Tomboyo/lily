@@ -3,6 +3,7 @@ package com.github.tomboyo.lily.compiler;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Objects.requireNonNullElse;
 
 import com.github.tomboyo.lily.compiler.cg.AstToJava;
 import com.github.tomboyo.lily.compiler.cg.Source;
@@ -15,9 +16,9 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,7 @@ public class LilyCompiler {
   private static OpenAPI requireValidV3OpenAPI(
       SwaggerParseResult parseResult, boolean allowWarnings) throws OasParseException {
     boolean hasWarnings =
-        Stream.ofNullable(parseResult.getMessages())
+        requireNonNullElse(parseResult.getMessages(), List.of()).stream()
             .peek(e -> LOGGER.warn("OpenAPI parse error: {}", e))
             .findAny()
             .isPresent();
