@@ -79,7 +79,7 @@ Lily helps the developer where it is able, but gets out of the way when requeste
 
 Lily is composed of four modules in the `modules` directory:
 
-- `it-project` is an integration test project and living example of the compiler in action. The pom shows how to configure Lily in a maven build. The OAS shows what Lily supports. Test cases demonstrate where Lily lends support to HTTP clients. Check out the generated-sources directory under `target/` to see how it compiles OAS definitions.
+- `example` compiles the v3.0 petstore YAML as an example. Check out the generated-sources directory after a build to see what Lily generates.
 
 - `lily-compiler-maven-plugin` is a teensy-weensy Maven plugin that reads configuration from the pom and hands it off to the compiler project.
 

@@ -14,7 +14,7 @@ public class AstGenerator {
         OasSchemaToAst.evaluate(
             basePackage,
             requireNonNullElse(openAPI.getComponents(), defaultComponents()).getSchemas()),
-        OasPathsToAst.evaluate(basePackage, openAPI.getPaths()));
+        OasPathsToAst.evaluate(basePackage, requireNonNullElse(openAPI.getPaths(), Map.of())));
   }
 
   private static Components defaultComponents() {

@@ -11,7 +11,7 @@
     <modules>
         <module>modules/lily-compiler</module>
         <module>modules/lily-compiler-maven-plugin</module>
-        <module>modules/it-project</module>
+        <module>modules/example</module>
         <module>modules/lily-http</module>
     </modules>
 
@@ -34,6 +34,14 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.11</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
