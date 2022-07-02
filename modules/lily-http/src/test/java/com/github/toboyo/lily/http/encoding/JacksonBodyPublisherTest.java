@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import com.github.tomboyo.lily.http.JacksonBodyPublisher;
+import io.github.tomboyo.lily.http.JacksonBodyPublisher;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;

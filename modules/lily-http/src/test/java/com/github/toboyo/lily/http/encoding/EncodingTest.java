@@ -1,7 +1,7 @@
 package com.github.toboyo.lily.http.encoding;
 
-import static com.github.tomboyo.lily.http.encoding.Encoding.formExplode;
-import static com.github.tomboyo.lily.http.encoding.Encoding.simple;
+import static io.github.tomboyo.lily.http.encoding.Encoding.formExplode;
+import static io.github.tomboyo.lily.http.encoding.Encoding.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
