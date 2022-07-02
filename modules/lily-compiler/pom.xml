@@ -13,6 +13,7 @@
 
     <artifactId>lily-compiler</artifactId>
     <packaging>jar</packaging>
+    <description>The Lily OAS-to-java compiler.</description>
 
     <properties>
         <main.project.dir>${project.basedir}/../..</main.project.dir>

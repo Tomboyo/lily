@@ -12,6 +12,7 @@
 
     <artifactId>lily-compiler-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
+    <description>Maven plugin to compile OAS documents using Lily.</description>
 
     <prerequisites>
         <maven>${maven.version}</maven>

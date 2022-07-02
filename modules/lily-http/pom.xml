@@ -13,6 +13,7 @@
 
     <artifactId>lily-http</artifactId>
     <packaging>jar</packaging>
+    <description>Supporting classes for generated Lily APIs.</description>
 
     <dependencyManagement>
         <dependencies>

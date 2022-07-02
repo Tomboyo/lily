@@ -13,7 +13,7 @@
 
     <artifactId>example</artifactId>
     <packaging>jar</packaging>
-    <name>Petstore example project</name>
+    <description>Example project</description>
 
     <pluginRepositories>
         <pluginRepository>

@@ -8,6 +8,33 @@
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Parent project for the Lily OAS compiler.</description>
+    <url>https://github.com/Tomboyo/lily</url>
+
+    <scm>
+        <connection>scm:git:git@github.com:Tomboyo/lily.git</connection>
+        <developerConnection>scm:git:git@github.com:Tomboyo/lily.git</developerConnection>
+        <url>https://github.com/Tomboyo/lily</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://www.opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Thomas Simmons</name>
+            <email>tomasimmons@gmail.com</email>
+            <organization>Thomas Simmons</organization>
+            <organizationUrl>https://tomboyo.github.io/</organizationUrl>
+        </developer>
+    </developers>
+
+
     <modules>
         <module>modules/lily-compiler</module>
         <module>modules/lily-compiler-maven-plugin</module>
@@ -42,9 +69,13 @@
             <version>1.2.11</version>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.0.0-M6</version>
+            </plugin>
             <plugin>
                 <!-- Runs before integration testing to ensure the plugin module and dependent poms are installed where
                      the it-project can find them. -->
