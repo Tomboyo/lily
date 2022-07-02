@@ -30,6 +30,10 @@ public class CompilerSupport {
   }
 
   private static void deleteAllInDirectoryRecursively(Path dir) throws IOException {
+    if (!dir.toFile().exists() || !dir.toFile().isDirectory()) {
+      return;
+    }
+
     try (var stream = Files.newDirectoryStream(dir)) {
       for (var path : stream) {
         if (path.toFile().isDirectory()) {
