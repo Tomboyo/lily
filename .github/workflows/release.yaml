@@ -38,7 +38,7 @@ jobs:
           server-password: MAVEN_PASSWORD
       - name: Publish version ${{ needs.check_tag.outputs.version }}
         run: |
-          ./mvnw deploy
+          ./mvnw deploy \
             -B \
             -ntp \
             -P release \
