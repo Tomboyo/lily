@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.tomboyo.lily</groupId>
         <artifactId>lily</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -36,7 +36,7 @@
             <plugin>
                 <groupId>io.github.tomboyo.lily</groupId>
                 <artifactId>lily-compiler-maven-plugin</artifactId>
-                <version>0.1.0-SNAPSHOT</version>
+                <version>${revision}</version>
                 <configuration>
                     <uri>https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/petstore.yaml</uri>
                     <!-- <outputDir>target/generated-sources</outputDir> -->

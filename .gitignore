@@ -2,3 +2,5 @@ target/
 .idea/
 .gradle/
 *.iml
+*pom.xml.versionsBackup
+**/pom.xml.versionsBackup
