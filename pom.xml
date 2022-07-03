@@ -86,21 +86,21 @@
                             <goal>deploy</goal>
                         </goals>
                         <phase>pre-integration-test</phase>
+                        <configuration>
+                            <!-- URLs must be defined in each project. Maven doesn't have a consistent reference to the multi-
+                                 module root dir. -->
+                            <altDeploymentRepository>
+                                it-repository::${it.repository.url}
+                            </altDeploymentRepository>
+                            <altReleaseDeploymentRepository>
+                                it-repository::${it.repository.url}
+                            </altReleaseDeploymentRepository>
+                            <altSnapshotDeploymentRepository>
+                                it-repository::${it.repository.url}
+                            </altSnapshotDeploymentRepository>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <!-- URLs must be defined in each project. Maven doesn't have a consistent reference to the multi-
-                         module root dir. -->
-                    <altDeploymentRepository>
-                        it-repository::${it.repository.url}
-                    </altDeploymentRepository>
-                    <altReleaseDeploymentRepository>
-                        it-repository::${it.repository.url}
-                    </altReleaseDeploymentRepository>
-                    <altSnapshotDeploymentRepository>
-                        it-repository::${it.repository.url}
-                    </altSnapshotDeploymentRepository>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
@@ -136,21 +136,6 @@
 <!--            <module>modules/example</module>-->
                 <module>modules/lily-http</module>
             </modules>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <version>2.5.3</version>
-                        <configuration>
-                            <autoVersionSubmodules>true</autoVersionSubmodules>
-                            <useReleaseProfile>false</useReleaseProfile>
-                            <releaseProfiles>release</releaseProfiles>
-                            <goals>deploy</goals>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
             <distributionManagement>
                 <snapshotRepository>
                     <id>ossrh</id>
