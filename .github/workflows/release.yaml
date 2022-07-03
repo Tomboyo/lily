@@ -15,7 +15,7 @@ jobs:
       is_maven_release: ${{ steps.check-tag.outputs.is_maven_release }}
       tag: ${{ steps.check-tag.outputs.tag }}
     steps:
-      - name: check tag GITHUB_REF=${{ GITHUB_REF }} tag=${{ tag }}
+      - name: check tag tag=${{ steps.check-tag.outputs.tag }}
         id: check-tag
         run: |
           # set VALUE to the given tag or github_ref
