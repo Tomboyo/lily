@@ -4,7 +4,7 @@
 
     <groupId>io.github.tomboyo.lily</groupId>
     <artifactId>lily</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
@@ -15,7 +15,7 @@
         <connection>scm:git:git@github.com:Tomboyo/lily.git</connection>
         <developerConnection>scm:git:git@github.com:Tomboyo/lily.git</developerConnection>
         <url>https://github.com/Tomboyo/lily</url>
-      <tag>lily-0.1.0</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <licenses>
