@@ -15,12 +15,12 @@ jobs:
       is_maven_release: ${{ steps.check-tag.outputs.is_maven_release }}
       tag: ${{ steps.check-tag.outputs.tag }}
     steps:
-      - name: check tag tag=${{ steps.check-tag.outputs.tag }}
+      - name: check tag tag=${{ github.event.inputs.tag }}
         id: check-tag
         run: |
           # set VALUE to the given tag or github_ref
-          if [[ ! -z "${{ steps.check-tag.outputs.tag }}" ]]; then
-            VALUE="${{ steps.check-tag.outputs.tag }}"
+          if [[ ! -z "${{ github.event.inputs.tag }}" ]]; then
+            VALUE="${{ github.event.inputs.tag }}"
           else
             VALUE="GITHUB_REF"
           fi
