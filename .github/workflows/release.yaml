@@ -14,10 +14,11 @@ jobs:
         id: check-tag
         run: |
           # parse the version out of VALUE
-          if [[ "${{ github.event.release.tag_name }}" =~ v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-            TAG=${VALUE#*v}
+          TAG="${{ github.event.release.tag_name }}"
+          if [[ $TAG =~ v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            VERSION=${TAG#*v}
             echo "::set-output name=is_maven_release::true"
-            echo "::set-output name=version::$TAG"
+            echo "::set-output name=version::$VERSION"
           else
             echo "::set-output name=is_maven_release::false"
           fi
