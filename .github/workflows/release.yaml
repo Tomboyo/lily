@@ -40,6 +40,7 @@ jobs:
         run: |
           ./mvnw deploy \
             --batch-mode \
+            -P release \
             -Drevision=${{ needs.check_tag.outputs.version }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
