@@ -38,9 +38,9 @@ jobs:
           server-password: MAVEN_PASSWORD
       - name: Publish version ${{ needs.check_tag.outputs.version }}
         run: |
-#          ./mvnw deploy \
-#            --batch-mode \
-#            -Drevision=${{ needs.check_tag.outputs.version }}
+          ./mvnw deploy \
+            --batch-mode \
+            -Drevision=${{ needs.check_tag.outputs.version }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
