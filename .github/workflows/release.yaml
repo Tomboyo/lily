@@ -19,8 +19,8 @@ jobs:
         id: check-tag
         run: |
           # set VALUE to the given tag or github_ref
-          if [[ ! -z "${{ tag }}" ]]; then
-            VALUE="${{ tag }}"
+          if [[ ! -z "${{ steps.check-tag.outputs.tag }}" ]]; then
+            VALUE="${{ steps.check-tag.outputs.tag }}"
           else
             VALUE="GITHUB_REF"
           fi
