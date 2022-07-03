@@ -35,12 +35,11 @@ jobs:
           server-id: ossrh
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
-      - name: Publish package
+      - name: Publish version ${{ needs.check_tag.outputs.version }}
         run: |
-          echo "Would deploy ${{ needs.check_tag.outputs.tag }}"
 #          ./mvnw deploy \
 #            --batch-mode \
-#            -Drevision=$RELEASE_VERSION
+#            -Drevision=${{ needs.check_tag.outputs.version }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
