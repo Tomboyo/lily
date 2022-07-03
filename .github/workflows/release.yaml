@@ -3,30 +3,18 @@ on:
   release:
     types:
       - created
-  workflow_dispatch:
-    inputs:
-      tag:
-        required: true
-        description: 'Release tag (vX.Y.Z)'
 jobs:
   check_tag:
     runs-on: ubuntu-latest
     outputs:
       is_maven_release: ${{ steps.check-tag.outputs.is_maven_release }}
-      tag: ${{ steps.check-tag.outputs.tag }}
+      version: ${{ steps.check-tag.outputs.version }}
     steps:
-      - name: check tag tag=${{ github.event.inputs.tag }} github.ref=${{ github.ref }}
+      - name: check tag (${{ github.event.release.tag_name }})
         id: check-tag
         run: |
-          # set VALUE to the given tag or github_ref
-          if [[ ! -z "${{ github.event.inputs.tag }}" ]]; then
-            VALUE="${{ github.event.inputs.tag }}"
-          else
-            VALUE="${{ github.ref }}"
-          fi
-
           # parse the version out of VALUE
-          if [[ VALUE =~ refs\/tags\/release\/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+          if [[ "${{ github.event.release.tag_name }}" =~ refs\/tags\/release\/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             TAG=${VALUE#*v}
             echo "::set-output name=is_maven_release::true"
             echo "::set-output name=tag::$TAG"
