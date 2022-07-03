@@ -1,4 +1,4 @@
-name: verify-pr
+name: release
 on:
   release:
     types:
