@@ -14,7 +14,7 @@ jobs:
         id: check-tag
         run: |
           # parse the version out of VALUE
-          if [[ "${{ github.event.release.tag_name }}" =~v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+          if [[ "${{ github.event.release.tag_name }}" =~ v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             TAG=${VALUE#*v}
             echo "::set-output name=is_maven_release::true"
             echo "::set-output name=tag::$TAG"
