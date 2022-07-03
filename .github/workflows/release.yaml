@@ -5,7 +5,7 @@ on:
       - created
   workflow_dispatch:
     inputs:
-      GITHUB_REF:
+      tag:
         required: true
         description: 'Release tag (vX.Y.Z)'
 jobs:
@@ -13,12 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       is_maven_release: ${{ steps.check-tag.outputs.is_maven_release }}
+      tag: ${{ steps.check-tag.outputs.tag }}
     steps:
-      - name: check tag ${{ github.ref }}
+      - name: check tag GITHUB_REF=${{ GITHUB_REF }} tag=${{ tag }}
         id: check-tag
         run: |
-          if [[${{ github.ref }} =~ refs\/tags\/release\/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+          # set VALUE to the given tag or github_ref
+          if [[ ! -z "${{ tag }}" ]]; then
+            VALUE="${{ tag }}"
+          else
+            VALUE="GITHUB_REF"
+          fi
+
+          # parse the version out of VALUE
+          if [[ VALUE =~ refs\/tags\/release\/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            TAG=${VALUE#*v}
             echo "::set-output name=is_maven_release::true"
+            echo "::set-output name=tag::$TAG"
           else
             echo "::set-output name=is_maven_release::false"
           fi
@@ -36,11 +47,9 @@ jobs:
           server-id: ossrh
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
-      - name: Extract version
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Publish package
         run: |
-          echo "Would deploy $RELEASE_VERSION"
+          echo "Would deploy ${{ needs.check_tag.outputs.tag }}"
 #          ./mvnw deploy \
 #            --batch-mode \
 #            -Drevision=$RELEASE_VERSION
