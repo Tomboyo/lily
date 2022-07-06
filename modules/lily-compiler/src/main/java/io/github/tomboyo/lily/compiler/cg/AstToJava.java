@@ -188,8 +188,8 @@ public class AstToJava {
             """
         package {{packageName}};
         public class {{className}} {
-          public java.net.http.HttpRequest.Builder requestBuilder() {
-            return java.net.http.HttpRequest.newBuilder();
+          public java.net.http.HttpRequest request() {
+            return java.net.http.HttpRequest.newBuilder().build();
           }
         }
         """,
