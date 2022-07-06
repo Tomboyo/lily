@@ -1,4 +1,4 @@
-package com.github.toboyo.lily.http.encoding;
+package io.github.toboyo.lily.http.encoding;
 
 import static io.github.tomboyo.lily.http.encoding.Encoding.formExplode;
 import static io.github.tomboyo.lily.http.encoding.Encoding.simple;

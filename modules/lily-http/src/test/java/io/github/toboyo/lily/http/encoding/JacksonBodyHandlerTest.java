@@ -1,4 +1,4 @@
-package com.github.toboyo.lily.http.encoding;
+package io.github.toboyo.lily.http.encoding;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.any;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
