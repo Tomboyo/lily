@@ -33,7 +33,7 @@ public class PathsTest {
   }
 
   @Test
-  public void foo() throws Exception {
+  void hasOperationsApiForDogsTag() throws Exception {
     assertEquals(
         "com.example.pathstest.DogsOperations",
         Class.forName("com.example.pathstest.Api")
@@ -41,7 +41,10 @@ public class PathsTest {
             .getReturnType()
             .getName(),
         "api.dogsOperations() returns DogsOperations");
+  }
 
+  @Test
+  void hasOperationsApiForCatsTag() throws Exception {
     assertEquals(
         "com.example.pathstest.CatsOperations",
         Class.forName("com.example.pathstest.Api")
@@ -49,7 +52,10 @@ public class PathsTest {
             .getReturnType()
             .getName(),
         "api.catsOperations() returns CatsOperations");
+  }
 
+  @Test
+  void dogsOperationsContainsGetPetsOperation() throws Exception {
     assertEquals(
         "com.example.pathstest.GetPetsOperation",
         Class.forName("com.example.pathstest.DogsOperations")
@@ -57,7 +63,10 @@ public class PathsTest {
             .getReturnType()
             .getName(),
         "api.dogsOperations().getPets() returns the GetPetsOperation");
+  }
 
+  @Test
+  void catsOperationsContainsGetPetsOperation() throws Exception {
     assertEquals(
         "com.example.pathstest.GetPetsOperation",
         Class.forName("com.example.pathstest.CatsOperations")
