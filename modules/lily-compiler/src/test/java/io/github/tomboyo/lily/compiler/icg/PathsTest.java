@@ -4,75 +4,79 @@ import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.generateAndCom
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /** Tests the APIs generated from OAS paths. */
 public class PathsTest {
 
-  @BeforeAll
-  public static void beforeAll() throws Exception {
-    generateAndCompile(
-        "com.example.pathstest",
-        """
-        openapi: 3.0.2
-        info:
-          title: MultipleTags
-          description: "An operation with multiple tags"
-          version: 0.1.0
-        paths:
-          /pets/:
-            get:
-              operationId: getPets
-              tags:
-                - dogs
-                - cats
-              responses:
-                "204":
-                  description: OK
-        """);
-  }
+  @Nested
+  class TaggedOperationsApiTests {
+    @BeforeAll
+    static void beforeAll() throws Exception {
+      generateAndCompile(
+          "com.example.pathstest",
+          """
+          openapi: 3.0.2
+          info:
+            title: MultipleTags
+            description: "An operation with multiple tags"
+            version: 0.1.0
+          paths:
+            /pets/:
+              get:
+                operationId: getPets
+                tags:
+                  - dogs
+                  - cats
+                responses:
+                  "204":
+                    description: OK
+          """);
+    }
 
-  @Test
-  void hasOperationsApiForDogsTag() throws Exception {
-    assertEquals(
-        "com.example.pathstest.DogsOperations",
-        Class.forName("com.example.pathstest.Api")
-            .getMethod("dogsOperations")
-            .getReturnType()
-            .getName(),
-        "api.dogsOperations() returns DogsOperations");
-  }
+    @Test
+    void hasOperationsApiForDogsTag() throws Exception {
+      assertEquals(
+          "com.example.pathstest.DogsOperations",
+          Class.forName("com.example.pathstest.Api")
+              .getMethod("dogsOperations")
+              .getReturnType()
+              .getName(),
+          "api.dogsOperations() returns DogsOperations");
+    }
 
-  @Test
-  void hasOperationsApiForCatsTag() throws Exception {
-    assertEquals(
-        "com.example.pathstest.CatsOperations",
-        Class.forName("com.example.pathstest.Api")
-            .getMethod("catsOperations")
-            .getReturnType()
-            .getName(),
-        "api.catsOperations() returns CatsOperations");
-  }
+    @Test
+    void hasOperationsApiForCatsTag() throws Exception {
+      assertEquals(
+          "com.example.pathstest.CatsOperations",
+          Class.forName("com.example.pathstest.Api")
+              .getMethod("catsOperations")
+              .getReturnType()
+              .getName(),
+          "api.catsOperations() returns CatsOperations");
+    }
 
-  @Test
-  void dogsOperationsContainsGetPetsOperation() throws Exception {
-    assertEquals(
-        "com.example.pathstest.GetPetsOperation",
-        Class.forName("com.example.pathstest.DogsOperations")
-            .getMethod("getPets")
-            .getReturnType()
-            .getName(),
-        "api.dogsOperations().getPets() returns the GetPetsOperation");
-  }
+    @Test
+    void dogsOperationsContainsGetPetsOperation() throws Exception {
+      assertEquals(
+          "com.example.pathstest.GetPetsOperation",
+          Class.forName("com.example.pathstest.DogsOperations")
+              .getMethod("getPets")
+              .getReturnType()
+              .getName(),
+          "api.dogsOperations().getPets() returns the GetPetsOperation");
+    }
 
-  @Test
-  void catsOperationsContainsGetPetsOperation() throws Exception {
-    assertEquals(
-        "com.example.pathstest.GetPetsOperation",
-        Class.forName("com.example.pathstest.CatsOperations")
-            .getMethod("getPets")
-            .getReturnType()
-            .getName(),
-        "api.catsOperations().getPets() returns the GetPetsOperations");
+    @Test
+    void catsOperationsContainsGetPetsOperation() throws Exception {
+      assertEquals(
+          "com.example.pathstest.GetPetsOperation",
+          Class.forName("com.example.pathstest.CatsOperations")
+              .getMethod("getPets")
+              .getReturnType()
+              .getName(),
+          "api.catsOperations().getPets() returns the GetPetsOperations");
+    }
   }
 }
