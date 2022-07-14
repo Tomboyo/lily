@@ -1,14 +1,21 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.deleteGeneratedSources;
 import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.generateAndCompile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /** Tests the APIs generated from OAS paths. */
 public class PathsTest {
+
+  @AfterAll
+  static void afterAll() throws Exception {
+    deleteGeneratedSources();
+  }
 
   @Nested
   class TaggedOperationsApiTests {

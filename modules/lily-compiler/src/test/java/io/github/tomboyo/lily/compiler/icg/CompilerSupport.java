@@ -13,20 +13,18 @@ import javax.tools.ToolProvider;
 
 public class CompilerSupport {
 
-  private static final Path GENERATED_TEST_SOURCES = Path.of("target", "generated-test-sources");
+  private static final Path GENERATED_SOURCES = Path.of("target", "sources-under-test");
   private static final Path TEST_CLASSES = Path.of("target", "test-classes");
 
   public static void generateAndCompile(String basePackage, String oasContents)
       throws OasParseException {
-    var sourcePaths = LilyCompiler.compile(oasContents, GENERATED_TEST_SOURCES, basePackage, true);
+    var sourcePaths = LilyCompiler.compile(oasContents, GENERATED_SOURCES, basePackage, true);
     compileJava(TEST_CLASSES, sourcePaths);
   }
 
   /** Delete all generated test sources and their compiled classes */
-  public static void deleteGeneratedSourcesAndClasses(String basePackage) throws IOException {
-    var pathString = basePackage.replaceAll("\\.", "/");
-    deleteAllInDirectoryRecursively(TEST_CLASSES.resolve(pathString));
-    deleteAllInDirectoryRecursively(GENERATED_TEST_SOURCES.resolve(pathString));
+  public static void deleteGeneratedSources() throws IOException {
+    deleteAllInDirectoryRecursively(GENERATED_SOURCES);
   }
 
   private static void deleteAllInDirectoryRecursively(Path dir) throws IOException {

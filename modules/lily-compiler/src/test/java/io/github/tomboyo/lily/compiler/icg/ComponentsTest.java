@@ -1,7 +1,7 @@
 package io.github.tomboyo.lily.compiler.icg;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
-import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.deleteGeneratedSourcesAndClasses;
+import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.deleteGeneratedSources;
 import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.generateAndCompile;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -19,6 +19,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Named;
@@ -39,7 +40,6 @@ public class ComponentsTest {
 
   @BeforeAll
   public static void beforeAll() throws OasParseException, IOException {
-    deleteGeneratedSourcesAndClasses("com.example.componentstest");
     generateAndCompile(
         "com.example.componentstest",
         """
@@ -172,6 +172,11 @@ public class ComponentsTest {
                       type: integer
                       format: int32
             """);
+  }
+
+  @AfterAll
+  void afterAll() throws Exception {
+    deleteGeneratedSources();
   }
 
   @ParameterizedTest
