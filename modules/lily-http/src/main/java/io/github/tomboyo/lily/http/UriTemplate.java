@@ -26,6 +26,12 @@ public class UriTemplate {
     return this;
   }
 
+  /**
+   * Create a URI from the given template and interpolated, URL-encoded parameters.
+   *
+   * @return The finished URI.
+   * @throws UriTemplateException If the URI cannot be generated for any reason.
+   */
   public URI toURI() {
     var pattern = Pattern.compile("\\{([^{}]+)}"); // "{parameterName}"
     var uri =
