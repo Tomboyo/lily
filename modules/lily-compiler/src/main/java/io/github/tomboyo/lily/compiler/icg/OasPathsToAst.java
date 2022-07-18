@@ -13,6 +13,7 @@ import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -71,6 +72,7 @@ public class OasPathsToAst {
         tags,
         new AstOperation(
             operation.getOperationId(),
-            new AstReference(basePackage, operation.getOperationId() + "Operation")));
+            new AstReference(
+                basePackage, operation.getOperationId() + "Operation", List.of(), false)));
   }
 }

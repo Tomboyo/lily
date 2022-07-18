@@ -175,7 +175,7 @@ public class ComponentsTest {
   }
 
   @AfterAll
-  void afterAll() throws Exception {
+  static void afterAll() throws Exception {
     deleteGeneratedSources();
   }
 

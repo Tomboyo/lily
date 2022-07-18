@@ -11,9 +11,8 @@ import java.util.stream.Stream;
 public class AstGenerator {
   public static Stream<Ast> evaluate(String basePackage, OpenAPI openAPI) {
     return Stream.concat(
-        OasSchemaToAst.evaluate(
-            basePackage,
-            requireNonNullElse(openAPI.getComponents(), defaultComponents()).getSchemas()),
+        OasComponentsToAst.evaluate(
+            basePackage, requireNonNullElse(openAPI.getComponents(), defaultComponents())),
         OasPathsToAst.evaluate(basePackage, requireNonNullElse(openAPI.getPaths(), Map.of())));
   }
 

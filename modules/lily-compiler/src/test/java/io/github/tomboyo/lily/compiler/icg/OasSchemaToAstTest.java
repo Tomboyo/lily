@@ -62,7 +62,7 @@ class OasSchemaToAstTest {
     public void scalarObjectProperties(
         String type, String format, String javaPackage, String javaClass) {
       var ast =
-          OasSchemaToAst.evaluate(
+          OasComponentsToAst.evaluate(
                   "com.foo",
                   Map.of(
                       "MyComponent",
@@ -76,7 +76,9 @@ class OasSchemaToAstTest {
               new AstClass(
                   "com.foo",
                   "MyComponent",
-                  List.of(new AstField(new AstReference(javaPackage, javaClass), "myField")))),
+                  List.of(
+                      new AstField(
+                          new AstReference(javaPackage, javaClass, List.of(), true), "myField")))),
           ast,
           "Scalar object properties evaluate to standard java type fields");
     }
@@ -93,7 +95,7 @@ class OasSchemaToAstTest {
       Logger logger = mock(Logger.class);
 
       var ast =
-          OasSchemaToAst.evaluate(
+          OasComponentsToAst.evaluate(
                   logger,
                   "com.foo",
                   Map.of(
@@ -111,7 +113,9 @@ class OasSchemaToAstTest {
               new AstClass(
                   "com.foo",
                   "MyComponent",
-                  List.of(new AstField(new AstReference(javaPackage, javaClass), "myField")))),
+                  List.of(
+                      new AstField(
+                          new AstReference(javaPackage, javaClass, List.of(), true), "myField")))),
           ast,
           "Unsupported formats evaluate to default (fall-back) types");
 
@@ -126,7 +130,7 @@ class OasSchemaToAstTest {
     @Test
     public void componentReferences() {
       var ast =
-          OasSchemaToAst.evaluate(
+          OasComponentsToAst.evaluate(
                   "com.foo",
                   Map.of(
                       "MyComponent",
@@ -145,7 +149,9 @@ class OasSchemaToAstTest {
                   "com.foo",
                   "MyComponent",
                   List.of(
-                      new AstField(new AstReference("com.foo", "MyReferencedComponent"), "myRef"))),
+                      new AstField(
+                          new AstReference("com.foo", "MyReferencedComponent", List.of(), false),
+                          "myRef"))),
               new AstClass("com.foo", "MyReferencedComponent", List.of())),
           ast,
           "$ref types evaluate to references to other classes");
@@ -156,7 +162,7 @@ class OasSchemaToAstTest {
       @Test
       public void inlineRefArray() {
         var ast =
-            OasSchemaToAst.evaluate(
+            OasComponentsToAst.evaluate(
                     "com.foo",
                     Map.of(
                         "MyComponent",
@@ -179,7 +185,7 @@ class OasSchemaToAstTest {
       public void inlineScalarArrays(
           String type, String format, String javaPackage, String javaClass) {
         var ast =
-            OasSchemaToAst.evaluate(
+            OasComponentsToAst.evaluate(
                     "com.foo",
                     Map.of(
                         "MyComponent",
@@ -200,7 +206,8 @@ class OasSchemaToAstTest {
                     "MyComponent",
                     List.of(
                         new AstField(
-                            astListOf(new AstReference(javaPackage, javaClass)), "myField")))),
+                            astListOf(new AstReference(javaPackage, javaClass, List.of(), true)),
+                            "myField")))),
             ast,
             "In-line arrays of scalar items evaluate to Lists with type parameters");
       }
@@ -208,7 +215,7 @@ class OasSchemaToAstTest {
       @Test
       public void inlineObjectArrays() {
         var ast =
-            OasSchemaToAst.evaluate(
+            OasComponentsToAst.evaluate(
                     "com.foo",
                     Map.of(
                         "MyComponent",
@@ -234,12 +241,18 @@ class OasSchemaToAstTest {
                             new AstReference(
                                 "java.util",
                                 "List",
-                                List.of(new AstReference("com.foo.mycomponent", "MyItemsItem"))),
+                                List.of(
+                                    new AstReference(
+                                        "com.foo.mycomponent", "MyItemsItem", List.of(), false)),
+                                true),
                             "myItems"))),
                 new AstClass(
                     "com.foo.mycomponent",
                     "MyItemsItem",
-                    List.of(new AstField(new AstReference("java.lang", "String"), "myString")))),
+                    List.of(
+                        new AstField(
+                            new AstReference("java.lang", "String", List.of(), true),
+                            "myString")))),
             ast,
             "in-line array item definitions evaluate to references to new classes in nested"
                 + " packages");
@@ -248,7 +261,7 @@ class OasSchemaToAstTest {
       @Test
       public void compositeInlineArrays() {
         var ast =
-            OasSchemaToAst.evaluate(
+            OasComponentsToAst.evaluate(
                     "com.foo",
                     Map.of(
                         "MyComponent",
@@ -283,12 +296,16 @@ class OasSchemaToAstTest {
     @Test
     public void rootRefComponent() {
       var ast =
-          OasSchemaToAst.evaluate(
+          OasComponentsToAst.evaluate(
                   "com.foo", Map.of("MyComponent", new Schema().$ref("#/components/schemas/MyRef")))
               .collect(toSet());
 
       assertEquals(
-          Set.of(new AstClassAlias("com.foo", "MyComponent", new AstReference("com.foo", "MyRef"))),
+          Set.of(
+              new AstClassAlias(
+                  "com.foo",
+                  "MyComponent",
+                  new AstReference("com.foo", "MyRef", List.of(), false))),
           ast);
     }
 
@@ -297,14 +314,16 @@ class OasSchemaToAstTest {
     public void rootScalarComponents(
         String type, String format, String javaPackage, String javaClass) {
       var ast =
-          OasSchemaToAst.evaluate(
+          OasComponentsToAst.evaluate(
                   "com.foo", Map.of("MyAliasComponent", new Schema().type(type).format(format)))
               .collect(toSet());
 
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  "com.foo", "MyAliasComponent", new AstReference(javaPackage, javaClass))),
+                  "com.foo",
+                  "MyAliasComponent",
+                  new AstReference(javaPackage, javaClass, List.of(), true))),
           ast,
           "Top-level components with standard types evaluate to type aliases");
     }
@@ -312,7 +331,7 @@ class OasSchemaToAstTest {
     @Test
     public void rootRefArray() {
       var ast =
-          OasSchemaToAst.evaluate(
+          OasComponentsToAst.evaluate(
                   "com.foo",
                   Map.of(
                       "MyAlias",
@@ -323,7 +342,9 @@ class OasSchemaToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  "com.foo", "MyAlias", astListOf(new AstReference("com.foo", "MyComponent")))),
+                  "com.foo",
+                  "MyAlias",
+                  astListOf(new AstReference("com.foo", "MyComponent", List.of(), false)))),
           ast,
           "Array components of $refs evaluate to aliases of lists of the referenced type");
     }
@@ -331,7 +352,7 @@ class OasSchemaToAstTest {
     @Test
     public void rootScalarArray() {
       var ast =
-          OasSchemaToAst.evaluate(
+          OasComponentsToAst.evaluate(
                   "com.foo",
                   Map.of("MyAlias", new ArraySchema().items(new Schema<>().type("string"))))
               .collect(toSet());
@@ -345,7 +366,7 @@ class OasSchemaToAstTest {
     @Test
     public void rootInlineObjectArray() {
       var ast =
-          OasSchemaToAst.evaluate(
+          OasComponentsToAst.evaluate(
                   "com.foo",
                   Map.of(
                       "MyAlias",
@@ -360,7 +381,7 @@ class OasSchemaToAstTest {
               new AstClassAlias(
                   "com.foo",
                   "MyAlias",
-                  astListOf(new AstReference("com.foo.myalias", "MyAliasItem"))),
+                  astListOf(new AstReference("com.foo.myalias", "MyAliasItem", List.of(), false))),
               new AstClass(
                   "com.foo.myalias", "MyAliasItem", List.of(new AstField(astString(), "foo")))),
           ast,
@@ -373,7 +394,7 @@ class OasSchemaToAstTest {
       @Test
       public void rootCompositeRefArray() {
         var ast =
-            OasSchemaToAst.evaluate(
+            OasComponentsToAst.evaluate(
                     "com.foo",
                     Map.of(
                         "MyAlias",
@@ -389,7 +410,8 @@ class OasSchemaToAstTest {
                 new AstClassAlias(
                     "com.foo",
                     "MyAlias",
-                    astListOf(astListOf(new AstReference("com.foo", "MyComponent"))))),
+                    astListOf(
+                        astListOf(new AstReference("com.foo", "MyComponent", List.of(), false))))),
             ast,
             "Array components of arrays evaluate to aliases of lists of lists");
       }
@@ -397,7 +419,7 @@ class OasSchemaToAstTest {
       @Test
       public void rootCompositeScalarArray() {
         var ast =
-            OasSchemaToAst.evaluate(
+            OasComponentsToAst.evaluate(
                     "com.foo",
                     Map.of(
                         "MyAlias",
@@ -414,7 +436,7 @@ class OasSchemaToAstTest {
       @Test
       public void rootCompositeInlineObjectArray() {
         var ast =
-            OasSchemaToAst.evaluate(
+            OasComponentsToAst.evaluate(
                     "com.foo",
                     Map.of(
                         "MyAlias",
@@ -434,7 +456,10 @@ class OasSchemaToAstTest {
                 new AstClassAlias(
                     "com.foo",
                     "MyAlias",
-                    astListOf(astListOf(new AstReference("com.foo.myalias", "MyAliasItem"))))),
+                    astListOf(
+                        astListOf(
+                            new AstReference(
+                                "com.foo.myalias", "MyAliasItem", List.of(), false))))),
             ast,
             "Array components of arrays evaluate to aliases of lists of lists");
       }
@@ -446,7 +471,7 @@ class OasSchemaToAstTest {
     assertThrows(
         IllegalArgumentException.class,
         () ->
-            OasSchemaToAst.evaluate(
+            OasComponentsToAst.evaluate(
                     "com.foo",
                     Map.of(
                         "MyComponent",
@@ -460,7 +485,7 @@ class OasSchemaToAstTest {
   @Test
   public void inLineObjectDefinition() {
     var ast =
-        OasSchemaToAst.evaluate(
+        OasComponentsToAst.evaluate(
                 "com.foo",
                 Map.of(
                     "MyComponent",
@@ -480,7 +505,9 @@ class OasSchemaToAstTest {
                 "com.foo",
                 "MyComponent",
                 List.of(
-                    new AstField(new AstReference("com.foo.mycomponent", "MyField"), "myField"))),
+                    new AstField(
+                        new AstReference("com.foo.mycomponent", "MyField", List.of(), false),
+                        "myField"))),
             new AstClass(
                 "com.foo.mycomponent",
                 "MyField",

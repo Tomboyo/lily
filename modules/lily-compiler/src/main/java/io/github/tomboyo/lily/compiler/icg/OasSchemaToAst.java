@@ -5,9 +5,9 @@ import static java.util.stream.Collectors.toList;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
-import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.List;
@@ -29,258 +29,44 @@ public class OasSchemaToAst {
     this.basePackage = basePackage;
   }
 
-  public static Stream<Ast> evaluate(String basePackage, Map<String, Schema> schema) {
-    return evaluate(DEFAULT_LOGGER, basePackage, schema);
+  /**
+   * Evaluate an OAS schema to AST, returning an AstReference to the top-level type generated from
+   * the schema.
+   *
+   * @param basePackage The root package under which to generate new types.
+   * @param name The name of the schema, which is used to name types evaluated from the schema.
+   * @param schema The schema to evaluate to AST.
+   * @return A pair describing the root reference and stream of evaluated AST.
+   */
+  public static Pair<AstReference, Stream<Ast>> evaluate(
+      String basePackage, String name, Schema<?> schema) {
+    return evaluate(DEFAULT_LOGGER, basePackage, name, schema);
   }
 
-  public static Stream<Ast> evaluate(
-      Logger logger, String basePackage, Map<String, Schema> schema) {
-    return new OasSchemaToAst(logger, basePackage).evaluate(schema);
+  static Pair<AstReference, Stream<Ast>> evaluate(
+      Logger logger, String basePackage, String name, Schema<?> schema) {
+    return new OasSchemaToAst(logger, basePackage).evaluateSchema(basePackage, name, schema);
   }
 
-  private Stream<Ast> evaluate(Map<String, Schema> schema) {
-    return schema.entrySet().stream()
-        .flatMap(entry -> evaluateRootSchema(entry.getKey(), entry.getValue()));
-  }
-
-  private Stream<Ast> evaluateRootSchema(String schemaName, Schema<?> schema) {
+  private Pair<AstReference, Stream<Ast>> evaluateSchema(
+      String currentPackage, String name, Schema<?> schema) {
     var type = schema.getType();
     if (type == null) {
-      return Stream.of(evaluateRootRef(basePackage, schemaName, schema));
+      return new Pair<>(toBasePackageClassReference(requireNonNull(schema.get$ref())), Stream.of());
     }
 
     return switch (type) {
-      case "integer", "number", "string", "boolean" -> Stream.of(
-          evaluateRootScalar(basePackage, schemaName, schema));
-      case "array" -> evaluateRootArray(basePackage, schemaName, (ArraySchema) schema);
-      case "object" -> evaluateInteriorComponent(basePackage, schemaName, schema);
+      case "integer", "number", "string", "boolean" -> new Pair<>(
+          toStdLibAstReference(schema.getType(), schema.getFormat()), Stream.of());
+      case "array" -> evaluateArray(currentPackage, name, (ArraySchema) schema);
+      case "object" -> evaluateObject(currentPackage, name, schema);
       default -> throw new IllegalArgumentException(("Unexpected type: " + type));
     };
   }
 
-  private AstClassAlias evaluateRootRef(
-      String currentPackage, String schemaName, Schema<?> schema) {
-    return new AstClassAlias(
-        currentPackage, schemaName, toBasePackageClassReference(requireNonNull(schema.get$ref())));
-  }
-
-  /**
-   * Evaluate a root scalar component (i.e. not an object or array) to an alias of some stdlib type.
-   */
-  private AstClassAlias evaluateRootScalar(
-      String currentPackage, String schemaName, Schema<?> schema) {
-    var type = schema.getType();
-    var format = schema.getFormat();
-    return new AstClassAlias(currentPackage, schemaName, toStdLibAstReference(type, format));
-  }
-
-  /** Evaluate a root array component to an alias of {@code List<T>} type. */
-  private Stream<Ast> evaluateRootArray(
-      String currentPackage, String schemaName, ArraySchema schema) {
-    var itemType = schema.getItems().getType();
-    if (itemType == null) {
-      return evaluateRootRefArray(currentPackage, schemaName, schema);
-    } else {
-      return switch (itemType) {
-        case "integer", "number", "string", "boolean" -> evaluateRootScalarArray(
-            currentPackage, schemaName, schema);
-        case "array" -> evaluateRootCompositeArray(currentPackage, schemaName, schema);
-        case "object" -> evaluateRootInlineObjectArray(currentPackage, schemaName, schema);
-        default -> throw new IllegalArgumentException("Unexpected type: " + itemType);
-      };
-    }
-  }
-
-  /** Evaluate a root array whose items are a component $ref to an alias of the referenced type. */
-  private Stream<Ast> evaluateRootRefArray(
-      String currentPackage, String schemaName, ArraySchema schema) {
-    var ref = requireNonNull(schema.getItems().get$ref());
-    return Stream.of(
-        new AstClassAlias(
-            currentPackage,
-            schemaName,
-            StdlibAstReferences.astListOf(toBasePackageClassReference(ref))));
-  }
-
-  /**
-   * Evaluate a root array whose items are a scalar to an alias of {@code List<S>}, where {@code S}
-   * is the scalar type.
-   */
-  private Stream<Ast> evaluateRootScalarArray(
-      String currentPackage, String schemaName, ArraySchema schema) {
-    var itemType = schema.getItems().getType();
-    var itemFormat = schema.getItems().getFormat();
-    return Stream.of(
-        new AstClassAlias(
-            currentPackage,
-            schemaName,
-            StdlibAstReferences.astListOf(toStdLibAstReference(itemType, itemFormat))));
-  }
-
-  /**
-   * Evaluate a root array-of-arrays into an alias of a composite list {@code
-   * List<List<...List<T>...>>}.
-   */
-  private Stream<Ast> evaluateRootCompositeArray(
-      String currentPackage, String schemaName, ArraySchema schema) {
-    var interiorSchema = getFirstNonArrayChildSchema(schema);
-
-    AstReference astReference; // The `T` in List<List<...List<T>...>>
-    Stream<Ast> interiorAst; // The definition of `T` and subordinate types
-    var type = interiorSchema.getType();
-    if (type == null) {
-      var ref = requireNonNull(interiorSchema.get$ref());
-      interiorAst = Stream.of();
-      astReference = toBasePackageClassReference(ref);
-    } else {
-      var format = interiorSchema.getFormat();
-      switch (type) {
-        case "integer", "number", "string", "boolean" -> {
-          interiorAst = Stream.of();
-          astReference = toStdLibAstReference(type, format);
-        }
-        case "object" -> {
-          var interiorPackage = Support.joinPackages(currentPackage, schemaName.toLowerCase());
-          var interiorTypeName = schemaName + "Item";
-          interiorAst = evaluateInteriorObject(interiorPackage, interiorTypeName, interiorSchema);
-          astReference = new AstReference(interiorPackage, interiorTypeName);
-        }
-        default -> throw new IllegalArgumentException("Unexpected type: " + type);
-      }
-    }
-
-    for (int i = 0; i < numberOfArrayChildren(schema); i += 1) {
-      astReference = StdlibAstReferences.astListOf(astReference);
-    }
-
-    var alias =
-        new AstClassAlias(currentPackage, schemaName, StdlibAstReferences.astListOf(astReference));
-
-    return Stream.concat(Stream.of(alias), interiorAst);
-  }
-
-  private Schema<?> getFirstNonArrayChildSchema(ArraySchema root) {
-    Schema<?> current = root;
-    while ("array".equals(current.getType())) {
-      current = ((ArraySchema) current).getItems();
-    }
-    return current;
-  }
-
-  private int numberOfArrayChildren(ArraySchema root) {
-    int result = 0;
-    Schema<?> current = root.getItems();
-    while ("array".equals(current.getType())) {
-      current = ((ArraySchema) current).getItems();
-      result += 1;
-    }
-    return result;
-  }
-
-  /**
-   * Evaluate a root array whose items are in-line defined objects into an alias of {@code List<T>},
-   * where {@code T} is the in-line object type.
-   */
-  private Stream<Ast> evaluateRootInlineObjectArray(
-      String currentPackage, String schemaName, ArraySchema schema) {
-    var itemPackage = Support.joinPackages(currentPackage, schemaName.toLowerCase());
-    var itemName = schemaName + "Item";
-    var objectSchema = schema.getItems();
-    var inlineAst = evaluateInteriorObject(itemPackage, itemName, objectSchema);
-    var aliasAst =
-        new AstClassAlias(
-            currentPackage,
-            schemaName,
-            StdlibAstReferences.astListOf(new AstReference(itemPackage, itemName)));
-    return Stream.concat(Stream.of(aliasAst), inlineAst);
-  }
-
-  /** Evaluate any interior (i.e. non-root) component. */
-  private Stream<Ast> evaluateInteriorComponent(
-      String currentPackage, String schemaName, Schema<?> schema) {
-    var type = schema.getType();
-    if (type == null) {
-      return Stream.of();
-    }
-
-    return switch (type) {
-      case "integer", "number", "string", "boolean" -> Stream.of();
-      case "object" -> evaluateInteriorObject(currentPackage, schemaName, schema);
-      case "array" -> evaluateInteriorArray(currentPackage, schemaName, (ArraySchema) schema);
-      default -> throw new IllegalArgumentException("Unexpected type: " + type);
-    };
-  }
-
-  /** Evaluate any interior (e.g. non-root) component of array type. */
-  private Stream<Ast> evaluateInteriorArray(
-      String currentPackage, String schemaName, ArraySchema schema) {
-    var itemSchema = schema.getItems();
-    var itemType = itemSchema.getType();
-
-    // Only append "Item" to the name if the nested type is actually an object. Otherwise, we end up
-    // with
-    // ThingItemItem...Item in the presence of nested array definitions.
-    if ("object".equals(itemType)) {
-      return evaluateInteriorComponent(currentPackage, schemaName + "Item", itemSchema);
-    } else {
-      return evaluateInteriorComponent(currentPackage, schemaName, itemSchema);
-    }
-  }
-
-  /** Evaluate any interior (e.g. non-root) component of object type */
-  private Stream<Ast> evaluateInteriorObject(
-      String currentPackage, String schemaName, Schema<?> schema) {
-    // This package is "nested" beneath this class. Any nested in-line class definitions are
-    // generated within the interior package.
-    var interiorPackage = Support.joinPackages(currentPackage, schemaName.toLowerCase());
-
-    // 1. Define a new class for this object.
-    Map<String, Schema> properties = Optional.ofNullable(schema.getProperties()).orElse(Map.of());
-    var fields =
-        properties.entrySet().stream()
-            .map(
-                entry -> {
-                  var pName = entry.getKey();
-                  var pSchema = entry.getValue();
-                  var reference = toReference(interiorPackage, pName, pSchema);
-                  return new AstField(reference, pName);
-                })
-            .collect(toList());
-    var exteriorClass = new AstClass(currentPackage, schemaName, fields);
-
-    // 2. Define new classes for interior objects (e.g. in-line object definitions for our fields).
-    // Note that many properties _may not_ warrant AST generation -- those return an empty stream.
-    var interiorClasses =
-        properties.entrySet().stream()
-            .flatMap(
-                entry ->
-                    evaluateInteriorComponent(
-                        interiorPackage,
-                        Support.capitalCamelCase(entry.getKey()),
-                        entry.getValue()));
-
-    return Stream.concat(Stream.of(exteriorClass), interiorClasses);
-  }
-
-  private AstReference toReference(String referentPackage, String schemaName, Schema<?> schema) {
-    var type = schema.getType();
-    var format = schema.getFormat();
-    var ref = schema.get$ref();
-
-    if (type == null) {
-      return toBasePackageClassReference(ref);
-    }
-
-    return switch (type) {
-      case "integer", "number", "string", "boolean" -> toStdLibAstReference(type, format);
-      case "array" -> toListReference(referentPackage, schemaName, schema);
-      case "object" -> new AstReference(referentPackage, schemaName);
-      default -> throw new IllegalArgumentException("Unexpected type: " + type);
-    };
-  }
-
   private AstReference toBasePackageClassReference(String $ref) {
-    return new AstReference(basePackage, $ref.replaceFirst("^#/components/schemas/", ""));
+    return new AstReference(
+        basePackage, $ref.replaceFirst("^#/components/schemas/", ""), List.of(), false);
   }
 
   private AstReference toStdLibAstReference(String type, String format) {
@@ -336,11 +122,74 @@ public class OasSchemaToAst {
     return defaultAst;
   }
 
-  private AstReference toListReference(
-      String referentPackage, String schemaName, Schema<?> schema) {
-    var itemSchema = ((ArraySchema) schema).getItems();
-    var itemName = schemaName + "Item";
-    return new AstReference(
-        "java.util", "List", List.of(toReference(referentPackage, itemName, itemSchema)));
+  private Pair<AstReference, Stream<Ast>> evaluateArray(
+      String currentPackage, String name, ArraySchema arraySchema) {
+    if ("object".equals(arraySchema.getItems().getType())) {
+      /*
+       AST generated from objects in arrays are named similarly to all other objects in that they
+       are defined withi subordinate packages of superior types (if any). They are also given the "Item" suffix. For
+       example:
+
+       1. Suppose the #/components/Cats component is an array containing [arrays of] objects. If
+       the base package is p, then the resulting AstReference should be:
+
+          List<[List<...<]p.CatsItem[>...>]>
+
+       2. Suppose the #/components/Bus component is an object with a "wheels" array parameter
+       which contains [arrays of] objects. Then the resulting AstReference should be:
+
+          List<[List<...<]p.bus.WheelsItem[>...>]>
+
+       Regardless of how many arrays are nested within an array, the Item suffix as appended only
+       once to the referent type name. I.e. we do not generate WheelsItemItem...Item. Furthermore, since arrays do not
+       generate their own
+       types (for exceptions, see OasComponentsToAst), nested arrays do not affect the package
+       name of the referent
+       type.
+      */
+      var interior = evaluateSchema(currentPackage, name + "Item", arraySchema.getItems());
+      return new Pair<>(StdlibAstReferences.astListOf(interior.left()), interior.right());
+    } else {
+      // All types other than Object do not result in new AST, so we do not use the naming strategy
+      // used for objects.
+      var interior = evaluateSchema(currentPackage, name, arraySchema.getItems());
+      return new Pair<>(StdlibAstReferences.astListOf(interior.left()), interior.right());
+    }
+  }
+
+  private Pair<AstReference, Stream<Ast>> evaluateObject(
+      String currentPackage, String name, Schema<?> schema) {
+    /*
+     Generate the AST required to define the fields of this new class. If we define any classes
+     for our fields, we
+     place them in a subordinate package named after this class. For example, if we define the
+     class package.MyClass,
+     then any classes defined for MyClass' fields are defined under the package.myclass package.
+    */
+    var properties = Optional.ofNullable(schema.getProperties()).orElse(Map.of());
+    var interiorPackage = Support.joinPackages(currentPackage, name.toLowerCase());
+    var fieldAndAst =
+        properties.entrySet().stream()
+            .map(
+                entry -> {
+                  var fieldName = entry.getKey();
+                  var fieldSchema = entry.getValue();
+                  var fieldPackage =
+                      fieldSchema.get$ref() == null
+                          ? interiorPackage
+                          : basePackage; // $ref's always point to a base package type.
+                  var refAndAst =
+                      evaluateSchema(
+                          fieldPackage, Support.capitalCamelCase(fieldName), fieldSchema);
+                  return refAndAst.mapLeft(ref -> new AstField(ref, fieldName));
+                })
+            .collect(toList());
+
+    var exteriorClass =
+        new AstClass(currentPackage, name, fieldAndAst.stream().map(Pair::left).collect(toList()));
+    var interiorAst = fieldAndAst.stream().flatMap(Pair::right);
+    return new Pair<>(
+        new AstReference(currentPackage, name, List.of(), false),
+        Stream.concat(Stream.of(exteriorClass), interiorAst));
   }
 }
