@@ -1,8 +1,8 @@
 package io.github.tomboyo.lily.compiler.icg;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.deleteGeneratedSources;
-import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.generateAndCompile;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -29,7 +29,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /** Tests that all generated sources serialize and deserialize to expected values. */
 public class ComponentsTest {
+
   private static final ObjectMapper MAPPER = new ObjectMapper();
+
+  private static String packageName;
 
   static {
     MAPPER
@@ -40,9 +43,9 @@ public class ComponentsTest {
 
   @BeforeAll
   public static void beforeAll() throws OasParseException, IOException {
-    generateAndCompile(
-        "com.example.componentstest",
-        """
+    packageName =
+        compileOas(
+            """
             openapi: 3.0.2
             info:
               title: MultipleTags
@@ -220,7 +223,7 @@ public class ComponentsTest {
   }
 
   private static TestParameter myScalarsObject() throws Exception {
-    var myScalarsObject = Class.forName("com.example.componentstest.MyScalarsObject");
+    var myScalarsObject = Class.forName(packageName + ".MyScalarsObject");
     return new TestParameter(
         """
               {
@@ -266,7 +269,7 @@ public class ComponentsTest {
   }
 
   private static TestParameter myByteAndBinaryObject() throws Exception {
-    var myByteAndBinaryObject = Class.forName("com.example.componentstest.MyByteAndBinaryObject");
+    var myByteAndBinaryObject = Class.forName(packageName + ".MyByteAndBinaryObject");
     return new TestParameter(
         "{ \"a\": [3], \"b\": [7]}",
         myByteAndBinaryObject
@@ -291,8 +294,8 @@ public class ComponentsTest {
   }
 
   private static TestParameter myObject2TestParameter() throws Exception {
-    var myobject2 = Class.forName("com.example.componentstest.MyObject2");
-    var foo = Class.forName("com.example.componentstest.myobject2.Foo");
+    var myobject2 = Class.forName(packageName + ".MyObject2");
+    var foo = Class.forName(packageName + ".myobject2.Foo");
     return new TestParameter(
         "{ \"foo\": { \"bar\": \"value\" } }",
         myobject2
@@ -302,9 +305,9 @@ public class ComponentsTest {
   }
 
   private static TestParameter myRefAliasTestParameter() throws Exception {
-    var myRefAlias = Class.forName("com.example.componentstest.MyRefAlias");
-    var myobject2 = Class.forName("com.example.componentstest.MyObject2");
-    var foo = Class.forName("com.example.componentstest.myobject2.Foo");
+    var myRefAlias = Class.forName(packageName + ".MyRefAlias");
+    var myobject2 = Class.forName(packageName + ".MyObject2");
+    var foo = Class.forName(packageName + ".myobject2.Foo");
     return new TestParameter(
         "{\"foo\": {\"bar\": \"value\"}}",
         myRefAlias
@@ -317,7 +320,7 @@ public class ComponentsTest {
   }
 
   private static TestParameter myScalarAliasTestParameter() throws Exception {
-    var myScalarAlias = Class.forName("com.example.componentstest.MyScalarAlias");
+    var myScalarAlias = Class.forName(packageName + ".MyScalarAlias");
     return new TestParameter(
         "\"value\"",
         myScalarAlias.getMethod("creator", String.class).invoke(null, "value"),
@@ -325,9 +328,9 @@ public class ComponentsTest {
   }
 
   private static TestParameter myRefArrayAliasTestParameter() throws Exception {
-    var myRefArrayAlias = Class.forName("com.example.componentstest.MyRefArrayAlias");
-    var myObject2 = Class.forName("com.example.componentstest.MyObject2");
-    var foo = Class.forName("com.example.componentstest.myobject2.Foo");
+    var myRefArrayAlias = Class.forName(packageName + ".MyRefArrayAlias");
+    var myObject2 = Class.forName(packageName + ".MyObject2");
+    var foo = Class.forName(packageName + ".myobject2.Foo");
     return new TestParameter(
         "[{ \"foo\": { \"bar\": \"value\" } }]",
         myRefArrayAlias
@@ -342,7 +345,7 @@ public class ComponentsTest {
   }
 
   private static TestParameter myScalarArrayAliasTestParameter() throws Exception {
-    var myScalarArrayAlias = Class.forName("com.example.componentstest.MyScalarArrayAlias");
+    var myScalarArrayAlias = Class.forName(packageName + ".MyScalarArrayAlias");
     return new TestParameter(
         "[123]",
         myScalarArrayAlias
@@ -352,11 +355,9 @@ public class ComponentsTest {
   }
 
   private static TestParameter myInlineObjectArrayAliasTestParameter() throws Exception {
-    var myInlineObjectArrayAlias =
-        Class.forName("com.example.componentstest.MyInlineObjectArrayAlias");
+    var myInlineObjectArrayAlias = Class.forName(packageName + ".MyInlineObjectArrayAlias");
     var myInlineObjectArrayAliasItem =
-        Class.forName(
-            "com.example.componentstest.myinlineobjectarrayalias.MyInlineObjectArrayAliasItem");
+        Class.forName(packageName + ".myinlineobjectarrayalias.MyInlineObjectArrayAliasItem");
     return new TestParameter(
         "[{\"foo\": \"foo\"}]",
         myInlineObjectArrayAlias
@@ -369,10 +370,9 @@ public class ComponentsTest {
   }
 
   private static TestParameter myCompositeRefArrayAliasTestParameter() throws Exception {
-    var myCompositeRefArrayAlias =
-        Class.forName("com.example.componentstest.MyCompositeRefArrayAlias");
-    var myObject2 = Class.forName("com.example.componentstest.MyObject2");
-    var foo = Class.forName("com.example.componentstest.myobject2.Foo");
+    var myCompositeRefArrayAlias = Class.forName(packageName + ".MyCompositeRefArrayAlias");
+    var myObject2 = Class.forName(packageName + ".MyObject2");
+    var foo = Class.forName(packageName + ".myobject2.Foo");
     return new TestParameter(
         "[[{\"foo\": { \"bar\": \"value\"}}]]",
         myCompositeRefArrayAlias
@@ -388,8 +388,7 @@ public class ComponentsTest {
   }
 
   private static TestParameter myCompositeScalarArrayAliasTestParameter() throws Exception {
-    var myCompositeScalarArrayAlias =
-        Class.forName("com.example.componentstest.MyCompositeScalarArrayAlias");
+    var myCompositeScalarArrayAlias = Class.forName(packageName + ".MyCompositeScalarArrayAlias");
     return new TestParameter(
         "[[\"foo\"]]",
         myCompositeScalarArrayAlias
@@ -400,10 +399,11 @@ public class ComponentsTest {
 
   private static TestParameter myCompositeInlineObjectArrayAliasTestParameter() throws Exception {
     var myCompositeInlineObjectArrayAlias =
-        Class.forName("com.example.componentstest.MyCompositeInlineObjectArrayAlias");
+        Class.forName(packageName + ".MyCompositeInlineObjectArrayAlias");
     var myCompositeInlineObjectArrayAliasItem =
         Class.forName(
-            "com.example.componentstest.mycompositeinlineobjectarrayalias.MyCompositeInlineObjectArrayAliasItem");
+            packageName
+                + ".mycompositeinlineobjectarrayalias.MyCompositeInlineObjectArrayAliasItem");
     return new TestParameter(
         "[[{\"foo\": \"foo\"}]]",
         myCompositeInlineObjectArrayAlias

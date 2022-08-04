@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
@@ -16,10 +17,17 @@ public class CompilerSupport {
   private static final Path GENERATED_SOURCES = Path.of("target", "sources-under-test");
   private static final Path TEST_CLASSES = Path.of("target", "test-classes");
 
-  public static void generateAndCompile(String basePackage, String oasContents)
-      throws OasParseException {
-    var sourcePaths = LilyCompiler.compile(oasContents, GENERATED_SOURCES, basePackage, true);
-    compileJava(TEST_CLASSES, sourcePaths);
+  private static final AtomicInteger PACKAGE_SERIAL = new AtomicInteger(0);
+
+  public static String compileOas(String oas) throws OasParseException {
+    var packageName = uniquePackageName();
+    var generatedSourcePaths = LilyCompiler.compile(oas, GENERATED_SOURCES, packageName, true);
+    compileJavaSources(TEST_CLASSES, generatedSourcePaths);
+    return packageName;
+  }
+
+  private static String uniquePackageName() {
+    return "gen.p" + PACKAGE_SERIAL.incrementAndGet();
   }
 
   /** Delete all generated test sources and their compiled classes */
@@ -43,7 +51,7 @@ public class CompilerSupport {
     }
   }
 
-  private static void compileJava(Path classesDir, Collection<Path> sourcePaths) {
+  private static void compileJavaSources(Path classesDir, Collection<Path> sourcePaths) {
     var compiler = ToolProvider.getSystemJavaCompiler();
     var listener = new DiagnosticCollector<JavaFileObject>();
     var fileManager = compiler.getStandardFileManager(listener, null, null);

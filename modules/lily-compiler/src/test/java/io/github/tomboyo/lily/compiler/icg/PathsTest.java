@@ -1,7 +1,7 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.deleteGeneratedSources;
-import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.generateAndCompile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.AfterAll;
@@ -19,11 +19,14 @@ public class PathsTest {
 
   @Nested
   class TaggedOperationsApiTests {
+
+    private static String packageName;
+
     @BeforeAll
     static void beforeAll() throws Exception {
-      generateAndCompile(
-          "com.example.pathstest",
-          """
+      packageName =
+          compileOas(
+              """
           openapi: 3.0.2
           info:
             title: MultipleTags
@@ -45,30 +48,24 @@ public class PathsTest {
     @Test
     void hasOperationsApiForDogsTag() throws Exception {
       assertEquals(
-          "com.example.pathstest.DogsOperations",
-          Class.forName("com.example.pathstest.Api")
-              .getMethod("dogsOperations")
-              .getReturnType()
-              .getName(),
+          packageName + ".DogsOperations",
+          Class.forName(packageName + ".Api").getMethod("dogsOperations").getReturnType().getName(),
           "api.dogsOperations() returns DogsOperations");
     }
 
     @Test
     void hasOperationsApiForCatsTag() throws Exception {
       assertEquals(
-          "com.example.pathstest.CatsOperations",
-          Class.forName("com.example.pathstest.Api")
-              .getMethod("catsOperations")
-              .getReturnType()
-              .getName(),
+          packageName + ".CatsOperations",
+          Class.forName(packageName + ".Api").getMethod("catsOperations").getReturnType().getName(),
           "api.catsOperations() returns CatsOperations");
     }
 
     @Test
     void dogsOperationsContainsGetPetsOperation() throws Exception {
       assertEquals(
-          "com.example.pathstest.GetPetsOperation",
-          Class.forName("com.example.pathstest.DogsOperations")
+          packageName + ".GetPetsOperation",
+          Class.forName(packageName + ".DogsOperations")
               .getMethod("getPets")
               .getReturnType()
               .getName(),
@@ -78,8 +75,8 @@ public class PathsTest {
     @Test
     void catsOperationsContainsGetPetsOperation() throws Exception {
       assertEquals(
-          "com.example.pathstest.GetPetsOperation",
-          Class.forName("com.example.pathstest.CatsOperations")
+          packageName + ".GetPetsOperation",
+          Class.forName(packageName + ".CatsOperations")
               .getMethod("getPets")
               .getReturnType()
               .getName(),
