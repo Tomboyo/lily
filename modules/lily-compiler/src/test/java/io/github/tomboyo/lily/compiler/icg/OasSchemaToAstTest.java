@@ -16,7 +16,6 @@ import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.oas.models.media.StringSchema;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -201,136 +200,105 @@ class OasSchemaToAstTest {
   }
 
   @Nested
+  class ArraySchemas {
+    @ParameterizedTest
+    @MethodSource("io.github.tomboyo.lily.compiler.icg.OasSchemaToAstTest#scalarsSource")
+    void evaluateWithScalarItem(
+        String oasType, String oasFormat, String javaPackage, String javaClass) {
+      var actual =
+          OasSchemaToAst.evaluate(
+              "p",
+              "MyArray",
+              new ArraySchema().items(new Schema().type(oasType).format(oasFormat)));
+
+      assertEquals(
+          new Pair<>(
+              astListOf(new AstReference(javaPackage, javaClass, List.of(), true)), Set.of()),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "returns an AstReference for the list, but no AST since no new types are generated");
+    }
+
+    @Test
+    void evaluateWithInlineObjectItem() {
+      var actual =
+          OasSchemaToAst.evaluate(
+              "p",
+              "MyArray",
+              new ArraySchema()
+                  .items(
+                      new ObjectSchema()
+                          .properties(Map.of("myField", new Schema().type("boolean")))));
+
+      assertEquals(
+          new Pair<>(
+              astListOf(new AstReference("p", "MyArrayItem", List.of(), false)),
+              Set.of(
+                  new AstClass(
+                      "p", "MyArrayItem", List.of(new AstField(astBoolean(), "myField"))))),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "defines the inline object in the current package with the -Item suffix in its class"
+              + " name");
+    }
+
+    @Test
+    void evaluateWithReferenceItem() {
+      var actual =
+          OasSchemaToAst.evaluate(
+              "p",
+              "MyArray",
+              new ArraySchema().items(new Schema<>().$ref("#/components/schemas/MyRef")));
+
+      assertEquals(
+          new Pair<>(astListOf(new AstReference("p", "MyRef", List.of(), false)), Set.of()),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "returns an AstReference for the list, but no AST since no new types are generated (we"
+              + " assume the reference is evaluated separately)");
+    }
+
+    @Test
+    void evaluateWithArrayItem() {
+      var actual =
+          OasSchemaToAst.evaluate(
+              "p",
+              "MyArray",
+              new ArraySchema().items(new ArraySchema().items(new Schema<>().type("boolean"))));
+
+      assertEquals(
+          new Pair<>(astListOf(astListOf(astBoolean())), Set.of()),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "returns a compose list AstReference and no AST since no new types are generated");
+    }
+  }
+
+  @Nested
   public class ObjectProperties {
 
-    @Nested
-    public static class InlineArrays {
-      @Test
-      public void inlineRefArray() {
-        var ast =
-            OasComponentsToAst.evaluate(
-                    "com.foo",
-                    Map.of(
-                        "MyComponent",
-                        new ObjectSchema()
-                            .properties(
-                                Map.of("foo", new ArraySchema().items(new StringSchema())))))
-                .collect(toSet());
+    @Test
+    public void compositeInlineArrays() {
+      var ast =
+          OasComponentsToAst.evaluate(
+                  "com.foo",
+                  Map.of(
+                      "MyComponent",
+                      new ObjectSchema()
+                          .properties(
+                              Map.of(
+                                  "foo",
+                                  new ArraySchema()
+                                      .items(
+                                          new ArraySchema()
+                                              .items(new Schema<>().type("string")))))))
+              .collect(toSet());
 
-        assertEquals(
-            Set.of(
-                new AstClass(
-                    "com.foo",
-                    "MyComponent",
-                    List.of(new AstField(astListOf(astString()), "foo")))),
-            ast);
-      }
-
-      @ParameterizedTest
-      @MethodSource(SCALARS)
-      public void inlineScalarArrays(
-          String type, String format, String javaPackage, String javaClass) {
-        var ast =
-            OasComponentsToAst.evaluate(
-                    "com.foo",
-                    Map.of(
-                        "MyComponent",
-                        new ObjectSchema()
-                            .name("MyComponent")
-                            .properties(
-                                Map.of(
-                                    "myField",
-                                    new ArraySchema()
-                                        .type("array")
-                                        .items(new Schema().type(type).format(format))))))
-                .collect(toSet());
-
-        assertEquals(
-            Set.of(
-                new AstClass(
-                    "com.foo",
-                    "MyComponent",
-                    List.of(
-                        new AstField(
-                            astListOf(new AstReference(javaPackage, javaClass, List.of(), true)),
-                            "myField")))),
-            ast,
-            "In-line arrays of scalar items evaluate to Lists with type parameters");
-      }
-
-      @Test
-      public void inlineObjectArrays() {
-        var ast =
-            OasComponentsToAst.evaluate(
-                    "com.foo",
-                    Map.of(
-                        "MyComponent",
-                        new ObjectSchema()
-                            .name("MyComponent")
-                            .properties(
-                                Map.of(
-                                    "myItems",
-                                    new ArraySchema()
-                                        .items(
-                                            new ObjectSchema()
-                                                .properties(
-                                                    Map.of("myString", new StringSchema())))))))
-                .collect(toSet());
-
-        assertEquals(
-            Set.of(
-                new AstClass(
-                    "com.foo",
-                    "MyComponent",
-                    List.of(
-                        new AstField(
-                            new AstReference(
-                                "java.util",
-                                "List",
-                                List.of(
-                                    new AstReference(
-                                        "com.foo.mycomponent", "MyItemsItem", List.of(), false)),
-                                true),
-                            "myItems"))),
-                new AstClass(
-                    "com.foo.mycomponent",
-                    "MyItemsItem",
-                    List.of(
-                        new AstField(
-                            new AstReference("java.lang", "String", List.of(), true),
-                            "myString")))),
-            ast,
-            "in-line array item definitions evaluate to references to new classes in nested"
-                + " packages");
-      }
-
-      @Test
-      public void compositeInlineArrays() {
-        var ast =
-            OasComponentsToAst.evaluate(
-                    "com.foo",
-                    Map.of(
-                        "MyComponent",
-                        new ObjectSchema()
-                            .properties(
-                                Map.of(
-                                    "foo",
-                                    new ArraySchema()
-                                        .items(
-                                            new ArraySchema()
-                                                .items(new Schema<>().type("string")))))))
-                .collect(toSet());
-
-        assertEquals(
-            Set.of(
-                new AstClass(
-                    "com.foo",
-                    "MyComponent",
-                    List.of(new AstField(astListOf(astListOf(astString())), "foo")))),
-            ast,
-            "Components with composite array properties evaluate to objects with composite List"
-                + " fields");
-      }
+      assertEquals(
+          Set.of(
+              new AstClass(
+                  "com.foo",
+                  "MyComponent",
+                  List.of(new AstField(astListOf(astListOf(astString())), "foo")))),
+          ast,
+          "Components with composite array properties evaluate to objects with composite List"
+              + " fields");
     }
   }
 
@@ -356,7 +324,7 @@ class OasSchemaToAstTest {
     }
 
     @ParameterizedTest
-    @MethodSource(SCALARS)
+    @MethodSource("io.github.tomboyo.lily.compiler.icg.OasSchemaToAstTest#scalarsSource")
     public void rootScalarComponents(
         String type, String format, String javaPackage, String javaClass) {
       var ast =
