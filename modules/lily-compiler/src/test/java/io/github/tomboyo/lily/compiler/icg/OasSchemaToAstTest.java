@@ -50,6 +50,14 @@ class OasSchemaToAstTest {
         arguments("string", "date-time", "java.time", "OffsetDateTime"));
   }
 
+  @Test
+  public void unsupportedSchemaTypes() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> OasSchemaToAst.evaluate("p", "MyBadSchema", new Schema<>().type("unsupported-type")),
+        "Unsupported types trigger runtime exceptions.");
+  }
+
   @Nested
   class ScalarSchemas {
     @ParameterizedTest
@@ -270,38 +278,6 @@ class OasSchemaToAstTest {
     }
   }
 
-  @Nested
-  public class ObjectProperties {
-
-    @Test
-    public void compositeInlineArrays() {
-      var ast =
-          OasComponentsToAst.evaluate(
-                  "com.foo",
-                  Map.of(
-                      "MyComponent",
-                      new ObjectSchema()
-                          .properties(
-                              Map.of(
-                                  "foo",
-                                  new ArraySchema()
-                                      .items(
-                                          new ArraySchema()
-                                              .items(new Schema<>().type("string")))))))
-              .collect(toSet());
-
-      assertEquals(
-          Set.of(
-              new AstClass(
-                  "com.foo",
-                  "MyComponent",
-                  List.of(new AstField(astListOf(astListOf(astString())), "foo")))),
-          ast,
-          "Components with composite array properties evaluate to objects with composite List"
-              + " fields");
-    }
-  }
-
   /**
    * Root components of scalar or array type are "aliases" of Stdlib types, like List or Integer.
    */
@@ -478,55 +454,5 @@ class OasSchemaToAstTest {
             "Array components of arrays evaluate to aliases of lists of lists");
       }
     }
-  }
-
-  @Test
-  public void unsupportedTypes() {
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            OasComponentsToAst.evaluate(
-                    "com.foo",
-                    Map.of(
-                        "MyComponent",
-                        new ObjectSchema()
-                            .name("MyComponent")
-                            .properties(Map.of("myField", new Schema().type("unsupported-type")))))
-                .toList(),
-        "Unsupported types trigger runtime exceptions.");
-  }
-
-  @Test
-  public void inLineObjectDefinition() {
-    var ast =
-        OasComponentsToAst.evaluate(
-                "com.foo",
-                Map.of(
-                    "MyComponent",
-                    new ObjectSchema()
-                        .name("MyComponent")
-                        .properties(
-                            Map.of(
-                                "myField",
-                                new ObjectSchema()
-                                    .properties(
-                                        Map.of("myOtherField", new Schema().type("string")))))))
-            .collect(toSet());
-
-    assertEquals(
-        Set.of(
-            new AstClass(
-                "com.foo",
-                "MyComponent",
-                List.of(
-                    new AstField(
-                        new AstReference("com.foo.mycomponent", "MyField", List.of(), false),
-                        "myField"))),
-            new AstClass(
-                "com.foo.mycomponent",
-                "MyField",
-                List.of(new AstField(astString(), "myOtherField")))),
-        ast,
-        "in-line object definitions evaluate to references to new classes in a nested package");
   }
 }
