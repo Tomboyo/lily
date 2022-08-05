@@ -1,19 +1,18 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astListOf;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astString;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -26,27 +25,25 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
 
 class OasSchemaToAstTest {
 
-  /** FQ name for the scalars parameter source. */
-  private static final String SCALARS =
-      "io.github.tomboyo.lily.compiler.icg.OasSchemaToAstTest#scalars";
-
   /** A list of scalar types and formats, and the java types they evaluate to. * */
-  public static Stream<Arguments> scalars() {
+  public static Stream<Arguments> scalarsSource() {
     return Stream.of(
         arguments("boolean", null, "java.lang", "Boolean"),
+        arguments("boolean", "unsupported-format", "java.lang", "Boolean"),
         arguments("integer", null, "java.math", "BigInteger"),
+        arguments("integer", "unsupported-format", "java.math", "BigInteger"),
         arguments("integer", "int32", "java.lang", "Integer"),
         arguments("integer", "int64", "java.lang", "Long"),
         arguments("number", null, "java.math", "BigDecimal"),
+        arguments("number", "unsupported-format", "java.math", "BigDecimal"),
         arguments("number", "double", "java.lang", "Double"),
         arguments("number", "float", "java.lang", "Float"),
         arguments("string", null, "java.lang", "String"),
+        arguments("string", "unsupportedFormat", "java.lang", "String"),
         arguments("string", "password", "java.lang", "String"),
         arguments("string", "byte", "java.lang", "Byte[]"),
         arguments("string", "binary", "java.lang", "Byte[]"),
@@ -55,107 +52,156 @@ class OasSchemaToAstTest {
   }
 
   @Nested
-  public class ObjectProperties {
-    // Fields
+  class ScalarSchemas {
     @ParameterizedTest
-    @MethodSource(SCALARS)
-    public void scalarObjectProperties(
-        String type, String format, String javaPackage, String javaClass) {
-      var ast =
-          OasComponentsToAst.evaluate(
-                  "com.foo",
-                  Map.of(
-                      "MyComponent",
-                      new ObjectSchema()
-                          .name("MyComponent")
-                          .properties(Map.of("myField", new Schema().type(type).format(format)))))
-              .collect(toSet());
+    @MethodSource("io.github.tomboyo.lily.compiler.icg.OasSchemaToAstTest#scalarsSource")
+    void evaluate(String oasType, String oasFormat, String javaPackage, String javaClass) {
+      var actual =
+          OasSchemaToAst.evaluate("p", "fieldName", new Schema().type(oasType).format(oasFormat));
 
       assertEquals(
-          Set.of(
-              new AstClass(
-                  "com.foo",
-                  "MyComponent",
-                  List.of(
-                      new AstField(
-                          new AstReference(javaPackage, javaClass, List.of(), true), "myField")))),
-          ast,
-          "Scalar object properties evaluate to standard java type fields");
+          new Pair<>(new AstReference(javaPackage, javaClass, List.of(), true), Set.of()),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "returns a standard type reference and no AST since nothing was generated");
     }
+  }
 
+  @Nested
+  class ObjectSchemas {
     @ParameterizedTest
-    @CsvSource({
-      "boolean, java.lang, Boolean",
-      "integer, java.math, BigInteger",
-      "number, java.math, BigDecimal",
-      "string, java.lang, String"
-    })
-    public void unsupportedScalarObjectPropertyFormats(
-        String type, String javaPackage, String javaClass) {
-      Logger logger = mock(Logger.class);
-
-      var ast =
-          OasComponentsToAst.evaluate(
-                  logger,
-                  "com.foo",
-                  Map.of(
-                      "MyComponent",
-                      new ObjectSchema()
-                          .name("MyComponent")
-                          .properties(
-                              Map.of(
-                                  "myField",
-                                  new Schema().type(type).format("unsupported-format")))))
-              .collect(toSet());
+    @MethodSource("io.github.tomboyo.lily.compiler.icg.OasSchemaToAstTest#scalarsSource")
+    void evaluateWithScalarProperty(
+        String oasType, String oasFormat, String javaPackage, String javaClass) {
+      var actual =
+          OasSchemaToAst.evaluate(
+              "p",
+              "MyObject",
+              new ObjectSchema()
+                  .properties(Map.of("myField", new Schema().type(oasType).format(oasFormat))));
 
       assertEquals(
-          Set.of(
-              new AstClass(
-                  "com.foo",
-                  "MyComponent",
-                  List.of(
-                      new AstField(
-                          new AstReference(javaPackage, javaClass, List.of(), true), "myField")))),
-          ast,
-          "Unsupported formats evaluate to default (fall-back) types");
-
-      // Warn the user when an unsupported format is found.
-      verify(logger)
-          .warn(
-              eq("Using default class for unsupported format: type={} format={}"),
-              eq(type),
-              eq("unsupported-format"));
+          new Pair<>(
+              new AstReference("p", "MyObject", List.of(), false),
+              Set.of(
+                  new AstClass(
+                      "p",
+                      "MyObject",
+                      List.of(
+                          new AstField(
+                              new AstReference(javaPackage, javaClass, List.of(), true),
+                              "myField"))))),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "returns an AstReference for the generated type and its AST");
     }
 
     @Test
-    public void componentReferences() {
-      var ast =
-          OasComponentsToAst.evaluate(
-                  "com.foo",
-                  Map.of(
-                      "MyComponent",
-                      new ObjectSchema()
-                          .properties(
-                              Map.of(
-                                  "myRef",
-                                  new Schema().$ref("#/components/schemas/MyReferencedComponent"))),
-                      "MyReferencedComponent",
-                      new ObjectSchema()))
-              .collect(toSet());
+    void evaluateWithInlineObjectProperty() {
+      var actual =
+          OasSchemaToAst.evaluate(
+              "p",
+              "MyObject",
+              new ObjectSchema()
+                  .properties(
+                      Map.of(
+                          "myInnerObject",
+                          new ObjectSchema()
+                              .properties(Map.of("myField", new Schema().type("boolean"))))));
 
       assertEquals(
-          Set.of(
-              new AstClass(
-                  "com.foo",
-                  "MyComponent",
-                  List.of(
-                      new AstField(
-                          new AstReference("com.foo", "MyReferencedComponent", List.of(), false),
-                          "myRef"))),
-              new AstClass("com.foo", "MyReferencedComponent", List.of())),
-          ast,
-          "$ref types evaluate to references to other classes");
+          new Pair<>(
+              new AstReference("p", "MyObject", List.of(), false),
+              Set.of(
+                  new AstClass(
+                      "p",
+                      "MyObject",
+                      List.of(
+                          new AstField(
+                              new AstReference("p.myobject", "MyInnerObject", List.of(), false),
+                              "myInnerObject"))),
+                  new AstClass(
+                      "p.myobject",
+                      "MyInnerObject",
+                      List.of(new AstField(astBoolean(), "myField"))))),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "returns an AstReference for the outer generated type but the AST for both the outer and"
+              + " nested types");
     }
+
+    @Test
+    void evaluateWithReferenceProperty() {
+      var actual =
+          OasSchemaToAst.evaluate(
+              "p",
+              "MyObject",
+              new ObjectSchema()
+                  .properties(Map.of("myField", new Schema().$ref("#/components/schemas/MyRef"))));
+
+      assertEquals(
+          new Pair<>(
+              new AstReference("p", "MyObject", List.of(), false),
+              Set.of(
+                  new AstClass(
+                      "p",
+                      "MyObject",
+                      List.of(
+                          new AstField(
+                              new AstReference("p", "MyRef", List.of(), false), "myField"))))),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "returns an AstReference for the outer generated type and its AST, but no AST for the"
+              + " referenced type, which must be evaluated separately");
+    }
+
+    @Test
+    void evaluateWithInlineArrayProperty() {
+      var actual =
+          OasSchemaToAst.evaluate(
+              "p",
+              "MyObject",
+              new ObjectSchema()
+                  .properties(
+                      Map.of("myField", new ArraySchema().items(new Schema().type("boolean")))));
+
+      assertEquals(
+          new Pair<>(
+              new AstReference("p", "MyObject", List.of(), false),
+              Set.of(
+                  new AstClass(
+                      "p", "MyObject", List.of(new AstField(astListOf(astBoolean()), "myField"))))),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "returns an AstReference to the generated type and its AST, which does not generate any"
+              + " new type for the nested array");
+    }
+
+    @Test
+    void evaluateWithMultipleProperties() {
+      var actual =
+          OasSchemaToAst.evaluate(
+              "p",
+              "MyObject",
+              new ObjectSchema()
+                  .properties(
+                      Map.of(
+                          "myField1", new Schema().type("boolean"),
+                          "myField2", new Schema().$ref("#/components/schemas/MyRef"))));
+
+      assertEquals(
+          new Pair<>(
+              new AstReference("p", "MyObject", List.of(), false),
+              Set.of(
+                  new AstClass(
+                      "p",
+                      "MyObject",
+                      List.of(
+                          new AstField(astBoolean(), "myField1"),
+                          new AstField(
+                              new AstReference("p", "MyRef", List.of(), false), "myField2"))))),
+          actual.mapRight(stream -> stream.collect(toSet())),
+          "The AST contains one field for each of multiple properties");
+    }
+  }
+
+  @Nested
+  public class ObjectProperties {
 
     @Nested
     public static class InlineArrays {
