@@ -1,8 +1,8 @@
-package io.github.tomboyo.lily.compiler.icg;
+package io.github.tomboyo.lily.compiler;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
-import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.compileOas;
-import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.deleteGeneratedSources;
+import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
+import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -10,7 +10,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.tomboyo.lily.compiler.OasParseException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -28,7 +27,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /** Tests that all generated sources serialize and deserialize to expected values. */
-public class ComponentsTest {
+public class SerializationTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 

@@ -1,7 +1,7 @@
-package io.github.tomboyo.lily.compiler.icg;
+package io.github.tomboyo.lily.compiler;
 
-import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.compileOas;
-import static io.github.tomboyo.lily.compiler.icg.CompilerSupport.deleteGeneratedSources;
+import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
+import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.AfterAll;
