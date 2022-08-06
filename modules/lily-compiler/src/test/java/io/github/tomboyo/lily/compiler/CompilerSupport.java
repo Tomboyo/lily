@@ -1,9 +1,5 @@
 package io.github.tomboyo.lily.compiler;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
