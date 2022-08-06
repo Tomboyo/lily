@@ -40,12 +40,8 @@ public class OasSchemaToAst {
    */
   public static Pair<AstReference, Stream<Ast>> evaluate(
       String basePackage, String name, Schema<?> schema) {
-    return evaluate(DEFAULT_LOGGER, basePackage, name, schema);
-  }
-
-  static Pair<AstReference, Stream<Ast>> evaluate(
-      Logger logger, String basePackage, String name, Schema<?> schema) {
-    return new OasSchemaToAst(logger, basePackage).evaluateSchema(basePackage, name, schema);
+    return new OasSchemaToAst(DEFAULT_LOGGER, basePackage)
+        .evaluateSchema(basePackage, name, schema);
   }
 
   private Pair<AstReference, Stream<Ast>> evaluateSchema(

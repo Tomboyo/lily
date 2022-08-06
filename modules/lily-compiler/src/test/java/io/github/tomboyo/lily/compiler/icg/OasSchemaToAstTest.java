@@ -2,14 +2,12 @@ package io.github.tomboyo.lily.compiler.icg;
 
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astListOf;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astString;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.github.tomboyo.lily.compiler.ast.AstClass;
-import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.util.Pair;
@@ -275,184 +273,6 @@ class OasSchemaToAstTest {
           new Pair<>(astListOf(astListOf(astBoolean())), Set.of()),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns a compose list AstReference and no AST since no new types are generated");
-    }
-  }
-
-  /**
-   * Root components of scalar or array type are "aliases" of Stdlib types, like List or Integer.
-   */
-  @Nested
-  public class Aliases {
-    @Test
-    public void rootRefComponent() {
-      var ast =
-          OasComponentsToAst.evaluate(
-                  "com.foo", Map.of("MyComponent", new Schema().$ref("#/components/schemas/MyRef")))
-              .collect(toSet());
-
-      assertEquals(
-          Set.of(
-              new AstClassAlias(
-                  "com.foo",
-                  "MyComponent",
-                  new AstReference("com.foo", "MyRef", List.of(), false))),
-          ast);
-    }
-
-    @ParameterizedTest
-    @MethodSource("io.github.tomboyo.lily.compiler.icg.OasSchemaToAstTest#scalarsSource")
-    public void rootScalarComponents(
-        String type, String format, String javaPackage, String javaClass) {
-      var ast =
-          OasComponentsToAst.evaluate(
-                  "com.foo", Map.of("MyAliasComponent", new Schema().type(type).format(format)))
-              .collect(toSet());
-
-      assertEquals(
-          Set.of(
-              new AstClassAlias(
-                  "com.foo",
-                  "MyAliasComponent",
-                  new AstReference(javaPackage, javaClass, List.of(), true))),
-          ast,
-          "Top-level components with standard types evaluate to type aliases");
-    }
-
-    @Test
-    public void rootRefArray() {
-      var ast =
-          OasComponentsToAst.evaluate(
-                  "com.foo",
-                  Map.of(
-                      "MyAlias",
-                      new ArraySchema()
-                          .items(new Schema().$ref("#/components/schemas/MyComponent"))))
-              .collect(toSet());
-
-      assertEquals(
-          Set.of(
-              new AstClassAlias(
-                  "com.foo",
-                  "MyAlias",
-                  astListOf(new AstReference("com.foo", "MyComponent", List.of(), false)))),
-          ast,
-          "Array components of $refs evaluate to aliases of lists of the referenced type");
-    }
-
-    @Test
-    public void rootScalarArray() {
-      var ast =
-          OasComponentsToAst.evaluate(
-                  "com.foo",
-                  Map.of("MyAlias", new ArraySchema().items(new Schema<>().type("string"))))
-              .collect(toSet());
-
-      assertEquals(
-          Set.of(new AstClassAlias("com.foo", "MyAlias", astListOf(astString()))),
-          ast,
-          "Array components of strings evaluate to aliases of lists of strings");
-    }
-
-    @Test
-    public void rootInlineObjectArray() {
-      var ast =
-          OasComponentsToAst.evaluate(
-                  "com.foo",
-                  Map.of(
-                      "MyAlias",
-                      new ArraySchema()
-                          .items(
-                              new ObjectSchema()
-                                  .properties(Map.of("foo", new Schema().type("string"))))))
-              .collect(toSet());
-
-      assertEquals(
-          Set.of(
-              new AstClassAlias(
-                  "com.foo",
-                  "MyAlias",
-                  astListOf(new AstReference("com.foo.myalias", "MyAliasItem", List.of(), false))),
-              new AstClass(
-                  "com.foo.myalias", "MyAliasItem", List.of(new AstField(astString(), "foo")))),
-          ast,
-          "Array components of inlined objects evaluate to aliases of lists of objects");
-    }
-
-    /** Components which are arrays of arrays evaluate to aliases of lists of lists. */
-    @Nested
-    public class CompositeListAliases {
-      @Test
-      public void rootCompositeRefArray() {
-        var ast =
-            OasComponentsToAst.evaluate(
-                    "com.foo",
-                    Map.of(
-                        "MyAlias",
-                        new ArraySchema()
-                            .items(
-                                new ArraySchema()
-                                    .items(
-                                        new Schema<>().$ref("#/components/schemas/MyComponent")))))
-                .collect(toSet());
-
-        assertEquals(
-            Set.of(
-                new AstClassAlias(
-                    "com.foo",
-                    "MyAlias",
-                    astListOf(
-                        astListOf(new AstReference("com.foo", "MyComponent", List.of(), false))))),
-            ast,
-            "Array components of arrays evaluate to aliases of lists of lists");
-      }
-
-      @Test
-      public void rootCompositeScalarArray() {
-        var ast =
-            OasComponentsToAst.evaluate(
-                    "com.foo",
-                    Map.of(
-                        "MyAlias",
-                        new ArraySchema()
-                            .items(new ArraySchema().items(new Schema<>().type("string")))))
-                .collect(toSet());
-
-        assertEquals(
-            Set.of(new AstClassAlias("com.foo", "MyAlias", astListOf(astListOf(astString())))),
-            ast,
-            "Array components of arrays evaluate to aliases of lists of lists");
-      }
-
-      @Test
-      public void rootCompositeInlineObjectArray() {
-        var ast =
-            OasComponentsToAst.evaluate(
-                    "com.foo",
-                    Map.of(
-                        "MyAlias",
-                        new ArraySchema()
-                            .items(
-                                new ArraySchema()
-                                    .items(
-                                        new ObjectSchema()
-                                            .properties(
-                                                Map.of("foo", new Schema().type("string")))))))
-                .collect(toSet());
-
-        assertEquals(
-            Set.of(
-                new AstClass(
-                    "com.foo.myalias", "MyAliasItem", List.of(new AstField(astString(), "foo"))),
-                new AstClassAlias(
-                    "com.foo",
-                    "MyAlias",
-                    astListOf(
-                        astListOf(
-                            new AstReference(
-                                "com.foo.myalias", "MyAliasItem", List.of(), false))))),
-            ast,
-            "Array components of arrays evaluate to aliases of lists of lists");
-      }
     }
   }
 }

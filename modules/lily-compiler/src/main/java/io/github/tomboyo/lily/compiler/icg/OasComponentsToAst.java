@@ -23,12 +23,17 @@ public class OasComponentsToAst {
   /* Temporary for test migration. */
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(OasComponentsToAst.class);
 
-  /* Temporary for test migration. Prefer {@link #evaluate(String, Components)} */
+  /* Temporary for test migration. */
   public static Stream<Ast> evaluate(String basePackage, Map<String, Schema> components) {
     return evaluate(DEFAULT_LOGGER, basePackage, components);
   }
 
-  /** Temporary for test migration. Prefer {@link #evaluate(String, Components)} */
+  /* Temporary for migration. */
+  public static Stream<Ast> evaluate(String basePackage, Components components) {
+    return evaluate(DEFAULT_LOGGER, basePackage, components.getSchemas());
+  }
+
+  /** Temporary for test migration */
   public static Stream<Ast> evaluate(
       Logger logger, String basePackage, Map<String, Schema> components) {
     return components.entrySet().stream()
@@ -36,37 +41,55 @@ public class OasComponentsToAst {
             entry -> {
               var name = entry.getKey();
               var schema = entry.getValue();
-              var refAndAst = OasSchemaToAst.evaluate(logger, basePackage, name, schema);
-
-              if (null == schema.getType()) {
-                // Create a AstClassAlias of a referent type. There are no AST elements.
-                return Stream.concat(
-                    Stream.of(new AstClassAlias(basePackage, name, refAndAst.left())),
-                    refAndAst.right());
-              }
-
-              return switch (schema.getType()) {
-                  // Create a AstClassAlias of a scalar type. There are no AST elements.
-                case "integer", "number", "string", "boolean" -> Stream.concat(
-                    Stream.of(new AstClassAlias(basePackage, name, refAndAst.left())),
-                    refAndAst.right());
-                  // ToDo: signature of moveClasses is at the "it works and I am exhausted" stage.
-                  // Rewrite.
-                case "array" -> moveClasses(
-                    refAndAst.right().collect(toList()),
-                    refAndAst.left(),
-                    name,
-                    basePackage,
-                    Support.joinPackages(basePackage, name));
-                case "object" -> refAndAst.right(); // No aliasing required for new types
-                default -> throw new IllegalArgumentException(
-                    "Unexpected component type: " + schema.getType());
-              };
+              return evaluate(basePackage, name, schema);
             });
   }
 
-  public static Stream<Ast> evaluate(String basePackage, Components components) {
-    return evaluate(DEFAULT_LOGGER, basePackage, components.getSchemas());
+  /**
+   * Evaluate a component schema (that is, any schema "root" located at #/components/schema),
+   * returning a stream of AST.
+   *
+   * <p>This is similar to {@link OasSchemaToAst}, but adds "aliasing" rules whereby components of
+   * scalar, $ref, or array type evaluate to AstClassAlias AST (i.e. type aliases or type wrappers).
+   * For example, an array schema named "Boots" whose items are strings and would otherwise evaluate
+   * to no AST would instead evaluate to an AstClassAlias describing a class named "Boots" with a
+   * single {@code List<String>} field. Typically, a front-end would render this class such that it
+   * serializes and deserializes as though it were just a {@code List<String>}, but is otherwise
+   * manipulated as a distinct type. This is used to provide semantic domain names to data.
+   *
+   * @param basePackage Base package under which to generate classes
+   * @param componentName The name of the component to evaluate, which may be used to name resulting
+   *     classes
+   * @param component The schema of the component
+   * @return A stream of AST
+   */
+  public static Stream<Ast> evaluate(String basePackage, String componentName, Schema component) {
+    var refAndAst = OasSchemaToAst.evaluate(basePackage, componentName, component);
+
+    if (null == component.getType()) {
+      // Create a AstClassAlias of a referent type. There are no AST elements.
+      return Stream.concat(
+          Stream.of(new AstClassAlias(basePackage, componentName, refAndAst.left())),
+          refAndAst.right());
+    }
+
+    return switch (component.getType()) {
+        // Create a AstClassAlias of a scalar type. There are no AST elements.
+      case "integer", "number", "string", "boolean" -> Stream.concat(
+          Stream.of(new AstClassAlias(basePackage, componentName, refAndAst.left())),
+          refAndAst.right());
+        // ToDo: signature of moveClasses is at the "it works and I am exhausted" stage.
+        // Rewrite.
+      case "array" -> moveClasses(
+          refAndAst.right().collect(toList()),
+          refAndAst.left(),
+          componentName,
+          basePackage,
+          Support.joinPackages(basePackage, componentName));
+      case "object" -> refAndAst.right(); // No aliasing required for new types
+      default -> throw new IllegalArgumentException(
+          "Unexpected component type: " + component.getType());
+    };
   }
 
   /**
@@ -124,7 +147,7 @@ public class OasComponentsToAst {
   }
 
   /**
-   * Bear in mind that the type parameters may need updating even if the outermost refrents do not.
+   * Bear in mind that the type parameters may need updating even if the outermost referents do not.
    */
   private static AstReference moveReference(AstReference ref, Map<String, String> mapping) {
     var key = Fqns.fqn(ref);
