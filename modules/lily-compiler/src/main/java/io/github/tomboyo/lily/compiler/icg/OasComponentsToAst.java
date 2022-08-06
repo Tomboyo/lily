@@ -15,34 +15,12 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OasComponentsToAst {
 
-  /* Temporary for test migration. */
-  private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(OasComponentsToAst.class);
-
-  /* Temporary for test migration. */
-  public static Stream<Ast> evaluate(String basePackage, Map<String, Schema> components) {
-    return evaluate(DEFAULT_LOGGER, basePackage, components);
-  }
-
-  /* Temporary for migration. */
   public static Stream<Ast> evaluate(String basePackage, Components components) {
-    return evaluate(DEFAULT_LOGGER, basePackage, components.getSchemas());
-  }
-
-  /** Temporary for test migration */
-  public static Stream<Ast> evaluate(
-      Logger logger, String basePackage, Map<String, Schema> components) {
-    return components.entrySet().stream()
-        .flatMap(
-            entry -> {
-              var name = entry.getKey();
-              var schema = entry.getValue();
-              return evaluate(basePackage, name, schema);
-            });
+    return components.getSchemas().entrySet().stream()
+        .flatMap(entry -> evaluate(basePackage, entry.getKey(), entry.getValue()));
   }
 
   /**

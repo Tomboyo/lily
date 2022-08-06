@@ -19,13 +19,11 @@ import org.slf4j.LoggerFactory;
 
 public class OasSchemaToAst {
 
-  private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(OasSchemaToAst.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OasSchemaToAst.class);
 
-  private final Logger logger;
   private final String basePackage;
 
-  private OasSchemaToAst(Logger logger, String basePackage) {
-    this.logger = logger;
+  private OasSchemaToAst(String basePackage) {
     this.basePackage = basePackage;
   }
 
@@ -40,8 +38,7 @@ public class OasSchemaToAst {
    */
   public static Pair<AstReference, Stream<Ast>> evaluate(
       String basePackage, String name, Schema<?> schema) {
-    return new OasSchemaToAst(DEFAULT_LOGGER, basePackage)
-        .evaluateSchema(basePackage, name, schema);
+    return new OasSchemaToAst(basePackage).evaluateSchema(basePackage, name, schema);
   }
 
   private Pair<AstReference, Stream<Ast>> evaluateSchema(
@@ -113,7 +110,7 @@ public class OasSchemaToAst {
   private AstReference defaultForUnsupportedFormat(
       String type, String format, AstReference defaultAst) {
     if (format != null) {
-      logger.warn("Using default class for unsupported format: type={} format={}", type, format);
+      LOGGER.warn("Using default class for unsupported format: type={} format={}", type, format);
     }
     return defaultAst;
   }
