@@ -114,7 +114,7 @@ public class OasComponentsToAstTest {
                       List.of(
                           new AstReference("p.mycomponent", "MyComponentItem", List.of(), false)),
                       true)),
-              new AstClass(
+              AstClass.of(
                   "p.mycomponent",
                   "MyComponentItem",
                   List.of(
@@ -122,7 +122,7 @@ public class OasComponentsToAstTest {
                           new AstReference(
                               "p.mycomponent.mycomponentitem", "MyField", List.of(), false),
                           "myField"))),
-              new AstClass("p.mycomponent.mycomponentitem", "MyField", List.of())),
+              AstClass.of("p.mycomponent.mycomponentitem", "MyField", List.of())),
           actual.collect(Collectors.toSet()),
           "Inline types within aliases are defined in packages subordinate to the class alias");
     }
@@ -137,7 +137,7 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              new AstClass("p.mycomponent", "MyComponentItem", List.of()),
+              AstClass.of("p.mycomponent", "MyComponentItem", List.of()),
               new AstClassAlias(
                   "p",
                   "MyComponent",

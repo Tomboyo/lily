@@ -9,19 +9,14 @@ import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.cg.Fqns;
-import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+/** Evaluates OAS #/components/schemas into Java AST. */
 public class OasComponentsToAst {
-
-  public static Stream<Ast> evaluate(String basePackage, Components components) {
-    return components.getSchemas().entrySet().stream()
-        .flatMap(entry -> evaluate(basePackage, entry.getKey(), entry.getValue()));
-  }
 
   /**
    * Evaluate a component schema (that is, any schema "root" located at #/components/schema),
@@ -112,7 +107,7 @@ public class OasComponentsToAst {
   }
 
   private static AstClass moveClass(AstClass astClass, Map<String, String> mapping) {
-    return new AstClass(
+    return AstClass.of(
         // All classes in this AST stream have to move, so we know this mapping is defined.
         mapping.get(Fqns.fqn(astClass)),
         astClass.name(),

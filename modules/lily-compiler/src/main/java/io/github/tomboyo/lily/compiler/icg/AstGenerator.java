@@ -11,12 +11,13 @@ import java.util.stream.Stream;
 public class AstGenerator {
   public static Stream<Ast> evaluate(String basePackage, OpenAPI openAPI) {
     return Stream.concat(
-        OasComponentsToAst.evaluate(
-            basePackage, requireNonNullElse(openAPI.getComponents(), defaultComponents())),
+        requireNonNullElse(openAPI.getComponents(), new Components().schemas(Map.of()))
+            .getSchemas()
+            .entrySet()
+            .stream()
+            .flatMap(
+                entry ->
+                    OasComponentsToAst.evaluate(basePackage, entry.getKey(), entry.getValue())),
         OasPathsToAst.evaluate(basePackage, requireNonNullElse(openAPI.getPaths(), Map.of())));
-  }
-
-  private static Components defaultComponents() {
-    return new Components().schemas(Map.of());
   }
 }
