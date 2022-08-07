@@ -1,5 +1,6 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static io.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -9,8 +10,8 @@ import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.cg.Fqns;
+import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.Schema;
-import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -47,48 +48,43 @@ public class OasComponentsToAst {
     }
 
     return switch (component.getType()) {
-        // Create a AstClassAlias of a scalar type. There are no AST elements.
       case "integer", "number", "string", "boolean" -> Stream.concat(
           Stream.of(new AstClassAlias(basePackage, componentName, refAndAst.left())),
           refAndAst.right());
-        // ToDo: signature of moveClasses is at the "it works and I am exhausted" stage.
-        // Rewrite.
-      case "array" -> moveClasses(
-          refAndAst.right().collect(toList()),
-          refAndAst.left(),
-          componentName,
-          basePackage,
-          Support.joinPackages(basePackage, componentName));
-      case "object" -> refAndAst.right(); // No aliasing required for new types
+      case "array" -> evaluateArray(basePackage, refAndAst, componentName);
+      case "object" -> refAndAst.right();
       default -> throw new IllegalArgumentException(
           "Unexpected component type: " + component.getType());
     };
   }
 
   /**
-   * Move all new classes and references to those (and only those) classes to a new package by
-   * replacing the from package prefix with the to package prefix.
-   *
-   * <p>1: Identify the FQN of all generated classes, and use this to create a mapping of new
-   * package names. 2: Update all AstReferences pointing at any of the names from 1. Leave all
-   * others unchanged so that $refs to top- level components or provided types evaluate as normal.
-   *
-   * <p>The only classes we need to move are for subordinate object schemas used to create the
-   * model. All AstReferences to these classes must themselves also be in the model, so we only need
-   * to search AstClasses themselves for references that need to migrate.
+   * When we create an array alias, we may need to change the package of classes generated from the
+   * array's item schema. Normally when evaluating an array schema, if the array's item schema is an
+   * object schema, {@link OasSchemaToAst} would generate a class for the item schema in the
+   * "current" package (so if the array were a property of an object whose class is "p.MyObject",
+   * then the array item class would go in "p.myobject.FieldNameItem.") Therefore, an array
+   * component schema would normally put its items in the base package. However, since an alias is a
+   * class, we want item classes to be nested "beneath" this component (so if the component class is
+   * generated at "p.MyComponent", we want the item to be placed at
+   * "p.mycomponent.MyComponentItem.") Thus, we need to update the location of classes and
+   * references which evaluate form this array schema definition.
    */
-  private static Stream<Ast> moveClasses(
-      Collection<Ast> ast, AstReference ref, String newName, String from, String to) {
-    var pattern = Pattern.compile("^" + from);
-
-    // 1. Create mapping of fullyQualifiedName => newPackage
+  private static Stream<Ast> evaluateArray(
+      String basePackage, Pair<AstReference, Stream<Ast>> refAndAst, String componentName) {
+    var ast = refAndAst.right().collect(toList());
+    // 1. Create a mapping of FQNs that need to move => their updated package names.
+    var pattern = Pattern.compile("^" + basePackage);
+    var replacement = Support.joinPackages(basePackage, componentName);
     var mapping =
         ast.stream()
             .filter(it -> it instanceof AstClass)
             .map(it -> (AstClass) it)
-            .collect(toMap(Fqns::fqn, it -> pattern.matcher(it.packageName()).replaceFirst(to)));
+            .collect(
+                toMap(
+                    Fqns::fqn, it -> pattern.matcher(it.packageName()).replaceFirst(replacement)));
 
-    // 2. Update AstReferences to any FQN in step 1 ONLY.
+    // 2. Update each such FQN
     var mappedAst =
         ast.stream()
             .map(
@@ -100,8 +96,10 @@ public class OasComponentsToAst {
                   }
                 });
 
-    // 3. Create the AstClassAlias (with updated AstRef!)
-    var alias = new AstClassAlias(from, newName, moveReference(ref, mapping));
+    // 3. Create the final AstClassAlias (with updated AstRef!)
+    var alias =
+        new AstClassAlias(
+            basePackage, capitalCamelCase(componentName), moveReference(refAndAst.left(), mapping));
 
     return Stream.concat(Stream.of(alias), mappedAst);
   }
@@ -119,9 +117,6 @@ public class OasComponentsToAst {
     return new AstField(moveReference(field.astReference(), mapping), field.name());
   }
 
-  /**
-   * Bear in mind that the type parameters may need updating even if the outermost referents do not.
-   */
   private static AstReference moveReference(AstReference ref, Map<String, String> mapping) {
     var key = Fqns.fqn(ref);
     return new AstReference(
