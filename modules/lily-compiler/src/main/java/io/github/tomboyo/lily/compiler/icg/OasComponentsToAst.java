@@ -68,7 +68,7 @@ public class OasComponentsToAst {
    * class, we want item classes to be nested "beneath" this component (so if the component class is
    * generated at "p.MyComponent", we want the item to be placed at
    * "p.mycomponent.MyComponentItem.") Thus, we need to update the location of classes and
-   * references which evaluate form this array schema definition.
+   * references which evaluate from this array schema definition.
    */
   private static Stream<Ast> evaluateArray(
       String basePackage, Pair<AstReference, Stream<Ast>> refAndAst, String componentName) {
