@@ -73,13 +73,11 @@ public class LilyCompiler {
 
   private static OpenAPI requireValidV3OpenAPI(
       SwaggerParseResult parseResult, boolean allowWarnings) throws OasParseException {
-    boolean hasWarnings =
-        requireNonNullElse(parseResult.getMessages(), List.of()).stream()
-            .peek(e -> LOGGER.warn("OpenAPI parse error: {}", e))
-            .findAny()
-            .isPresent();
+    var warnings = requireNonNullElse(parseResult.getMessages(), List.of());
 
-    if (hasWarnings && !allowWarnings) {
+    warnings.forEach(warn -> LOGGER.warn("OpenAPI parse error: {}", warn));
+
+    if (!warnings.isEmpty() && !allowWarnings) {
       throw new OasParseException("OAS contains validation errors (see preceding errors)");
     }
 

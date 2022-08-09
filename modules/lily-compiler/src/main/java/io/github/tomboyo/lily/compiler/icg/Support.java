@@ -21,6 +21,9 @@ public class Support {
    * <p>For example, joinPackages("", "com.foo", "bar", "") == "com.foo.bar"
    */
   public static String joinPackages(String... packages) {
-    return Arrays.stream(packages).filter(x -> !x.isBlank()).collect(Collectors.joining("."));
+    return Arrays.stream(packages)
+        .filter(x -> !x.isBlank())
+        .collect(Collectors.joining("."))
+        .toLowerCase();
   }
 }
