@@ -1,5 +1,9 @@
 package io.github.tomboyo.lily.compiler;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +26,47 @@ public class CompilerSupport {
     var generatedSourcePaths = LilyCompiler.compile(oas, GENERATED_SOURCES, packageName, true);
     compileJavaSources(TEST_CLASSES, generatedSourcePaths);
     return packageName;
+  }
+
+  /** Shorthand for {@code evaluate(source, Object.class)}; see {@link #evaluate(String, Class)}. */
+  public static Object evaluate(String source) {
+    return evaluate(source, Object.class);
+  }
+
+  /**
+   * Compile and evaluate the given code block.
+   *
+   * <p>The code block must end with a return statement and constitute a valid {@code public static
+   * T} function body.
+   *
+   * @param source The source code block to evaluate.
+   * @param type The Class of the returned object.
+   * @param <T> The type of the returned object.
+   * @return An instance of T returned by compiling and invoking the given source code.
+   */
+  public static <T> T evaluate(String source, Class<T> type) {
+    var packageName = uniquePackageName();
+    var wrapperSource =
+        """
+        package %s;
+        public class Wrapper {
+          public static Object eval() {
+              %s
+          }
+        }
+        """
+            .formatted(packageName, source);
+
+    try {
+      var file =
+          GENERATED_SOURCES.resolve(Path.of(".", packageName.split("\\."))).resolve("Wrapper.java");
+      Files.createDirectories(file.getParent());
+      Files.writeString(file, wrapperSource, CREATE, WRITE, TRUNCATE_EXISTING);
+      compileJavaSources(TEST_CLASSES, List.of(file));
+      return type.cast(Class.forName(packageName + ".Wrapper").getMethod("eval").invoke(null));
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to evaluate source code", e);
+    }
   }
 
   private static String uniquePackageName() {

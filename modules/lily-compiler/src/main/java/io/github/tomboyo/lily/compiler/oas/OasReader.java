@@ -1,22 +1,19 @@
 package io.github.tomboyo.lily.compiler.oas;
 
+import static java.util.Objects.requireNonNullElse;
+
 import io.github.tomboyo.lily.compiler.OasParseException;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
+import java.net.URI;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-import java.util.List;
-
-import static java.util.Objects.requireNonNullElse;
-
-/**
- * Reads source OpenAPI Specification representations into OpenAPI object format.
- */
+/** Reads source OpenAPI Specification representations into OpenAPI object format. */
 public class OasReader {
-  
+
   private static final Logger LOGGER = LoggerFactory.getLogger(OasReader.class);
 
   /**
@@ -27,7 +24,8 @@ public class OasReader {
    * @return An OpenAPI object representation of the source document.
    * @throws OasParseException If reading the document fails for any reason.
    */
-  public static OpenAPI fromString(String oasContent, boolean allowWarnings) throws OasParseException {
+  public static OpenAPI fromString(String oasContent, boolean allowWarnings)
+      throws OasParseException {
     var parseResult = new OpenAPIParser().readContents(oasContent, null, null);
     return requireValidV3OpenAPI(parseResult, allowWarnings);
   }
@@ -44,7 +42,7 @@ public class OasReader {
     var parseResult = new OpenAPIParser().readLocation(oasUri.toString(), null, null);
     return requireValidV3OpenAPI(parseResult, allowWarnings);
   }
-  
+
   private static OpenAPI requireValidV3OpenAPI(
       SwaggerParseResult parseResult, boolean allowWarnings) throws OasParseException {
     var warnings = requireNonNullElse(parseResult.getMessages(), List.of());

@@ -2,6 +2,9 @@ package io.github.tomboyo.lily.compiler;
 
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
+import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.AfterAll;
@@ -28,10 +31,6 @@ public class PathsTest {
           compileOas(
               """
           openapi: 3.0.2
-          info:
-            title: MultipleTags
-            description: "An operation with multiple tags"
-            version: 0.1.0
           paths:
             /pets/:
               get:
@@ -81,6 +80,67 @@ public class PathsTest {
               .getReturnType()
               .getName(),
           "api.catsOperations().getPets() returns the GetPetsOperations");
+    }
+  }
+
+  @Nested
+  class ParameterSchemaGeneration {
+    private static String packageName;
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+      packageName =
+          compileOas(
+              """
+          openapi: 3.0.2
+          paths:
+            /foo/{foo}/bar:
+              parameters:
+                - name: foo
+                  in: path
+                  required: true
+                  schema:
+                    type: object
+                    properties:
+                      foo:
+                        type: string
+              get:
+                operationId: GetById
+                parameters:
+                  - name: bar
+                    in: query
+                    schema:
+                      type: object
+                      properties:
+                        bar:
+                          type: boolean
+          """);
+    }
+
+    @Test
+    void pathItemParametersAreGeneratedToTypes() throws Exception {
+      assertThat(
+          "Lily generates new types for path (item) parameter object schemas",
+          "value",
+          is(
+              evaluate(
+                  """
+              return new %s.getbyid.Foo("value").foo();
+              """
+                      .formatted(packageName))));
+    }
+
+    @Test
+    void operationParametersAreGeneratedToTypes() {
+      assertThat(
+          "Lily generates new types for operation parameter object schemas",
+          true,
+          is(
+              evaluate(
+                  """
+              return new %s.getbyid.Bar(true).bar();
+              """
+                      .formatted(packageName))));
     }
   }
 }
