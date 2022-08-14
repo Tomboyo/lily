@@ -2,6 +2,7 @@ package io.github.tomboyo.lily.compiler.icg;
 
 import static io.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
 import static io.github.tomboyo.lily.compiler.icg.Support.joinPackages;
+import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
@@ -22,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class OasPathsToAst {
@@ -80,12 +82,13 @@ public class OasPathsToAst {
 
   private EvaluatePathItemResult evaluateOperation(
       Operation operation, List<Parameter> inheritedParameters) {
-    var operationName = operation.getOperationId() + "Operation";
+    var operationName = requireNonNull(operation.getOperationId()) + "Operation";
     var subordinatePackageName = joinPackages(basePackage, operationName);
     var ownParameters = requireNonNullElse(operation.getParameters(), List.<Parameter>of());
     var ast =
         mergeParameters(inheritedParameters, ownParameters).stream()
-            .flatMap(parameter -> evaluateParameter(subordinatePackageName, parameter));
+            .flatMap(parameter -> evaluateParameter(subordinatePackageName, parameter))
+            .collect(Collectors.toList());
 
     return new EvaluatePathItemResult(
         getOperationTags(operation),
@@ -122,7 +125,7 @@ public class OasPathsToAst {
   }
 
   public static record EvaluatePathItemResult(
-      Set<String> tags, AstOperation operation, Stream<Ast> ast) {}
+      Set<String> tags, AstOperation operation, List<Ast> ast) {}
 
   private static record ParameterId(String name, String in) {}
 }

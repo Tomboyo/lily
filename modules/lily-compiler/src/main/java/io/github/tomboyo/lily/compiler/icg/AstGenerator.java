@@ -57,7 +57,7 @@ public class AstGenerator {
 
     return Stream.of(
             evaluatedPathItems.stream()
-                .flatMap(result -> result.ast()), // AST for parameter schemas,
+                .flatMap(result -> result.ast().stream()), // AST for parameter schemas,
             evaluatedPathItems.stream()
                 .map(result -> result.operation()), // Ast for operation builders,
             taggedOperations.stream(), // ast for tag groups,
