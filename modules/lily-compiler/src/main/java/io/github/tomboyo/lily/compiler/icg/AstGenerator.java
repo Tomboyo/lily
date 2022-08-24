@@ -61,8 +61,7 @@ public class AstGenerator {
             evaluatedPathItems.stream()
                 .map(result -> result.operation()), // Ast for operation builders,
             taggedOperations.stream(), // ast for tag groups,
-            Stream.of(api) // and ast for the API root.
-            )
+            Stream.of(api)) // and ast for the API root.
         .flatMap(identity());
   }
 }
