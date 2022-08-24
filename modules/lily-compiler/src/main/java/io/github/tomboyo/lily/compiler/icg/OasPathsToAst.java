@@ -51,6 +51,12 @@ public class OasPathsToAst {
     return new OasPathsToAst(basePackage).evaluateTaggedOperations(results);
   }
 
+  /** Evaluate a single PathItem (and its operations, nested schemas, etc) to AST. */
+  public static Stream<EvaluatePathItemResult> evaluatePathItem(
+      String basePackage, PathItem pathItem) {
+    return new OasPathsToAst(basePackage).evaluatePathItem(pathItem);
+  }
+
   private Stream<AstTaggedOperations> evaluateTaggedOperations(
       Collection<EvaluatePathItemResult> results) {
     return results.stream()
@@ -62,12 +68,6 @@ public class OasPathsToAst {
             entry ->
                 new AstTaggedOperations(
                     basePackage, entry.getKey() + "Operations", entry.getValue()));
-  }
-
-  /** Evaluate a single PathItem (and its operations, nested schemas, etc) to AST. */
-  public static Stream<EvaluatePathItemResult> evaluatePathItem(
-      String basePackage, PathItem pathItem) {
-    return new OasPathsToAst(basePackage).evaluatePathItem(pathItem);
   }
 
   private Stream<EvaluatePathItemResult> evaluatePathItem(PathItem pathItem) {
