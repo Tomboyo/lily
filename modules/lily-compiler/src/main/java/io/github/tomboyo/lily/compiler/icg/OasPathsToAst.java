@@ -112,7 +112,7 @@ public class OasPathsToAst {
     return Stream.concat(inherited.stream(), owned.stream())
         .collect(
             toMap(
-                param -> new ParameterId(param.getName(), param.getIn()), identity(), (a, b) -> a))
+                param -> new ParameterId(param.getName(), param.getIn()), identity(), (a, b) -> b))
         .values();
   }
 

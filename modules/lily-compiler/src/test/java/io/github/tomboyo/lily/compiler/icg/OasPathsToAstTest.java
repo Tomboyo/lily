@@ -2,8 +2,8 @@ package io.github.tomboyo.lily.compiler.icg;
 
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
 
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.Operation;
@@ -43,7 +43,40 @@ public class OasPathsToAstTest {
               }); // consume the stream.
 
       // Schema are generated for all parameters according to OasSchemaToAst.
-      mock.verify(() -> OasSchemaToAst.evaluate(any(), any(), any()), times(4));
+      mock.verify(
+          () -> OasSchemaToAst.evaluate(eq("p.getoperation"), eq("A"), eq(new BooleanSchema())));
+      mock.verify(
+          () -> OasSchemaToAst.evaluate(eq("p.getoperation"), eq("B"), eq(new StringSchema())));
+      mock.verify(
+          () -> OasSchemaToAst.evaluate(eq("p.getoperation"), eq("C"), eq(new IntegerSchema())));
+      mock.verify(
+          () -> OasSchemaToAst.evaluate(eq("p.getoperation"), eq("D"), eq(new BooleanSchema())));
+    }
+  }
+
+  @Test
+  void operationParametersOverrideInheritedParameters() {
+    try (var mock = mockStatic(OasSchemaToAst.class)) {
+      mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
+          .thenAnswer(invocation -> new Pair<>(astBoolean(), Stream.of()));
+
+      OasPathsToAst.evaluatePathItem(
+              "p",
+              new PathItem()
+                  .addParametersItem(
+                      new Parameter().name("a").in("query").schema(new BooleanSchema()))
+                  .get(
+                      new Operation()
+                          .operationId("Get")
+                          .addParametersItem(
+                              new Parameter().name("a").in("query").schema(new IntegerSchema()))))
+          .forEach(
+              x -> {
+                ; // consume the stream
+              });
+
+      mock.verify(
+          () -> OasSchemaToAst.evaluate(eq("p.getoperation"), eq("A"), eq(new IntegerSchema())));
     }
   }
 }
