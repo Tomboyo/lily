@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mockStatic;
 
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.github.tomboyo.lily.compiler.icg.OasPathsToAst.EvaluatePathItemResult;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.Operation;
@@ -51,10 +52,7 @@ public class OasPathsToAstTest {
                                     .name("d")
                                     .in("header")
                                     .schema(new BooleanSchema()))))
-            .forEach(
-                x -> {
-                  ;
-                }); // consume the stream.
+            .forEach(x -> {}); // consume the stream.
 
         // Schema are generated for all parameters according to OasSchemaToAst.
         mock.verify(
@@ -84,10 +82,7 @@ public class OasPathsToAstTest {
                             .operationId("Get")
                             .addParametersItem(
                                 new Parameter().name("a").in("query").schema(new IntegerSchema()))))
-            .forEach(
-                x -> {
-                  ; // consume the stream
-                });
+            .forEach(x -> {});
 
         mock.verify(
             () -> OasSchemaToAst.evaluate(eq("p.getoperation"), eq("A"), eq(new IntegerSchema())));
@@ -135,6 +130,34 @@ public class OasPathsToAstTest {
                       new AstOperation(
                           "Get", new AstReference("p", "GetOperation", List.of(), false)),
                       List.of()))));
+    }
+  }
+
+  @Nested
+  class TaggedOperations {
+    @Test
+    void groupsByTags() {
+      var getAOperation =
+          new AstOperation("GetA", new AstReference("p", "GetAOperation", List.of(), false));
+      var getABOperation =
+          new AstOperation("GetAB", new AstReference("p", "GetABOperation", List.of(), false));
+      var actual =
+          OasPathsToAst.evaluateTaggedOperations(
+                  "p",
+                  List.of(
+                      new EvaluatePathItemResult(Set.of("TagA"), getAOperation, List.of()),
+                      new EvaluatePathItemResult(
+                          Set.of("TagA", "TagB"), getABOperation, List.of())))
+              .collect(Collectors.toSet());
+
+      assertThat(
+          "Tagged operations AST are collections of operations grouped by tag",
+          actual,
+          is(
+              Set.of(
+                  new AstTaggedOperations(
+                      "p", "TagAOperations", Set.of(getAOperation, getABOperation)),
+                  new AstTaggedOperations("p", "TagBOperations", Set.of(getABOperation)))));
     }
   }
 }
