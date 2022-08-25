@@ -10,7 +10,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -41,7 +40,7 @@ public class SerializationTest {
   }
 
   @BeforeAll
-  public static void beforeAll() throws OasParseException, IOException {
+  public static void beforeAll() throws OasParseException {
     packageName =
         compileOas(
             """
@@ -191,7 +190,7 @@ public class SerializationTest {
 
   @ParameterizedTest
   @MethodSource("parameterSource")
-  public <T> void fromJson(TestParameter params) throws Exception {
+  public void fromJson(TestParameter params) throws Exception {
     params.assertObjectEquals.accept(params.asObject, MAPPER.readValue(params.asJson, params.type));
   }
 

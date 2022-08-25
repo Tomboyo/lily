@@ -2,7 +2,10 @@ package io.github.tomboyo.lily.compiler;
 
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isA;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,59 +31,113 @@ public class PathsTest {
           compileOas(
               """
           openapi: 3.0.2
-          info:
-            title: MultipleTags
-            description: "An operation with multiple tags"
-            version: 0.1.0
           paths:
             /pets/:
               get:
-                operationId: getPets
+                operationId: getPet
                 tags:
                   - dogs
                   - cats
-                responses:
-                  "204":
-                    description: OK
+              post:
+                operationId: postPet
           """);
     }
 
     @Test
     void hasOperationsApiForDogsTag() throws Exception {
-      assertEquals(
-          packageName + ".DogsOperations",
-          Class.forName(packageName + ".Api").getMethod("dogsOperations").getReturnType().getName(),
-          "api.dogsOperations() returns DogsOperations");
+      assertThat(
+          "The getPet operation is addressable via the dogs tag, DogsOperations",
+          evaluate(
+              """
+            return new %s.Api().dogsOperations().getPet();
+          """
+                  .formatted(packageName)),
+          isA(Class.forName(packageName + ".GetPetOperation")));
     }
 
     @Test
     void hasOperationsApiForCatsTag() throws Exception {
-      assertEquals(
-          packageName + ".CatsOperations",
-          Class.forName(packageName + ".Api").getMethod("catsOperations").getReturnType().getName(),
-          "api.catsOperations() returns CatsOperations");
+      assertThat(
+          "The getPet operation is addressable via the cats tag, CatsOperations",
+          evaluate(
+              """
+            return new %s.Api().catsOperations().getPet();
+          """
+                  .formatted(packageName)),
+          isA(Class.forName(packageName + ".GetPetOperation")));
     }
 
     @Test
-    void dogsOperationsContainsGetPetsOperation() throws Exception {
-      assertEquals(
-          packageName + ".GetPetsOperation",
-          Class.forName(packageName + ".DogsOperations")
-              .getMethod("getPets")
-              .getReturnType()
-              .getName(),
-          "api.dogsOperations().getPets() returns the GetPetsOperation");
+    void hasOperationsApiForUntaggedOperations() throws Exception {
+      assertThat(
+          "The postPet operation is addressable via the other tag, OtherOperations, by default",
+          evaluate(
+              """
+              return new %s.Api().otherOperations().postPet();
+              """
+                  .formatted(packageName)),
+          isA(Class.forName(packageName + ".PostPetOperation")));
+    }
+  }
+
+  @Nested
+  class ParameterSchemaGeneration {
+    private static String packageName;
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+      packageName =
+          compileOas(
+              """
+          openapi: 3.0.2
+          paths:
+            /foo/{foo}/bar:
+              parameters:
+                - name: foo
+                  in: path
+                  required: true
+                  schema:
+                    type: object
+                    properties:
+                      foo:
+                        type: string
+              get:
+                operationId: GetById
+                parameters:
+                  - name: bar
+                    in: query
+                    schema:
+                      type: object
+                      properties:
+                        bar:
+                          type: boolean
+          """);
     }
 
     @Test
-    void catsOperationsContainsGetPetsOperation() throws Exception {
-      assertEquals(
-          packageName + ".GetPetsOperation",
-          Class.forName(packageName + ".CatsOperations")
-              .getMethod("getPets")
-              .getReturnType()
-              .getName(),
-          "api.catsOperations().getPets() returns the GetPetsOperations");
+    void pathItemParametersAreGeneratedToTypes() {
+      assertThat(
+          "Lily generates new types for path (item) parameter object schemas",
+          "value",
+          is(
+              evaluate(
+                  """
+              return new %s.getbyidoperation.Foo("value").foo();
+              """
+                      .formatted(packageName))));
+    }
+
+    @Test
+    void operationParametersAreGeneratedToTypes() {
+      assertThat(
+          "Lily generates new types for operation parameter object schemas",
+          true,
+          is(
+              evaluate(
+                  """
+              return new %s.getbyidoperation.Bar(true).bar();
+              """
+                      .formatted(packageName))));
     }
   }
 }
