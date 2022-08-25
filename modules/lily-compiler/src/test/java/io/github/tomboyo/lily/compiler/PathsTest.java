@@ -5,7 +5,7 @@ import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSou
 import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.isA;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,52 +34,49 @@ public class PathsTest {
           paths:
             /pets/:
               get:
-                operationId: getPets
+                operationId: getPet
                 tags:
                   - dogs
                   - cats
-                responses:
-                  "204":
-                    description: OK
+              post:
+                operationId: postPet
           """);
     }
 
     @Test
     void hasOperationsApiForDogsTag() throws Exception {
-      assertEquals(
-          packageName + ".DogsOperations",
-          Class.forName(packageName + ".Api").getMethod("dogsOperations").getReturnType().getName(),
-          "api.dogsOperations() returns DogsOperations");
+      assertThat(
+          "The getPet operation is addressable via the dogs tag, DogsOperations",
+          evaluate(
+              """
+            return new %s.Api().dogsOperations().getPet();
+          """
+                  .formatted(packageName)),
+          isA(Class.forName(packageName + ".GetPetOperation")));
     }
 
     @Test
     void hasOperationsApiForCatsTag() throws Exception {
-      assertEquals(
-          packageName + ".CatsOperations",
-          Class.forName(packageName + ".Api").getMethod("catsOperations").getReturnType().getName(),
-          "api.catsOperations() returns CatsOperations");
+      assertThat(
+          "The getPet operation is addressable via the cats tag, CatsOperations",
+          evaluate(
+              """
+            return new %s.Api().catsOperations().getPet();
+          """
+                  .formatted(packageName)),
+          isA(Class.forName(packageName + ".GetPetOperation")));
     }
 
     @Test
-    void dogsOperationsContainsGetPetsOperation() throws Exception {
-      assertEquals(
-          packageName + ".GetPetsOperation",
-          Class.forName(packageName + ".DogsOperations")
-              .getMethod("getPets")
-              .getReturnType()
-              .getName(),
-          "api.dogsOperations().getPets() returns the GetPetsOperation");
-    }
-
-    @Test
-    void catsOperationsContainsGetPetsOperation() throws Exception {
-      assertEquals(
-          packageName + ".GetPetsOperation",
-          Class.forName(packageName + ".CatsOperations")
-              .getMethod("getPets")
-              .getReturnType()
-              .getName(),
-          "api.catsOperations().getPets() returns the GetPetsOperations");
+    void hasOperationsApiForUntaggedOperations() throws Exception {
+      assertThat(
+          "The postPet operation is addressable via the other tag, OtherOperations, by default",
+          evaluate(
+              """
+              return new %s.Api().otherOperations().postPet();
+              """
+                  .formatted(packageName)),
+          isA(Class.forName(packageName + ".PostPetOperation")));
     }
   }
 
@@ -118,7 +115,7 @@ public class PathsTest {
     }
 
     @Test
-    void pathItemParametersAreGeneratedToTypes() throws Exception {
+    void pathItemParametersAreGeneratedToTypes() {
       assertThat(
           "Lily generates new types for path (item) parameter object schemas",
           "value",
