@@ -122,7 +122,7 @@ public class PathsTest {
           is(
               evaluate(
                   """
-              return new %s.getbyid.Foo("value").foo();
+              return new %s.getbyidoperation.Foo("value").foo();
               """
                       .formatted(packageName))));
     }
@@ -135,7 +135,7 @@ public class PathsTest {
           is(
               evaluate(
                   """
-              return new %s.getbyid.Bar(true).bar();
+              return new %s.getbyidoperation.Bar(true).bar();
               """
                       .formatted(packageName))));
     }
