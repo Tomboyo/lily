@@ -47,18 +47,20 @@ public class OasPathsToAst {
    * a Stream describing AstTaggedOperations which group evaluated operations by their OAS tags.
    */
   public static Stream<AstTaggedOperations> evaluateTaggedOperations(
-      String basePackage, Collection<EvaluatePathItemResult> results) {
+      String basePackage, Collection<EvaluatedOperation> results) {
     return new OasPathsToAst(basePackage).evaluateTaggedOperations(results);
   }
 
-  /** Evaluate a single PathItem (and its operations, nested schemas, etc) to AST. */
-  public static Stream<EvaluatePathItemResult> evaluatePathItem(
-      String basePackage, PathItem pathItem) {
+  /**
+   * Evaluate a single PathItem (and its operations, nested schemas, etc) to AST. Returns one
+   * EvaluatedOperation per operation in the PathItem.
+   */
+  public static Stream<EvaluatedOperation> evaluatePathItem(String basePackage, PathItem pathItem) {
     return new OasPathsToAst(basePackage).evaluatePathItem(pathItem);
   }
 
   private Stream<AstTaggedOperations> evaluateTaggedOperations(
-      Collection<EvaluatePathItemResult> results) {
+      Collection<EvaluatedOperation> results) {
     return results.stream()
         .flatMap(result -> result.tags().stream().map(tag -> new Pair<>(tag, result.operation())))
         .collect(groupingBy(Pair::left, mapping(Pair::right, toSet())))
@@ -70,7 +72,7 @@ public class OasPathsToAst {
                     basePackage, entry.getKey() + "Operations", entry.getValue()));
   }
 
-  private Stream<EvaluatePathItemResult> evaluatePathItem(PathItem pathItem) {
+  private Stream<EvaluatedOperation> evaluatePathItem(PathItem pathItem) {
     var inheritedParameters = requireNonNullElse(pathItem.getParameters(), List.<Parameter>of());
     return pathItem.readOperationsMap().entrySet().stream()
         .map(
@@ -80,7 +82,7 @@ public class OasPathsToAst {
             });
   }
 
-  private EvaluatePathItemResult evaluateOperation(
+  private EvaluatedOperation evaluateOperation(
       Operation operation, List<Parameter> inheritedParameters) {
     var operationName = requireNonNull(operation.getOperationId()) + "Operation";
     var subordinatePackageName = joinPackages(basePackage, operationName);
@@ -90,7 +92,7 @@ public class OasPathsToAst {
             .flatMap(parameter -> evaluateParameter(subordinatePackageName, parameter))
             .collect(Collectors.toList());
 
-    return new EvaluatePathItemResult(
+    return new EvaluatedOperation(
         getOperationTags(operation),
         new AstOperation(
             operation.getOperationId(),
@@ -99,11 +101,12 @@ public class OasPathsToAst {
   }
 
   private static Set<String> getOperationTags(Operation operation) {
-    if (operation.getTags() != null) {
-      return new HashSet<>(operation.getTags());
-    } else {
-      return Set.of("other");
+    var set = new HashSet<>(requireNonNullElse(operation.getTags(), List.of()));
+    if (set.isEmpty()) {
+      set.add("other");
     }
+    set.add("all");
+    return set;
   }
 
   /** Merge owned parameters with inherited parameters. Owned parameters take precedence. */
@@ -124,7 +127,7 @@ public class OasPathsToAst {
     return parameterRefAndAst.right();
   }
 
-  public static record EvaluatePathItemResult(
+  public static record EvaluatedOperation(
       Set<String> tags, AstOperation operation, List<Ast> ast) {}
 
   private static record ParameterId(String name, String in) {}
