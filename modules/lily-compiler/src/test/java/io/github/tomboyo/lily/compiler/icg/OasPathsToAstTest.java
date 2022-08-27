@@ -152,6 +152,14 @@ public class OasPathsToAstTest {
             actual().operation().operationClass(),
             is(new AstReference("p", "GetOperation", List.of(), false)));
       }
+
+      @Test
+      void containsRelativePath() {
+        assertThat(
+            "The resulting operation contains its relative path from the Path Item",
+            actual().operation().relativePath(),
+            is("get/"));
+      }
     }
   }
 
