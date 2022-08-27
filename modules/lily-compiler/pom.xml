@@ -57,6 +57,13 @@
             <artifactId>mockito-inline</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <!-- Added to the class path for test source compilation (see CompilerSupport) -->
+            <groupId>io.github.tomboyo.lily</groupId>
+            <artifactId>lily-http</artifactId>
+            <version>${revision}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

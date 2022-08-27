@@ -39,8 +39,9 @@
                 <version>${revision}</version>
                 <configuration>
                     <uri>https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/petstore.yaml</uri>
+                    <!-- Uncomment to customize the default generated sources directory. -->
                     <!-- <outputDir>target/generated-sources</outputDir> -->
-                    <basePackage>com.example</basePackage>
+                    <basePackage>io.github.tomboyo.lily.example</basePackage>
                 </configuration>
                 <executions>
                     <execution>

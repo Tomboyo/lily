@@ -55,8 +55,9 @@ public class OasPathsToAst {
    * Evaluate a single PathItem (and its operations, nested schemas, etc) to AST. Returns one
    * EvaluatedOperation per operation in the PathItem.
    */
-  public static Stream<EvaluatedOperation> evaluatePathItem(String basePackage, PathItem pathItem) {
-    return new OasPathsToAst(basePackage).evaluatePathItem(pathItem);
+  public static Stream<EvaluatedOperation> evaluatePathItem(
+      String basePackage, String relativePath, PathItem pathItem) {
+    return new OasPathsToAst(basePackage).evaluatePathItem(relativePath, pathItem);
   }
 
   private Stream<AstTaggedOperations> evaluateTaggedOperations(
@@ -72,18 +73,18 @@ public class OasPathsToAst {
                     basePackage, entry.getKey() + "Operations", entry.getValue()));
   }
 
-  private Stream<EvaluatedOperation> evaluatePathItem(PathItem pathItem) {
+  private Stream<EvaluatedOperation> evaluatePathItem(String relativePath, PathItem pathItem) {
     var inheritedParameters = requireNonNullElse(pathItem.getParameters(), List.<Parameter>of());
     return pathItem.readOperationsMap().entrySet().stream()
         .map(
             entry -> {
               var operation = entry.getValue();
-              return evaluateOperation(operation, inheritedParameters);
+              return evaluateOperation(operation, relativePath, inheritedParameters);
             });
   }
 
   private EvaluatedOperation evaluateOperation(
-      Operation operation, List<Parameter> inheritedParameters) {
+      Operation operation, String relativePath, List<Parameter> inheritedParameters) {
     var operationName = requireNonNull(operation.getOperationId()) + "Operation";
     var subordinatePackageName = joinPackages(basePackage, operationName);
     var ownParameters = requireNonNullElse(operation.getParameters(), List.<Parameter>of());
@@ -96,7 +97,8 @@ public class OasPathsToAst {
         getOperationTags(operation),
         new AstOperation(
             operation.getOperationId(),
-            new AstReference(basePackage, operationName, List.of(), false)),
+            new AstReference(basePackage, operationName, List.of(), false),
+            relativePath),
         ast);
   }
 

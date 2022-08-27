@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 
+import java.net.URI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -49,7 +50,7 @@ public class PathsTest {
           "The getPet operation is addressable via the dogs tag, DogsOperations",
           evaluate(
               """
-            return new %s.Api().dogsOperations().getPet();
+            return %s.Api.newBuilder().build().dogsOperations().getPet();
           """
                   .formatted(packageName)),
           isA(Class.forName(packageName + ".GetPetOperation")));
@@ -61,7 +62,7 @@ public class PathsTest {
           "The getPet operation is addressable via the cats tag, CatsOperations",
           evaluate(
               """
-            return new %s.Api().catsOperations().getPet();
+            return %s.Api.newBuilder().build().catsOperations().getPet();
           """
                   .formatted(packageName)),
           isA(Class.forName(packageName + ".GetPetOperation")));
@@ -73,7 +74,7 @@ public class PathsTest {
           "The postPet operation is addressable via the other tag, OtherOperations, by default",
           evaluate(
               """
-              return new %s.Api().otherOperations().postPet();
+              return %s.Api.newBuilder().build().otherOperations().postPet();
               """
                   .formatted(packageName)),
           isA(Class.forName(packageName + ".PostPetOperation")));
@@ -138,6 +139,49 @@ public class PathsTest {
               return new %s.getbyidoperation.Bar(true).bar();
               """
                       .formatted(packageName))));
+    }
+  }
+
+  @Nested
+  class UriTemplates {
+    private static String packageName;
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+      packageName =
+          compileOas(
+              """
+          openapi: 3.0.2
+          paths:
+            /pets/{id}:
+              get:
+                operationId: getPetById
+                parameters:
+                  - name: id
+                    in: path
+                    required: true
+                    schema:
+                      type: string
+          """);
+    }
+
+    @Test
+    void todo() {
+      assertThat(
+          "Operations' URI templates may be used to create complete paths to a resource",
+          evaluate(
+              """
+              return %s.Api.newBuilder()
+                .uri("https://example.com/")
+                .build()
+                .allOperations()
+                .getPetById()
+                .uriTemplate()
+                .put("id", "some-uuid-here")
+                .toURI();
+              """
+                  .formatted(packageName)),
+          is(URI.create("https://example.com/pets/some-uuid-here")));
     }
   }
 }

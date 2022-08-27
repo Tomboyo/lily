@@ -109,7 +109,8 @@ public class CompilerSupport {
             null,
             fileManager,
             listener,
-            List.of("-d", classesDir.toString()),
+            List.of(
+                "-d", classesDir.toString(), "-classpath", System.getProperty("java.class.path")),
             null,
             compilationUnits)
         .call();
