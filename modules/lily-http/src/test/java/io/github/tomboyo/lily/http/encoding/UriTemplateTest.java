@@ -23,11 +23,18 @@ public class UriTemplateTest {
   @Test
   public void interpolatesParameters() throws Exception {
     var uri =
-        UriTemplate.forPath("https://example.com/pets/{petId}/foo/{foo}/")
+        UriTemplate.forPath("https://example.com/pets/{petId}/foo/{foo}")
             .put("petId", simple(5))
             .put("foo", simple("f%o/o!"))
             .toURI();
 
-    assertEquals(uri, URI.create("https://example.com/pets/5/foo/f%25o%2Fo%21/"));
+    assertEquals(uri, URI.create("https://example.com/pets/5/foo/f%25o%2Fo%21"));
+  }
+
+  @Test
+  public void removesExtraneousSlashes() throws Exception {
+    var uri = UriTemplate.forPath("https://example.com/pets/", "/foo/", "/bar/").toURI();
+
+    assertEquals(uri, URI.create("https://example.com/pets/foo/bar"));
   }
 }
