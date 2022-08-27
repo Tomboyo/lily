@@ -129,7 +129,7 @@ public class AstToJava {
               private final String uri;
 
               private {{className}}(String uri) {
-                this.uri = uri;
+                this.uri = java.util.Objects.requireNonNull(uri);
               }
 
               public static {{className}}Builder newBuilder() {
