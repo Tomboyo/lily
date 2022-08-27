@@ -226,10 +226,6 @@ public class AstToJava {
           public io.github.tomboyo.lily.http.UriTemplate uriTemplate() {
             return uriTemplate;
           }
-
-          public java.net.http.HttpRequest request() {
-            return java.net.http.HttpRequest.newBuilder().build();
-          }
         }
         """,
             "renderAstOperation",
