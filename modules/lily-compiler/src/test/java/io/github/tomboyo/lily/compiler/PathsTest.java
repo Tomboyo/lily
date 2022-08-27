@@ -50,7 +50,7 @@ public class PathsTest {
           "The getPet operation is addressable via the dogs tag, DogsOperations",
           evaluate(
               """
-            return %s.Api.newBuilder().build().dogsOperations().getPet();
+            return %s.Api.newBuilder().uri("https://example.com/").build().dogsOperations().getPet();
           """
                   .formatted(packageName)),
           isA(Class.forName(packageName + ".GetPetOperation")));
@@ -62,7 +62,7 @@ public class PathsTest {
           "The getPet operation is addressable via the cats tag, CatsOperations",
           evaluate(
               """
-            return %s.Api.newBuilder().build().catsOperations().getPet();
+            return %s.Api.newBuilder().uri("https://example.com/").build().catsOperations().getPet();
           """
                   .formatted(packageName)),
           isA(Class.forName(packageName + ".GetPetOperation")));
@@ -74,7 +74,7 @@ public class PathsTest {
           "The postPet operation is addressable via the other tag, OtherOperations, by default",
           evaluate(
               """
-              return %s.Api.newBuilder().build().otherOperations().postPet();
+              return %s.Api.newBuilder().uri("https://example.com/").build().otherOperations().postPet();
               """
                   .formatted(packageName)),
           isA(Class.forName(packageName + ".PostPetOperation")));
