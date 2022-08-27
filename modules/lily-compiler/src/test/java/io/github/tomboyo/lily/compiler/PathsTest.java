@@ -166,7 +166,7 @@ public class PathsTest {
     }
 
     @Test
-    void todo() {
+    void templatesAreExposedForAllOperations() {
       assertThat(
           "Operations' URI templates may be used to create complete paths to a resource",
           evaluate(
