@@ -13,6 +13,8 @@ import static java.util.stream.Collectors.toSet;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstApi;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
+import io.github.tomboyo.lily.compiler.ast.AstParameter;
+import io.github.tomboyo.lily.compiler.ast.AstParameterLocation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.github.tomboyo.lily.compiler.util.Pair;
@@ -75,12 +77,8 @@ public class OasPathsToAst {
 
   private Stream<EvaluatedOperation> evaluatePathItem(String relativePath, PathItem pathItem) {
     var inheritedParameters = requireNonNullElse(pathItem.getParameters(), List.<Parameter>of());
-    return pathItem.readOperationsMap().entrySet().stream()
-        .map(
-            entry -> {
-              var operation = entry.getValue();
-              return evaluateOperation(operation, relativePath, inheritedParameters);
-            });
+    return pathItem.readOperationsMap().values().stream()
+        .map(operation -> evaluateOperation(operation, relativePath, inheritedParameters));
   }
 
   private EvaluatedOperation evaluateOperation(
@@ -88,17 +86,22 @@ public class OasPathsToAst {
     var operationName = requireNonNull(operation.getOperationId()) + "Operation";
     var subordinatePackageName = joinPackages(basePackage, operationName);
     var ownParameters = requireNonNullElse(operation.getParameters(), List.<Parameter>of());
-    var ast =
+
+    var parametersAndAst =
         mergeParameters(inheritedParameters, ownParameters).stream()
-            .flatMap(parameter -> evaluateParameter(subordinatePackageName, parameter))
+            .map(parameter -> evaluateParameter(subordinatePackageName, parameter))
             .collect(Collectors.toList());
+    var ast = parametersAndAst.stream().flatMap(ParameterAndAst::ast).collect(Collectors.toList());
+    var parameters =
+        parametersAndAst.stream().map(ParameterAndAst::parameter).collect(Collectors.toSet());
 
     return new EvaluatedOperation(
         getOperationTags(operation),
         new AstOperation(
             operation.getOperationId(),
             new AstReference(basePackage, operationName, List.of(), false),
-            relativePath),
+            relativePath,
+            parameters),
         ast);
   }
 
@@ -121,16 +124,23 @@ public class OasPathsToAst {
         .values();
   }
 
-  private Stream<Ast> evaluateParameter(String packageName, Parameter parameter) {
+  private ParameterAndAst evaluateParameter(String packageName, Parameter parameter) {
     var parameterRefAndAst =
         OasSchemaToAst.evaluate(
             packageName, capitalCamelCase(parameter.getName()), parameter.getSchema());
 
-    return parameterRefAndAst.right();
+    return new ParameterAndAst(
+        new AstParameter(
+            parameter.getName(),
+            AstParameterLocation.fromString(parameter.getIn()),
+            parameterRefAndAst.left()),
+        parameterRefAndAst.right());
   }
 
   public static record EvaluatedOperation(
       Set<String> tags, AstOperation operation, List<Ast> ast) {}
 
   private static record ParameterId(String name, String in) {}
+
+  private static record ParameterAndAst(AstParameter parameter, Stream<Ast> ast) {}
 }

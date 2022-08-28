@@ -5,6 +5,7 @@ import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.io.UncheckedIOException;
 
 public class Encoding {
 
@@ -20,11 +21,19 @@ public class Encoding {
 
   private Encoding() {}
 
-  public static String simple(Object o) throws JsonProcessingException {
-    return simpleMapper.writer().writeValueAsString(o);
+  public static String simple(Object o) {
+    try {
+      return simpleMapper.writer().writeValueAsString(o);
+    } catch (JsonProcessingException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
-  public static String formExplode(Object o) throws JsonProcessingException {
-    return formExplodeMapper.writer().writeValueAsString(o);
+  public static String formExplode(Object o) {
+    try {
+      return formExplodeMapper.writer().writeValueAsString(o);
+    } catch (JsonProcessingException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 }

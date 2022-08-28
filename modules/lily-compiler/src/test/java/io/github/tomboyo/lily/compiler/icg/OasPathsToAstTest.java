@@ -165,14 +165,18 @@ public class OasPathsToAstTest {
 
   @Nested
   class TaggedOperations {
+
     @Test
     void groupsByTags() {
       var getAOperation =
           new AstOperation(
-              "GetA", new AstReference("p", "GetAOperation", List.of(), false), "getA/");
+              "GetA", new AstReference("p", "GetAOperation", List.of(), false), "getA/", Set.of());
       var getABOperation =
           new AstOperation(
-              "GetAB", new AstReference("p", "GetABOperation", List.of(), false), "getAB/");
+              "GetAB",
+              new AstReference("p", "GetABOperation", List.of(), false),
+              "getAB/",
+              Set.of());
       var actual =
           OasPathsToAst.evaluateTaggedOperations(
                   "p",

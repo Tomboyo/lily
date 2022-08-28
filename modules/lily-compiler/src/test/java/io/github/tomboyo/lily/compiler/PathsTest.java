@@ -184,4 +184,50 @@ public class PathsTest {
           is(URI.create("https://example.com/pets/some-uuid-here")));
     }
   }
+
+  @Nested
+  class PathParameterSupport {
+    private static String packageName;
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+      packageName =
+          compileOas(
+              """
+          openapi: 3.0.2
+          paths:
+            /pets/{id}:
+              get:
+                operationId: getPetById
+                parameters:
+                  - name: id
+                    in: path
+                    required: true
+                    schema:
+                      type: string
+          """);
+    }
+
+    @Test
+    void hasPathParameterSetters() {
+      var actual =
+          evaluate(
+              """
+          return %s.Api.newBuilder()
+            .uri("https://example.com/")
+            .build()
+            .allOperations()
+            .getPetById()
+            .id("1234")
+            .uriTemplate()
+            .toURI();
+          """
+                  .formatted(packageName),
+              URI.class);
+      assertThat(
+          "Named path parameters may be set via the operation API",
+          actual,
+          is(URI.create("https://example.com/pets/1234")));
+    }
+  }
 }
