@@ -125,13 +125,36 @@ public class AstToJava {
             """
             package {{packageName}};
             public class {{className}} {
+
+              private final String uri;
+
+              private {{className}}(String uri) {
+                this.uri = java.util.Objects.requireNonNull(uri);
+              }
+
+              public static {{className}}Builder newBuilder() {
+                return new {{className}}Builder();
+              }
+
               {{#tags}}
               {{! Note: Tag types are never parameterized }}
               public {{fqReturnType}} {{methodName}}() {
-                return new {{fqReturnType}}();
+                return new {{fqReturnType}}(uri);
               }
 
               {{/tags}}
+
+              public static class {{className}}Builder {
+                private String uri;
+
+                private {{className}}Builder() {}
+
+                public {{className}}Builder uri(String uri) { this.uri = uri; return this; }
+
+                public {{className}} build() {
+                  return new {{className}}(uri);
+                }
+              }
             }
             """,
             "renderAstApi",
@@ -157,10 +180,16 @@ public class AstToJava {
             package {{packageName}};
             public class {{className}} {
 
+              private final String uri;
+
+              public {{className}}(String uri) {
+                this.uri = uri;
+              }
+
               {{#operations}}
               {{! Note: Operation types are never parameterized }}
               public {{fqReturnType}} {{methodName}}() {
-                return new {{fqReturnType}}();
+                return new {{fqReturnType}}(uri);
               }
 
               {{/operations}}
@@ -188,15 +217,22 @@ public class AstToJava {
             """
         package {{packageName}};
         public class {{className}} {
-          public java.net.http.HttpRequest request() {
-            return java.net.http.HttpRequest.newBuilder().build();
+          private final io.github.tomboyo.lily.http.UriTemplate uriTemplate;
+
+          public {{className}}(String uri) {
+            this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.forPath(uri, "{{{relativePath}}}");
+          }
+
+          public io.github.tomboyo.lily.http.UriTemplate uriTemplate() {
+            return uriTemplate;
           }
         }
         """,
             "renderAstOperation",
             Map.of(
                 "packageName", ast.operationClass().packageName(),
-                "className", Support.capitalCamelCase(ast.operationClass().name())));
+                "className", Support.capitalCamelCase(ast.operationClass().name()),
+                "relativePath", ast.relativePath()));
 
     return sourceForFqn(ast.operationClass(), content);
   }

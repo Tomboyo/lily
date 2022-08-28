@@ -4,12 +4,16 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
@@ -105,7 +109,8 @@ public class CompilerSupport {
             null,
             fileManager,
             listener,
-            List.of("-d", classesDir.toString()),
+            List.of(
+                "-d", classesDir.toString(), "-classpath", System.getProperty("java.class.path")),
             null,
             compilationUnits)
         .call();
@@ -114,16 +119,33 @@ public class CompilerSupport {
         .findFirst()
         .ifPresent(
             (it) -> {
+              var source = readAll(it.getSource());
+              var affectedLines =
+                  getLinesAround(source, it.getStartPosition(), it.getEndPosition());
               throw new RuntimeException(
-                  "Compilation error: code=%s kind=%s pos=%d startPosition=%d endPosition=%d source=%s\n%s%n"
-                      .formatted(
-                          it.getCode(),
-                          it.getKind(),
-                          it.getPosition(),
-                          it.getStartPosition(),
-                          it.getEndPosition(),
-                          it.getSource(),
-                          it.getMessage(null)));
+                  "Compilation error in %s:%n%n%s%n```%n%s%n```%n"
+                      .formatted(it.getSource(), it.getMessage(null), affectedLines));
             });
+  }
+
+  private static String readAll(JavaFileObject o) {
+    try (var raw = o.openInputStream();
+        var reader = new InputStreamReader(raw);
+        var buffered = new BufferedReader(reader)) {
+      return buffered.lines().collect(Collectors.joining("\n"));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static String getLinesAround(String source, long fromLong, long toLong) {
+    int from = (int) fromLong;
+    int to = (int) toLong;
+
+    // Move pointers to the beginning and end of their respective lines if they aren't already there
+    from = source.lastIndexOf('\n', from);
+    to = source.indexOf('\n', to);
+
+    return source.substring(from, to).trim();
   }
 }

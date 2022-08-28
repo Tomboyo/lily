@@ -46,8 +46,9 @@ public class AstGenerator {
             .stream()
             .flatMap(
                 entry -> {
+                  var relativePath = entry.getKey();
                   var pathItem = entry.getValue();
-                  return OasPathsToAst.evaluatePathItem(basePackage, pathItem);
+                  return OasPathsToAst.evaluatePathItem(basePackage, relativePath, pathItem);
                 })
             .collect(Collectors.toSet());
     var taggedOperations =

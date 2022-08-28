@@ -4,8 +4,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.net.URI;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class UriTemplate {
 
@@ -17,8 +20,24 @@ public class UriTemplate {
     parameters = new HashMap<>();
   }
 
-  public static UriTemplate forPath(String path) {
-    return new UriTemplate(path);
+  public static UriTemplate forPath(String first, String... rest) {
+    var uri =
+        Stream.concat(Stream.of(first), Arrays.stream(rest))
+            .map(UriTemplate::removeLeadingAndTrailingSlash)
+            .collect(Collectors.joining("/"));
+    return new UriTemplate(uri);
+  }
+
+  private static String removeLeadingAndTrailingSlash(String part) {
+    if (part.codePointAt(0) == '/') {
+      part = part.substring(1);
+    }
+
+    if (part.codePointAt(part.length() - 1) == '/') {
+      part = part.substring(0, part.length() - 1);
+    }
+
+    return part;
   }
 
   public UriTemplate put(String name, String value) {

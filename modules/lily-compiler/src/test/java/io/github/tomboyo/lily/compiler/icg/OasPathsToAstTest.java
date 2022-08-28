@@ -41,6 +41,7 @@ public class OasPathsToAstTest {
 
           OasPathsToAst.evaluatePathItem(
                   "p",
+                  "get/",
                   new PathItem()
                       .addParametersItem(
                           new Parameter().name("a").in("path").schema(new BooleanSchema()))
@@ -81,6 +82,7 @@ public class OasPathsToAstTest {
 
           OasPathsToAst.evaluatePathItem(
                   "p",
+                  "get/",
                   new PathItem()
                       .addParametersItem(
                           new Parameter().name("a").in("query").schema(new BooleanSchema()))
@@ -106,6 +108,7 @@ public class OasPathsToAstTest {
       EvaluatedOperation actual(String... tags) {
         return OasPathsToAst.evaluatePathItem(
                 "p",
+                "get/",
                 new PathItem().get(new Operation().operationId("Get").tags(Arrays.asList(tags))))
             .findAny()
             .orElseThrow(); // Exactly one expected since there's one OAS operation
@@ -132,7 +135,7 @@ public class OasPathsToAstTest {
     class AstOperation {
       EvaluatedOperation actual() {
         return OasPathsToAst.evaluatePathItem(
-                "p", new PathItem().get(new Operation().operationId("Get")))
+                "p", "get/", new PathItem().get(new Operation().operationId("Get")))
             .findAny()
             .orElseThrow(); // Exactly one expected since there's one OAS operation
       }
@@ -149,6 +152,14 @@ public class OasPathsToAstTest {
             actual().operation().operationClass(),
             is(new AstReference("p", "GetOperation", List.of(), false)));
       }
+
+      @Test
+      void containsRelativePath() {
+        assertThat(
+            "The resulting operation contains its relative path from the Path Item",
+            actual().operation().relativePath(),
+            is("get/"));
+      }
     }
   }
 
@@ -157,9 +168,11 @@ public class OasPathsToAstTest {
     @Test
     void groupsByTags() {
       var getAOperation =
-          new AstOperation("GetA", new AstReference("p", "GetAOperation", List.of(), false));
+          new AstOperation(
+              "GetA", new AstReference("p", "GetAOperation", List.of(), false), "getA/");
       var getABOperation =
-          new AstOperation("GetAB", new AstReference("p", "GetABOperation", List.of(), false));
+          new AstOperation(
+              "GetAB", new AstReference("p", "GetABOperation", List.of(), false), "getAB/");
       var actual =
           OasPathsToAst.evaluateTaggedOperations(
                   "p",
