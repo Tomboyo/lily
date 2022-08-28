@@ -1,11 +1,15 @@
 package io.github.tomboyo.lily.compiler.ast;
 
-import java.util.Set;
+import java.util.List;
 
-/** An operation, such as "createNewBlogPost" corresponding to an OAS operation. */
+/**
+ * An operation, such as "createNewBlogPost" corresponding to an OAS operation.
+ *
+ * <p>The parameters field list reflects the order of parameters as specified in the OAS.
+ */
 public record AstOperation(
     String operationName,
     AstReference operationClass,
     String relativePath,
-    Set<AstParameter> parameters)
+    List<AstParameter> parameters)
     implements Ast {}
