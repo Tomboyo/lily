@@ -1,5 +1,7 @@
 package io.github.tomboyo.lily.compiler.cg;
 
+import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
+import static io.github.tomboyo.lily.compiler.icg.Support.lowerCamelCase;
 import static java.util.stream.Collectors.toList;
 
 import com.github.mustachejava.DefaultMustacheFactory;
@@ -79,7 +81,7 @@ public class AstToJava {
         "recordField",
         Map.of(
             "fqpt", fullyQualifiedParameterizedType(field.astReference()),
-            "name", Support.lowerCamelCase(field.name())));
+            "name", lowerCamelCase(field.name())));
   }
 
   private static String fullyQualifiedParameterizedType(AstReference ast) {
@@ -167,7 +169,7 @@ public class AstToJava {
                             tag ->
                                 Map.of(
                                     "fqReturnType", Fqns.fqn(tag),
-                                    "methodName", Support.lowerCamelCase(tag.name())))
+                                    "methodName", lowerCamelCase(tag.name())))
                         .collect(toList())));
 
     return sourceForFqn(ast, content);
@@ -223,7 +225,22 @@ public class AstToJava {
             this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.forPath(uri, "{{{relativePath}}}");
           }
 
+          {{#pathParameters}}
+          private {{{fqpt}}} {{name}};
+          public {{className}} {{name}}({{{fqpt}}} {{name}}) {
+            this.{{name}} = {{name}};
+            return this;
+          }
+          {{/pathParameters}}
+
           public io.github.tomboyo.lily.http.UriTemplate uriTemplate() {
+            {{#pathParameters}}
+            if (this.{{name}} != null) {
+              uriTemplate.put(
+                  "{{oasName}}",
+                  io.github.tomboyo.lily.http.encoding.Encoding.simple(this.{{name}}));
+            }
+            {{/pathParameters}}
             return uriTemplate;
           }
         }
@@ -232,7 +249,18 @@ public class AstToJava {
             Map.of(
                 "packageName", ast.operationClass().packageName(),
                 "className", Support.capitalCamelCase(ast.operationClass().name()),
-                "relativePath", ast.relativePath()));
+                "relativePath", ast.relativePath(),
+                "pathParameters",
+                    ast.parameters().stream()
+                        .filter(parameter -> parameter.location() == PATH)
+                        .map(
+                            parameter ->
+                                Map.of(
+                                    "fqpt",
+                                        fullyQualifiedParameterizedType(parameter.astReference()),
+                                    "name", lowerCamelCase(parameter.name()),
+                                    "oasName", parameter.name()))
+                        .collect(toList())));
 
     return sourceForFqn(ast.operationClass(), content);
   }
