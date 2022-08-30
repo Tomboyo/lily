@@ -3,6 +3,80 @@
 Lily is a compiler that consumes OpenAPI (Swagger) specifications and produces Java source code.
 It is intended to be an alternative to https://github.com/OpenAPITools/openapi-generator[OpenAPI Generator], which at time of writing is the only option, and substantially more complete than Lily.
 
+== Usage
+
+Please be aware that Lily is in the early stages of development and may not be suitable for production use-cases. Use Lily at your own risk.
+
+To generate sources from an OAS document in your maven project, and the following maven build plugin and dependencies:
+
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>io.github.tomboyo.lily</groupId>
+            <artifactId>lily-compiler-maven-plugin</artifactId>
+            <version>0.1.2</version>
+            <configuration>
+                <!-- Any URI to an OAS document, be it https:// or file://. -->
+                <uri>https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/petstore.yaml</uri>
+
+                <!-- Uncomment to customize the default generated sources directory. -->
+                <!-- <outputDir>target/generated-sources</outputDir> -->
+
+                <basePackage>com.exmaple.my.api</basePackage>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>compile-client</goal>
+                    </goals>
+                    <phase>generate-sources</phase>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+
+ <dependencyManagement>
+    <dependencies>
+        <!-- BEGIN generated code dependency management -->
+        <dependency>
+            <groupId>com.fasterxml.jackson</groupId>
+            <artifactId>jackson-bom</artifactId>
+            <version>2.13.0</version>
+            <scope>import</scope>
+            <type>pom</type>
+        </dependency>
+        <!-- END generated code dependency management -->
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+     <!-- BEGIN Generated code dependencies -->
+    <dependency>
+        <groupId>io.github.tomboyo.lily</groupId>
+        <artifactId>lily-http</artifactId>
+        <version>0.1.2</version>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+        <!-- ZonedDatetime support -->
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+    <!-- END Generated code dependencies -->
+</dependencies>
+```
+
+The generated source code relies on jackson and the lily-http library at runtime, which is why these dependencies are necessary.
+
+These configurations can be stand-alone or embedded in a larger project.
+
+For examples of how to use the generated API and what features are supported, please refer to the `modules/example/src/test/java` directory, which contains some basic examples of what the API is capable of.
+
 == Goals
 
 . Generate java source code directly from an OAS document within a java build pipeline (e.g. integrated with Maven or Gradle).
