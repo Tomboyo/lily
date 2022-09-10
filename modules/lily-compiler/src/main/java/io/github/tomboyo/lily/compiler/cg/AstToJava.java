@@ -116,10 +116,11 @@ public class AstToJava {
             """,
             "renderAstClassAlias",
             Map.of(
-                "packageName", ast.packageName(),
-                "recordName", Support.capitalCamelCase(ast.name()),
+                "packageName", ast.name().packageName(),
+                "recordName", ast.name().className().upperCamelCase(),
                 "fqpValueName", fullyQualifiedParameterizedType(ast.aliasedType())));
-    return sourceForFqn(ast, content);
+
+    return createSource(ast.name(), content);
   }
 
   private Source renderAstAPi(AstApi ast) {

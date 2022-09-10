@@ -1,20 +1,17 @@
 package io.github.tomboyo.lily.compiler.ast;
 
+import static java.util.Objects.requireNonNull;
+
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
-import static java.util.Objects.requireNonNull;
-
-//TODO: replace Fqn with this
+// TODO: replace Fqn with this
 public class Fqn2 {
 
   private final List<String> packageParts;
@@ -34,17 +31,12 @@ public class Fqn2 {
     }
 
     public String upperCamelCase() {
-      return nameParts.stream()
-          .map(this::upperCase)
-          .collect(Collectors.joining(""));
+      return nameParts.stream().map(this::upperCase).collect(Collectors.joining(""));
     }
 
     public String lowerCamelCase() {
       var first = nameParts.get(0).toLowerCase();
-      var rest = nameParts.stream()
-          .skip(1)
-          .map(this::upperCase)
-          .collect(Collectors.joining(""));
+      var rest = nameParts.stream().skip(1).map(this::upperCase).collect(Collectors.joining(""));
       return first + rest;
     }
 
@@ -78,7 +70,7 @@ public class Fqn2 {
         throw new IllegalArgumentException("Names cannot be blank");
       }
 
-      if(STARTS_WITH_DIGIT.matcher(name).matches()) {
+      if (STARTS_WITH_DIGIT.matcher(name).matches()) {
         throw new IllegalArgumentException("Names cannot begin with digits");
       }
 
@@ -119,7 +111,7 @@ public class Fqn2 {
   }
 
   public Path asPath() {
-    return Path.of(".", packageParts.toArray(new String[]{}))
+    return Path.of(".", packageParts.toArray(new String[] {}))
         .normalize()
         .resolve(className().upperCamelCase() + ".java");
   }
@@ -130,21 +122,19 @@ public class Fqn2 {
   }
 
   private static String joinPackages(List<String> packageNameParts) {
-    return packageNameParts.stream()
-        .collect(Collectors.joining("."));
+    return packageNameParts.stream().collect(Collectors.joining("."));
   }
 
   private static List<String> toPackageParts(String first, String... rest) {
-    return Stream.concat(
-            Stream.of(first),
-            Arrays.stream(rest))
+    return Stream.concat(Stream.of(first), Arrays.stream(rest))
         .filter(it -> !it.isBlank())
         .map(Builder::withoutLeadingOrTrailingDot)
+        .flatMap(it -> Arrays.stream(it.split("\\.")))
         .collect(Collectors.toList());
   }
 
-  private static final Pattern CAMEL_CASE_PATTERN = Pattern
-      .compile("[0-9a-z]+|([A-Z](([A-Z]*(?![a-z]))|[0-9a-z]*))");
+  private static final Pattern CAMEL_CASE_PATTERN =
+      Pattern.compile("[0-9a-z]+|([A-Z](([A-Z]*(?![a-z]))|[0-9a-z]*))");
 
   private static List<String> splitName(String name) {
     if (name.contains("-")) {

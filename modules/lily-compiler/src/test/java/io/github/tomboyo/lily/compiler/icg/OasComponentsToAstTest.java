@@ -60,7 +60,8 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  "p", "MyComponent", new AstReference(javaPackage, javaClass, List.of(), true))),
+                  Fqn2.of("p", "MyComponent"),
+                  new AstReference(javaPackage, javaClass, List.of(), true))),
           actual.collect(Collectors.toSet()));
     }
   }
@@ -76,7 +77,7 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  "p", "MyComponent", new AstReference("p", "MyRef", List.of(), false))),
+                  Fqn2.of("p", "MyComponent"), new AstReference("p", "MyRef", List.of(), false))),
           actual.collect(Collectors.toSet()));
     }
   }
@@ -90,7 +91,7 @@ public class OasComponentsToAstTest {
               "p", "MyComponent", new ArraySchema().items(new Schema<>().type("boolean")));
 
       assertEquals(
-          Set.of(new AstClassAlias("p", "MyComponent", astListOf(astBoolean()))),
+          Set.of(new AstClassAlias(Fqn2.of("p", "MyComponent"), astListOf(astBoolean()))),
           actual.collect(Collectors.toSet()),
           "Array components evaluate to aliases of lists");
     }
@@ -107,8 +108,7 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  "p",
-                  "MyComponent",
+                  Fqn2.of("p", "MyComponent"),
                   new AstReference(
                       "java.util",
                       "List",
@@ -139,8 +139,7 @@ public class OasComponentsToAstTest {
           Set.of(
               AstClass.of(Fqn2.of("p.mycomponent", "MyComponentItem"), List.of()),
               new AstClassAlias(
-                  "p",
-                  "MyComponent",
+                  Fqn2.of("p", "MyComponent"),
                   astListOf(
                       astListOf(
                           new AstReference(
@@ -161,7 +160,8 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  "p", "MyComponent", astListOf(new AstReference("p", "MyRef", List.of(), false)))),
+                  Fqn2.of("p", "MyComponent"),
+                  astListOf(new AstReference("p", "MyRef", List.of(), false)))),
           actual.collect(Collectors.toSet()),
           "arrays of refs evaluate to aliases of lists of the referent type");
     }

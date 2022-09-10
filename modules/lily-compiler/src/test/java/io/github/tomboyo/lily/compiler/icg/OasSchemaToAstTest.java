@@ -90,9 +90,7 @@ class OasSchemaToAstTest {
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
                   AstClass.of(
-                      Fqn2.of(
-                      "p",
-                      "MyObject"),
+                      Fqn2.of("p", "MyObject"),
                       List.of(
                           new AstField(
                               new AstReference(javaPackage, javaClass, List.of(), true),
@@ -118,16 +116,14 @@ class OasSchemaToAstTest {
           new Pair<>(
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
-                  AstClass.of(Fqn2.of(
-                      "p",
-                      "MyObject"),
+                  AstClass.of(
+                      Fqn2.of("p", "MyObject"),
                       List.of(
                           new AstField(
                               new AstReference("p.myobject", "MyInnerObject", List.of(), false),
                               "myInnerObject"))),
-                  AstClass.of(Fqn2.of(
-                      "p.myobject",
-                      "MyInnerObject"),
+                  AstClass.of(
+                      Fqn2.of("p.myobject", "MyInnerObject"),
                       List.of(new AstField(astBoolean(), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference for the outer generated type but the AST for both the outer and"
@@ -147,9 +143,8 @@ class OasSchemaToAstTest {
           new Pair<>(
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
-                  AstClass.of(Fqn2.of(
-                      "p",
-                      "MyObject"),
+                  AstClass.of(
+                      Fqn2.of("p", "MyObject"),
                       List.of(
                           new AstField(
                               new AstReference("p", "MyRef", List.of(), false), "myField"))))),
@@ -172,8 +167,9 @@ class OasSchemaToAstTest {
           new Pair<>(
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
-                  AstClass.of(Fqn2.of(
-                      "p", "MyObject"), List.of(new AstField(astListOf(astBoolean()), "myField"))))),
+                  AstClass.of(
+                      Fqn2.of("p", "MyObject"),
+                      List.of(new AstField(astListOf(astBoolean()), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference to the generated type and its AST, which does not generate any"
               + " new type for the nested array");
@@ -195,9 +191,8 @@ class OasSchemaToAstTest {
           new Pair<>(
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
-                  AstClass.of(Fqn2.of(
-                      "p",
-                      "MyObject"),
+                  AstClass.of(
+                      Fqn2.of("p", "MyObject"),
                       List.of(
                           new AstField(astBoolean(), "myField1"),
                           new AstField(
@@ -241,7 +236,9 @@ class OasSchemaToAstTest {
           new Pair<>(
               astListOf(new AstReference("p", "MyArrayItem", List.of(), false)),
               Set.of(
-                  AstClass.of(Fqn2.of("p", "MyArrayItem"), List.of(new AstField(astBoolean(), "myField"))))),
+                  AstClass.of(
+                      Fqn2.of("p", "MyArrayItem"),
+                      List.of(new AstField(astBoolean(), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "defines the inline object in the current package with the -Item suffix in its class"
               + " name");

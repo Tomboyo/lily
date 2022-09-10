@@ -1,6 +1,5 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static io.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -46,13 +45,13 @@ public class OasComponentsToAst {
     if (null == component.getType()) {
       // Create a AstClassAlias of a referent type. There are no AST elements.
       return Stream.concat(
-          Stream.of(new AstClassAlias(basePackage, componentName, refAndAst.left())),
+          Stream.of(new AstClassAlias(Fqn2.of(basePackage, componentName), refAndAst.left())),
           refAndAst.right());
     }
 
     return switch (component.getType()) {
       case "integer", "number", "string", "boolean" -> Stream.concat(
-          Stream.of(new AstClassAlias(basePackage, componentName, refAndAst.left())),
+          Stream.of(new AstClassAlias(Fqn2.of(basePackage, componentName), refAndAst.left())),
           refAndAst.right());
       case "array" -> evaluateArray(basePackage, refAndAst, componentName);
       case "object" -> refAndAst.right();
@@ -86,8 +85,9 @@ public class OasComponentsToAst {
             .collect(
                 toMap(
                     identity(),
-                    it -> it.withPackage(
-                        pattern.matcher(it.packageName()).replaceFirst(replacement))));
+                    it ->
+                        it.withPackage(
+                            pattern.matcher(it.packageName()).replaceFirst(replacement))));
 
     // 2. Update each such FQN
     var mappedAst =
@@ -104,8 +104,7 @@ public class OasComponentsToAst {
     // 3. Create the final AstClassAlias (with updated AstRef!)
     var alias =
         new AstClassAlias(
-            basePackage, capitalCamelCase(componentName), moveReference(refAndAst.left(),
-            fqnToPackage));
+            Fqn2.of(basePackage, componentName), moveReference(refAndAst.left(), fqnToPackage));
 
     return Stream.concat(Stream.of(alias), mappedAst);
   }
