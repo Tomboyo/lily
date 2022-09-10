@@ -44,15 +44,13 @@ public class Fqn2Test {
     @ParameterizedTest
     @MethodSource("kebabCaseParameterSource")
     void upperCamelCase(String input, String expected) {
-      assertEquals(
-          expected, Fqn2.newBuilder().withClassName(input).build().className().upperCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).className().upperCamelCase());
     }
 
     @ParameterizedTest
     @MethodSource("kebabCaseParameterSource")
     void lowerCamelCase(String input, String unused, String expected) {
-      assertEquals(
-          expected, Fqn2.newBuilder().withClassName(input).build().className().lowerCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).className().lowerCamelCase());
     }
   }
 
@@ -84,15 +82,13 @@ public class Fqn2Test {
     @ParameterizedTest
     @MethodSource("snakeCaseParameterSource")
     void upperCamelCase(String input, String expected) {
-      assertEquals(
-          expected, Fqn2.newBuilder().withClassName(input).build().className().upperCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).className().upperCamelCase());
     }
 
     @ParameterizedTest
     @MethodSource("snakeCaseParameterSource")
     void lowerCamelCase(String input, String unused, String expected) {
-      assertEquals(
-          expected, Fqn2.newBuilder().withClassName(input).build().className().lowerCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).className().lowerCamelCase());
     }
   }
 
@@ -134,15 +130,13 @@ public class Fqn2Test {
     @ParameterizedTest
     @MethodSource("camelCaseParameterSource")
     void upperCamelCase(String input, String expected) {
-      assertEquals(
-          expected, Fqn2.newBuilder().withClassName(input).build().className().upperCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).className().upperCamelCase());
     }
 
     @ParameterizedTest
     @MethodSource("camelCaseParameterSource")
     void lowerCamelCase(String input, String unused, String expected) {
-      assertEquals(
-          expected, Fqn2.newBuilder().withClassName(input).build().className().lowerCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).className().lowerCamelCase());
     }
   }
 
@@ -150,65 +144,22 @@ public class Fqn2Test {
   @NullAndEmptySource
   @ValueSource(strings = {"123Name", "123-name", "123_name"}) // leading digits
   void illegalNameInputs(String input) {
-    assertThrows(Exception.class, () -> Fqn2.newBuilder().withClassName(input).build());
+    assertThrows(Exception.class, () -> Fqn2.of("p", input));
   }
 
   @Nested
   class FullyQualifiedName {
-    private static final Stream<Arguments> fullyQualifiedParameterSource() {
-      return Stream.of(
-          arguments("com", new String[] {"example"}),
-          arguments(".com.", new String[] {".example."}),
-          arguments("com.example", new String[] {}),
-          arguments("", new String[] {"com.example"}),
-          arguments("com.example", new String[] {}));
-    }
-
     @ParameterizedTest
-    @MethodSource("fullyQualifiedParameterSource")
-    void fullyQualifiedName(String first, String... rest) {
-      assertEquals(
-          "com.example.FooBarBaz",
-          Fqn2.newBuilder()
-              .withPackage(first, rest)
-              .withClassName("FooBarBaz")
-              .build()
-              .fullyQualifiedName());
-    }
-
-    @Test
-    void nullFirstPackagePart() {
-      assertThrows(
-          NullPointerException.class,
-          () -> Fqn2.newBuilder().withPackage((String) null).withClassName("Foo").build());
-    }
-
-    @Test
-    void nullRestPackageParts() {
-      assertThrows(
-          NullPointerException.class,
-          () -> Fqn2.newBuilder().withPackage("", (String[]) null).withClassName("Foo").build());
+    @ValueSource(strings = {".com.example.", "com.example.", ".com.example", "com.example"})
+    void fullyQualifiedName(String packageName) {
+      assertEquals("com.example.FooBarBaz", Fqn2.of(packageName, "FooBarBaz").fullyQualifiedName());
     }
   }
 
-  @Nested
-  class AsPath {
-    @Test
-    void usingOf() {
-      assertEquals(
-          Path.of("io/github/tomboyo/lily/example/Test.java"),
-          Fqn2.of("io.github.tomboyo.lily.example", "Test").asPath());
-    }
-
-    @Test
-    void usingBuilder() {
-      assertEquals(
-          Path.of("io/github/tomboyo/lily/example/Test.java"),
-          Fqn2.newBuilder()
-              .withPackage("io.github", "tomboyo", "lily.example")
-              .withClassName("Test")
-              .build()
-              .asPath());
-    }
+  @Test
+  void asPath() {
+    assertEquals(
+        Path.of("io/github/tomboyo/lily/example/Test.java"),
+        Fqn2.of("io.github.tomboyo.lily.example", "Test").toPath());
   }
 }

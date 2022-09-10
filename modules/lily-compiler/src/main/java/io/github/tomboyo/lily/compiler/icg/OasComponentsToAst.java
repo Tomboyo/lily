@@ -10,6 +10,7 @@ import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.cg.Fqns;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.Schema;
@@ -87,7 +88,9 @@ public class OasComponentsToAst {
                     identity(),
                     it ->
                         it.withPackage(
-                            pattern.matcher(it.packageName()).replaceFirst(replacement))));
+                            pattern
+                                .matcher(it.packageName().toString())
+                                .replaceFirst(replacement))));
 
     // 2. Update each such FQN
     var mappedAst =
@@ -123,7 +126,10 @@ public class OasComponentsToAst {
   private static AstReference moveReference(AstReference ref, Map<Fqn2, Fqn2> nameMap) {
     var key = Fqn2.of(ref.packageName(), ref.name());
     return new AstReference(
-        Optional.ofNullable(nameMap.get(key)).map(Fqn2::packageName).orElse(ref.packageName()),
+        Optional.ofNullable(nameMap.get(key))
+            .map(Fqn2::packageName)
+            .map(PackageName::toString)
+            .orElse(ref.packageName()),
         ref.name(),
         ref.typeParameters().stream().map(param -> moveReference(param, nameMap)).collect(toList()),
         ref.isProvidedType());

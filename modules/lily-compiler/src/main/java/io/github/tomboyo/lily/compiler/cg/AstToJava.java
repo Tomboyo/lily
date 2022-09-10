@@ -272,6 +272,6 @@ public class AstToJava {
   }
 
   private static Source createSource(Fqn2 fqn, String content) {
-    return new Source(fqn.asPath(), fqn.fullyQualifiedName(), content);
+    return new Source(fqn.toPath(), fqn.fullyQualifiedName(), content);
   }
 }
