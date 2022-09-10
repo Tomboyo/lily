@@ -194,10 +194,21 @@ public class Fqn2Test {
   @Nested
   class AsPath {
     @Test
-    void test() {
+    void usingOf() {
       assertEquals(
-          Path.of("io/github/tomboyo/lily/example", "Test.java"),
+          Path.of("io/github/tomboyo/lily/example/Test.java"),
           Fqn2.of("io.github.tomboyo.lily.example", "Test").asPath());
+    }
+
+    @Test
+    void usingBuilder() {
+      assertEquals(
+          Path.of("io/github/tomboyo/lily/example/Test.java"),
+          Fqn2.newBuilder()
+              .withPackage("io.github", "tomboyo", "lily.example")
+              .withClassName("Test")
+              .build()
+              .asPath());
     }
   }
 }
