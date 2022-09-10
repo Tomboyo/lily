@@ -260,8 +260,8 @@ public class AstToJava {
                                 Map.of(
                                     "fqpt",
                                         fullyQualifiedParameterizedType(parameter.astReference()),
-                                    "name", lowerCamelCase(parameter.name()),
-                                    "oasName", parameter.name()))
+                                    "name", parameter.name().lowerCamelCase(),
+                                    "oasName", parameter.name().raw()))
                         .collect(toList())));
 
     return sourceForFqn(ast.operationClass(), content);

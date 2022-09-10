@@ -18,9 +18,11 @@ import java.util.stream.Collectors;
  */
 public class SimpleName {
 
+  private final String raw;
   private final List<String> nameParts;
 
-  private SimpleName(List<String> nameParts) {
+  private SimpleName(String raw, List<String> nameParts) {
+    this.raw = raw;
     this.nameParts = nameParts;
   }
 
@@ -35,7 +37,7 @@ public class SimpleName {
       throw new IllegalArgumentException("Simple name must not start with a digit");
     }
 
-    return new SimpleName(splitName(name));
+    return new SimpleName(name, splitName(name));
   }
 
   public String upperCamelCase() {
@@ -46,6 +48,10 @@ public class SimpleName {
     var first = nameParts.get(0).toLowerCase();
     var rest = nameParts.stream().skip(1).map(this::upperCase).collect(Collectors.joining(""));
     return first + rest;
+  }
+
+  public String raw() {
+    return raw;
   }
 
   @Override

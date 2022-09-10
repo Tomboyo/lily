@@ -5,6 +5,7 @@ import static io.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstParameter;
 import io.github.tomboyo.lily.compiler.ast.AstParameterLocation;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import java.util.stream.Stream;
 
@@ -17,7 +18,7 @@ public class OasParameterToAst {
 
     return new ParameterAndAst(
         new AstParameter(
-            parameter.getName(),
+            SimpleName.of(parameter.getName()),
             AstParameterLocation.fromString(parameter.getIn()),
             parameterRefAndAst.left()),
         parameterRefAndAst.right());

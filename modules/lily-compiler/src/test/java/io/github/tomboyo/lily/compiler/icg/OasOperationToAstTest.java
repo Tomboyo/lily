@@ -35,7 +35,6 @@ public class OasOperationToAstTest {
     @Test
     void evaluatesAllParametersToAst() {
       try (var mock = mockStatic(OasSchemaToAst.class)) {
-        var ast = astReferencePlaceholder();
         mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
             .thenAnswer(
                 invocation -> new Pair<>(astBoolean(), Stream.of(astReferencePlaceholder())));
@@ -83,31 +82,27 @@ public class OasOperationToAstTest {
         mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
             .thenAnswer(invocation -> new Pair<>(astBoolean(), Stream.of()));
 
-        var actual =
-            OasOperationToAst.evaluateOperaton(
-                "p",
-                "/relative/path",
-                new Operation()
-                    .operationId("operationId")
-                    .addParametersItem(
-                        new Parameter()
-                            .name("a")
-                            .in("query")
-                            .schema(new IntegerSchema())), // the only IntegerSchema
-                List.of(
-                    new Parameter()
-                        .name("a")
-                        .in("path")
-                        .schema(new BooleanSchema()), // different `in`
-                    new Parameter()
-                        .name("b")
-                        .in("query")
-                        .schema(new BooleanSchema()), // different `name`
+        OasOperationToAst.evaluateOperaton(
+            "p",
+            "/relative/path",
+            new Operation()
+                .operationId("operationId")
+                .addParametersItem(
                     new Parameter()
                         .name("a")
                         .in("query")
-                        .schema(new BooleanSchema()) // equal `name` and `in`
-                    ));
+                        .schema(new IntegerSchema())), // the only IntegerSchema
+            List.of(
+                new Parameter().name("a").in("path").schema(new BooleanSchema()), // different `in`
+                new Parameter()
+                    .name("b")
+                    .in("query")
+                    .schema(new BooleanSchema()), // different `name`
+                new Parameter()
+                    .name("a")
+                    .in("query")
+                    .schema(new BooleanSchema()) // equal `name` and `in`
+                ));
 
         // The PathItem's "a" query parameter is overridden by the Operation's query parameter with
         // the same name.
@@ -213,17 +208,19 @@ public class OasOperationToAstTest {
         try (var mock = mockStatic(OasParameterToAst.class)) {
           mock.when(() -> OasParameterToAst.evaluateParameter(any(), any()))
               .thenReturn(
-                  new ParameterAndAst(new AstParameter("1", PATH, astBoolean()), Stream.of()))
+                  new ParameterAndAst(
+                      new AstParameter(SimpleName.of("A"), PATH, astBoolean()), Stream.of()))
               .thenReturn(
-                  new ParameterAndAst(new AstParameter("2", QUERY, astString()), Stream.of()));
+                  new ParameterAndAst(
+                      new AstParameter(SimpleName.of("B"), QUERY, astString()), Stream.of()));
 
           assertThat(
               "The parameters list is in the original OAS order",
               actual().operation().parameters(),
               is(
                   List.of(
-                      new AstParameter("1", PATH, astBoolean()),
-                      new AstParameter("2", QUERY, astString()))));
+                      new AstParameter(SimpleName.of("A"), PATH, astBoolean()),
+                      new AstParameter(SimpleName.of("B"), QUERY, astString()))));
         }
       }
     }

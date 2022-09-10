@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 
 import io.github.tomboyo.lily.compiler.ast.AstParameterLocation;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.StringSchema;
@@ -25,7 +26,7 @@ public class OasParameterToAstTest {
         OasParameterToAst.evaluateParameter(
             "p", new Parameter().name("name").in("path").schema(new StringSchema()));
 
-    assertThat(actual.parameter().name(), is("name"));
+    assertThat(actual.parameter().name(), is(SimpleName.of("name")));
   }
 
   @Test
