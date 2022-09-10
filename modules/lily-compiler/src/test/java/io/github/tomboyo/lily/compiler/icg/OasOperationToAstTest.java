@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mockStatic;
 
 import io.github.tomboyo.lily.compiler.ast.AstParameter;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
 import io.github.tomboyo.lily.compiler.icg.OasParameterToAst.ParameterAndAst;
 import io.github.tomboyo.lily.compiler.util.Pair;
@@ -188,7 +189,7 @@ public class OasOperationToAstTest {
         assertThat(
             "The operation name is taken from the globally unique OAS operationID",
             actual().operation().operationName(),
-            is("operationId"));
+            is(SimpleName.of("operationId")));
       }
 
       @Test

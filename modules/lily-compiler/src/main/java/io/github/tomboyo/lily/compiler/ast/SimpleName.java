@@ -9,7 +9,13 @@ import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/** A name without a package qualifier, like String or myField. */
+/**
+ * A name without a package qualifier, like String or myField.
+ *
+ * <p>A simple name may be constructed from raw strings in camelCase (and PascalCase), kebab-case,
+ * and snake_case. When formatted to a string using {@link #lowerCamelCase()} or {@link
+ * #upperCamelCase()}, word boundaries from the raw input are respected.
+ */
 public class SimpleName {
 
   private final List<String> nameParts;

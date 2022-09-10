@@ -8,17 +8,21 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/** A package name without a qualified class, like com.example.foo.bar.baz */
 public class PackageName {
 
   private final List<String> packageParts;
 
   private PackageName(List<String> packageParts) {
-    requireNonNull(packageParts);
-
     this.packageParts = packageParts;
   }
 
   public static PackageName of(String packageName) {
+    requireNonNull(packageName);
+    if (packageName.isBlank()) {
+      throw new IllegalArgumentException("Package name must not be blank");
+    }
+
     return new PackageName(toPackageParts(packageName));
   }
 

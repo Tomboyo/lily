@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
@@ -61,9 +62,10 @@ public class OasPathsToAstTest {
 
     @Test
     void groupsOperationsByTag() {
-      var getAOperation = new AstOperation("GetA", astReferencePlaceholder(), "getA/", List.of());
+      var getAOperation =
+          new AstOperation(SimpleName.of("GetA"), astReferencePlaceholder(), "getA/", List.of());
       var getABOperation =
-          new AstOperation("GetAB", astReferencePlaceholder(), "getAB/", List.of());
+          new AstOperation(SimpleName.of("GetAB"), astReferencePlaceholder(), "getAB/", List.of());
       var actual =
           OasPathsToAst.evaluateTaggedOperations(
                   "p",

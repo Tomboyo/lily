@@ -209,7 +209,7 @@ public class AstToJava {
                             operation ->
                                 Map.of(
                                     "fqReturnType", Fqns.fqn(operation.operationClass()),
-                                    "methodName", operation.operationName()))
+                                    "methodName", operation.operationName().lowerCamelCase()))
                         .collect(toList())));
 
     return sourceForFqn(ast, content);

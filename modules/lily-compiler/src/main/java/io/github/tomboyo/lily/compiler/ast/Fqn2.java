@@ -4,7 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.nio.file.Path;
 
-// TODO: replace Fqn with this
+/** A fully-qualified name composed of a package name and a simple name, like java.util.String. */
 public record Fqn2(PackageName packageName, SimpleName simpleName) {
 
   public Fqn2(PackageName packageName, SimpleName simpleName) {

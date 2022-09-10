@@ -10,6 +10,7 @@ import static java.util.stream.Collectors.toMap;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import java.util.Collection;
@@ -59,7 +60,7 @@ public class OasOperationToAst {
     return new TagsOperationAndAst(
         getOperationTags(operation),
         new AstOperation(
-            operation.getOperationId(),
+            SimpleName.of(operation.getOperationId()),
             new AstReference(basePackage, operationName, List.of(), false),
             relativePath,
             parameters),
