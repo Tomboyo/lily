@@ -7,6 +7,7 @@ import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -179,7 +180,8 @@ public class OasSchemaToAst {
             .collect(toList());
 
     var exteriorClass =
-        AstClass.of(currentPackage, name, fieldAndAst.stream().map(Pair::left).collect(toList()));
+        AstClass
+            .of(Fqn2.of(currentPackage, name), fieldAndAst.stream().map(Pair::left).collect(toList()));
     var interiorAst = fieldAndAst.stream().flatMap(Pair::right);
     return new Pair<>(
         new AstReference(currentPackage, name, List.of(), false),

@@ -1,6 +1,7 @@
 package io.github.tomboyo.lily.compiler.icg;
 
 import static io.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -9,10 +10,12 @@ import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import io.github.tomboyo.lily.compiler.cg.Fqns;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -76,13 +79,15 @@ public class OasComponentsToAst {
     // 1. Create a mapping of FQNs that need to move => their updated package names.
     var pattern = Pattern.compile("^" + basePackage);
     var replacement = Support.joinPackages(basePackage, componentName);
-    var mapping =
+    var fqnToPackage =
         ast.stream()
             .filter(it -> it instanceof AstClass)
-            .map(it -> (AstClass) it)
+            .map(it -> ((AstClass) it).name())
             .collect(
                 toMap(
-                    Fqns::fqn, it -> pattern.matcher(it.packageName()).replaceFirst(replacement)));
+                    identity(),
+                    it -> it.withPackage(
+                        pattern.matcher(it.packageName()).replaceFirst(replacement))));
 
     // 2. Update each such FQN
     var mappedAst =
@@ -90,7 +95,7 @@ public class OasComponentsToAst {
             .map(
                 it -> {
                   if (it instanceof AstClass astClass) {
-                    return moveClass(astClass, mapping);
+                    return moveClass(astClass, fqnToPackage);
                   } else {
                     return it;
                   }
@@ -99,30 +104,29 @@ public class OasComponentsToAst {
     // 3. Create the final AstClassAlias (with updated AstRef!)
     var alias =
         new AstClassAlias(
-            basePackage, capitalCamelCase(componentName), moveReference(refAndAst.left(), mapping));
+            basePackage, capitalCamelCase(componentName), moveReference(refAndAst.left(),
+            fqnToPackage));
 
     return Stream.concat(Stream.of(alias), mappedAst);
   }
 
-  private static AstClass moveClass(AstClass astClass, Map<String, String> mapping) {
+  private static AstClass moveClass(AstClass astClass, Map<Fqn2, Fqn2> nameMap) {
     return AstClass.of(
-        // All classes in this AST stream have to move, so we know this mapping is defined.
-        mapping.get(Fqns.fqn(astClass)),
-        astClass.name(),
-        astClass.fields().stream().map(ref -> moveField(ref, mapping)).collect(toList()));
+        nameMap.get(astClass.name()),
+        astClass.fields().stream().map(ref -> moveField(ref, nameMap)).collect(toList()));
   }
 
-  private static AstField moveField(AstField field, Map<String, String> mapping) {
+  private static AstField moveField(AstField field, Map<Fqn2, Fqn2> nameMap) {
     var key = Fqns.fqn(field.astReference());
-    return new AstField(moveReference(field.astReference(), mapping), field.name());
+    return new AstField(moveReference(field.astReference(), nameMap), field.name());
   }
 
-  private static AstReference moveReference(AstReference ref, Map<String, String> mapping) {
-    var key = Fqns.fqn(ref);
+  private static AstReference moveReference(AstReference ref, Map<Fqn2, Fqn2> nameMap) {
+    var key = Fqn2.of(ref.packageName(), ref.name());
     return new AstReference(
-        mapping.getOrDefault(key, ref.packageName()),
+        Optional.ofNullable(nameMap.get(key)).map(Fqn2::packageName).orElse(ref.packageName()),
         ref.name(),
-        ref.typeParameters().stream().map(param -> moveReference(param, mapping)).collect(toList()),
+        ref.typeParameters().stream().map(param -> moveReference(param, nameMap)).collect(toList()),
         ref.isProvidedType());
   }
 }

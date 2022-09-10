@@ -9,6 +9,7 @@ import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -115,14 +116,13 @@ public class OasComponentsToAstTest {
                           new AstReference("p.mycomponent", "MyComponentItem", List.of(), false)),
                       true)),
               AstClass.of(
-                  "p.mycomponent",
-                  "MyComponentItem",
+                  Fqn2.of("p.mycomponent", "MyComponentItem"),
                   List.of(
                       new AstField(
                           new AstReference(
                               "p.mycomponent.mycomponentitem", "MyField", List.of(), false),
                           "myField"))),
-              AstClass.of("p.mycomponent.mycomponentitem", "MyField", List.of())),
+              AstClass.of(Fqn2.of("p.mycomponent.mycomponentitem", "MyField"), List.of())),
           actual.collect(Collectors.toSet()),
           "Inline types within aliases are defined in packages subordinate to the class alias");
     }
@@ -137,7 +137,7 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              AstClass.of("p.mycomponent", "MyComponentItem", List.of()),
+              AstClass.of(Fqn2.of("p.mycomponent", "MyComponentItem"), List.of()),
               new AstClassAlias(
                   "p",
                   "MyComponent",

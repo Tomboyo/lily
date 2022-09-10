@@ -15,6 +15,7 @@ import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
+import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import io.github.tomboyo.lily.compiler.icg.Support;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -66,13 +67,13 @@ public class AstToJava {
             "renderClass",
             Map.of(
                 "packageName",
-                ast.packageName(),
+                ast.name().packageName(),
                 "recordName",
-                Support.capitalCamelCase(ast.name()),
+                ast.name().className().upperCamelCase(),
                 "fields",
                 ast.fields().stream().map(this::recordField).collect(Collectors.joining(",\n"))));
 
-    return sourceForFqn(ast, content);
+    return createSource(ast.name(), content);
   }
 
   private String recordField(AstField field) {
@@ -161,8 +162,8 @@ public class AstToJava {
             """,
             "renderAstApi",
             Map.of(
-                "packageName", ast.packageName(),
-                "className", Support.capitalCamelCase(ast.name()),
+                "packageName", ast.fqn().packageName(),
+                "className", ast.fqn().className().upperCamelCase(),
                 "tags",
                     ast.taggedOperations().stream()
                         .map(
@@ -172,7 +173,7 @@ public class AstToJava {
                                     "methodName", lowerCamelCase(tag.name())))
                         .collect(toList())));
 
-    return sourceForFqn(ast, content);
+    return createSource(ast.fqn(), content);
   }
 
   private Source renderAstTaggedOperations(AstTaggedOperations ast) {
@@ -267,5 +268,9 @@ public class AstToJava {
 
   private static Source sourceForFqn(Fqn fqn, String content) {
     return new Source(Fqns.filePath(fqn), Fqns.fqn(fqn), content);
+  }
+
+  private static Source createSource(Fqn2 fqn, String content) {
+    return new Source(fqn.asPath(), fqn.fullyQualifiedName(), content);
   }
 }

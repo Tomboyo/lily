@@ -7,6 +7,7 @@ import static java.util.stream.Collectors.toSet;
 
 import io.github.tomboyo.lily.compiler.ast.AstApi;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
+import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.PathItem;
@@ -29,7 +30,7 @@ public class OasPathsToAst {
    * Collection)}, return an AstApi over those operations.
    */
   public static AstApi evaluateApi(String basePackage, Set<AstTaggedOperations> taggedOperations) {
-    return new AstApi(basePackage, "Api", taggedOperations);
+    return new AstApi(Fqn2.of(basePackage, "Api"), taggedOperations);
   }
 
   /**

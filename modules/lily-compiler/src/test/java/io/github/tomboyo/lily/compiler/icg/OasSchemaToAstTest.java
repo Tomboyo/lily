@@ -10,6 +10,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -89,8 +90,9 @@ class OasSchemaToAstTest {
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
                   AstClass.of(
+                      Fqn2.of(
                       "p",
-                      "MyObject",
+                      "MyObject"),
                       List.of(
                           new AstField(
                               new AstReference(javaPackage, javaClass, List.of(), true),
@@ -116,16 +118,16 @@ class OasSchemaToAstTest {
           new Pair<>(
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
-                  AstClass.of(
+                  AstClass.of(Fqn2.of(
                       "p",
-                      "MyObject",
+                      "MyObject"),
                       List.of(
                           new AstField(
                               new AstReference("p.myobject", "MyInnerObject", List.of(), false),
                               "myInnerObject"))),
-                  AstClass.of(
+                  AstClass.of(Fqn2.of(
                       "p.myobject",
-                      "MyInnerObject",
+                      "MyInnerObject"),
                       List.of(new AstField(astBoolean(), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference for the outer generated type but the AST for both the outer and"
@@ -145,9 +147,9 @@ class OasSchemaToAstTest {
           new Pair<>(
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
-                  AstClass.of(
+                  AstClass.of(Fqn2.of(
                       "p",
-                      "MyObject",
+                      "MyObject"),
                       List.of(
                           new AstField(
                               new AstReference("p", "MyRef", List.of(), false), "myField"))))),
@@ -170,8 +172,8 @@ class OasSchemaToAstTest {
           new Pair<>(
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
-                  AstClass.of(
-                      "p", "MyObject", List.of(new AstField(astListOf(astBoolean()), "myField"))))),
+                  AstClass.of(Fqn2.of(
+                      "p", "MyObject"), List.of(new AstField(astListOf(astBoolean()), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference to the generated type and its AST, which does not generate any"
               + " new type for the nested array");
@@ -193,9 +195,9 @@ class OasSchemaToAstTest {
           new Pair<>(
               new AstReference("p", "MyObject", List.of(), false),
               Set.of(
-                  AstClass.of(
+                  AstClass.of(Fqn2.of(
                       "p",
-                      "MyObject",
+                      "MyObject"),
                       List.of(
                           new AstField(astBoolean(), "myField1"),
                           new AstField(
@@ -239,7 +241,7 @@ class OasSchemaToAstTest {
           new Pair<>(
               astListOf(new AstReference("p", "MyArrayItem", List.of(), false)),
               Set.of(
-                  AstClass.of("p", "MyArrayItem", List.of(new AstField(astBoolean(), "myField"))))),
+                  AstClass.of(Fqn2.of("p", "MyArrayItem"), List.of(new AstField(astBoolean(), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "defines the inline object in the current package with the -Item suffix in its class"
               + " name");
