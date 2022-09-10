@@ -10,26 +10,26 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** A name without a package qualifier, like String or myField. */
-public class ClassName {
+public class SimpleName {
 
   private final List<String> nameParts;
 
-  private ClassName(List<String> nameParts) {
+  private SimpleName(List<String> nameParts) {
     this.nameParts = nameParts;
   }
 
-  public static ClassName of(String name) {
+  public static SimpleName of(String name) {
     requireNonNull(name);
 
     if (name.isBlank()) {
-      throw new IllegalArgumentException("Class name must not be blank");
+      throw new IllegalArgumentException("Simple name must not be blank");
     }
 
     if (startsWithDigit(name)) {
-      throw new IllegalArgumentException("Class name must not start with a digit");
+      throw new IllegalArgumentException("Simple name must not start with a digit");
     }
 
-    return new ClassName(splitName(name));
+    return new SimpleName(splitName(name));
   }
 
   public String upperCamelCase() {
@@ -46,8 +46,8 @@ public class ClassName {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    ClassName className = (ClassName) o;
-    return nameParts.equals(className.nameParts);
+    SimpleName simpleName = (SimpleName) o;
+    return nameParts.equals(simpleName.nameParts);
   }
 
   @Override

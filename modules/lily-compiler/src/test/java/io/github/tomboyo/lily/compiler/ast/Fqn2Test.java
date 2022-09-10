@@ -44,13 +44,13 @@ public class Fqn2Test {
     @ParameterizedTest
     @MethodSource("kebabCaseParameterSource")
     void upperCamelCase(String input, String expected) {
-      assertEquals(expected, Fqn2.of("p", input).className().upperCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).simpleName().upperCamelCase());
     }
 
     @ParameterizedTest
     @MethodSource("kebabCaseParameterSource")
     void lowerCamelCase(String input, String unused, String expected) {
-      assertEquals(expected, Fqn2.of("p", input).className().lowerCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).simpleName().lowerCamelCase());
     }
   }
 
@@ -82,13 +82,13 @@ public class Fqn2Test {
     @ParameterizedTest
     @MethodSource("snakeCaseParameterSource")
     void upperCamelCase(String input, String expected) {
-      assertEquals(expected, Fqn2.of("p", input).className().upperCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).simpleName().upperCamelCase());
     }
 
     @ParameterizedTest
     @MethodSource("snakeCaseParameterSource")
     void lowerCamelCase(String input, String unused, String expected) {
-      assertEquals(expected, Fqn2.of("p", input).className().lowerCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).simpleName().lowerCamelCase());
     }
   }
 
@@ -130,13 +130,13 @@ public class Fqn2Test {
     @ParameterizedTest
     @MethodSource("camelCaseParameterSource")
     void upperCamelCase(String input, String expected) {
-      assertEquals(expected, Fqn2.of("p", input).className().upperCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).simpleName().upperCamelCase());
     }
 
     @ParameterizedTest
     @MethodSource("camelCaseParameterSource")
     void lowerCamelCase(String input, String unused, String expected) {
-      assertEquals(expected, Fqn2.of("p", input).className().lowerCamelCase());
+      assertEquals(expected, Fqn2.of("p", input).simpleName().lowerCamelCase());
     }
   }
 

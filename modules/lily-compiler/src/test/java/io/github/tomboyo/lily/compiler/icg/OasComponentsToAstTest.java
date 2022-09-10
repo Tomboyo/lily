@@ -10,6 +10,7 @@ import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -121,7 +122,7 @@ public class OasComponentsToAstTest {
                       new AstField(
                           new AstReference(
                               "p.mycomponent.mycomponentitem", "MyField", List.of(), false),
-                          "myField"))),
+                          SimpleName.of("myField")))),
               AstClass.of(Fqn2.of("p.mycomponent.mycomponentitem", "MyField"), List.of())),
           actual.collect(Collectors.toSet()),
           "Inline types within aliases are defined in packages subordinate to the class alias");

@@ -8,6 +8,7 @@ import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -175,7 +176,7 @@ public class OasSchemaToAst {
                   var refAndAst =
                       evaluateSchema(
                           fieldPackage, Support.capitalCamelCase(fieldName), fieldSchema);
-                  return refAndAst.mapLeft(ref -> new AstField(ref, fieldName));
+                  return refAndAst.mapLeft(ref -> new AstField(ref, SimpleName.of(fieldName)));
                 })
             .collect(toList());
 
