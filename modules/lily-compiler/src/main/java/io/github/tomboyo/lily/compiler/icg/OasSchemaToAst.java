@@ -61,10 +61,9 @@ public class OasSchemaToAst {
   }
 
   private AstReference toBasePackageClassReference(String $ref) {
-    return new AstReference(
+    return AstReference.of(
         Fqn.of(basePackage, SimpleName.of($ref.replaceFirst("^#/components/schemas/", ""))),
-        List.of(),
-        false);
+        List.of());
   }
 
   private AstReference toStdLibAstReference(String type, String format) {
@@ -96,7 +95,7 @@ public class OasSchemaToAst {
 
         return switch (format) {
           case "password" -> StdlibAstReferences.astString();
-          case "byte", "binary" -> StdlibAstReferences.astByteArray();
+          case "byte", "binary" -> StdlibAstReferences.astByteBuffer();
           case "date" -> StdlibAstReferences.astLocalDate();
           case "date-time" -> StdlibAstReferences.astOffsetDateTime();
           default -> defaultForUnsupportedFormat(type, format, StdlibAstReferences.astString());
@@ -186,7 +185,7 @@ public class OasSchemaToAst {
             Fqn.of(currentPackage, name), fieldAndAst.stream().map(Pair::left).collect(toList()));
     var interiorAst = fieldAndAst.stream().flatMap(Pair::right);
     return new Pair<>(
-        new AstReference(Fqn.of(currentPackage, name), List.of(), false),
+        AstReference.of(Fqn.of(currentPackage, name), List.of()),
         Stream.concat(Stream.of(exteriorClass), interiorAst));
   }
 }

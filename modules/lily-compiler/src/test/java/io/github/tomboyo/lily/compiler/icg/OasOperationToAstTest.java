@@ -3,7 +3,7 @@ package io.github.tomboyo.lily.compiler.icg;
 import static io.github.tomboyo.lily.compiler.AstSupport.astReferencePlaceholder;
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.QUERY;
-import static io.github.tomboyo.lily.compiler.ast.AstReference.newTypeRef;
+import static io.github.tomboyo.lily.compiler.ast.AstReference.of;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -208,7 +208,7 @@ public class OasOperationToAstTest {
         assertThat(
             "The AstReference points to a generated type named after the operation ID",
             actual().operation().operationClass(),
-            is(newTypeRef(Fqn.of("p", "OperationIdOperation"), List.of())));
+            is(of(Fqn.of("p", "OperationIdOperation"), List.of())));
       }
 
       @Test
