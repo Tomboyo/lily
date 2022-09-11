@@ -64,7 +64,6 @@ public class OasSchemaToAst {
     return new AstReference(
         Fqn.of(basePackage, SimpleName.of($ref.replaceFirst("^#/components/schemas/", ""))),
         List.of(),
-        false,
         false);
   }
 
@@ -187,7 +186,7 @@ public class OasSchemaToAst {
             Fqn.of(currentPackage, name), fieldAndAst.stream().map(Pair::left).collect(toList()));
     var interiorAst = fieldAndAst.stream().flatMap(Pair::right);
     return new Pair<>(
-        new AstReference(Fqn.of(currentPackage, name), List.of(), false, false),
+        new AstReference(Fqn.of(currentPackage, name), List.of(), false),
         Stream.concat(Stream.of(exteriorClass), interiorAst));
   }
 }

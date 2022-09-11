@@ -128,7 +128,6 @@ public class OasComponentsToAst {
     return new AstReference(
         nameMap.getOrDefault(ref.name(), ref.name()),
         ref.typeParameters().stream().map(param -> moveReference(param, nameMap)).collect(toList()),
-        ref.isProvidedType(),
         ref.isArray());
   }
 }
