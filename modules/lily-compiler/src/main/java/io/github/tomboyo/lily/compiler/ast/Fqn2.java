@@ -16,7 +16,16 @@ public record Fqn2(PackageName packageName, SimpleName simpleName) {
     return new Fqn2(PackageName.of(packageName), SimpleName.of(className));
   }
 
-  public String fullyQualifiedName() {
+  public static Fqn2 of(PackageName packageName, SimpleName className) {
+    return new Fqn2(packageName, className);
+  }
+
+  /**
+   * Renders the fully qualified class name represented by this instance, like {@code
+   * "java.util.String"}
+   */
+  @Override
+  public String toString() {
     return String.join(".", packageName.toString(), simpleName().upperCamelCase());
   }
 

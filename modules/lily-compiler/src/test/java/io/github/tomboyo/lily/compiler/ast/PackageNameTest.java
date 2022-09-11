@@ -8,9 +8,23 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class PackageNameTest {
   @ParameterizedTest
-  @ValueSource(strings = {"com.example", ".com.example", "com.example.", ".com.example."})
+  @ValueSource(
+      strings = {
+        "com.example",
+        ".com.example",
+        "com.example.",
+        ".com.example.",
+        "COM.EXAMPLE",
+        "cOm.eXaMpLe"
+      })
   void toString(String input) {
     assertEquals("com.example", PackageName.of(input).toString());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"com.example", ".com.example", "com.example.", ".com.example."})
+  void append(String input) {
+    assertEquals("foo.bar.com.example", PackageName.of("foo.bar").resolve(input).toString());
   }
 
   @ParameterizedTest

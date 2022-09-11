@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
+import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
 import io.swagger.v3.oas.models.Operation;
@@ -30,7 +31,7 @@ public class OasPathsToAstTest {
     void evaluatesAllOperations() {
       try (var mock = mockStatic(OasOperationToAst.class)) {
         OasPathsToAst.evaluatePathItem(
-                "p",
+                PackageName.of("p"),
                 "/operation/path",
                 new PathItem()
                     .addParametersItem(new Parameter().name("name").in("path"))
@@ -48,7 +49,7 @@ public class OasPathsToAstTest {
         mock.verify(
             () ->
                 OasOperationToAst.evaluateOperaton(
-                    eq("p"),
+                    eq(PackageName.of("p")),
                     eq("/operation/path"),
                     any(),
                     eq(List.of(new Parameter().name("name").in("path")))),
@@ -68,7 +69,7 @@ public class OasPathsToAstTest {
           new AstOperation(SimpleName.of("GetAB"), astReferencePlaceholder(), "getAB/", List.of());
       var actual =
           OasPathsToAst.evaluateTaggedOperations(
-                  "p",
+                  PackageName.of("p"),
                   List.of(
                       new TagsOperationAndAst(Set.of("TagA"), getAOperation, Set.of()),
                       new TagsOperationAndAst(Set.of("TagA", "TagB"), getABOperation, Set.of())))

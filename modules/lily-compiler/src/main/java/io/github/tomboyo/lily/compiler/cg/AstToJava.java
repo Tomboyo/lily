@@ -86,8 +86,10 @@ public class AstToJava {
   }
 
   private static String fullyQualifiedParameterizedType(AstReference ast) {
-    if (ast.typeParameters().isEmpty()) {
-      return Fqns.fqn(ast);
+    if (ast.isArray()) {
+      return ast.name().toString() + "[]";
+    } else if (ast.typeParameters().isEmpty()) {
+      return ast.name().toString();
     } else {
       var typeParameters =
           "<%s>"
@@ -95,7 +97,7 @@ public class AstToJava {
                   ast.typeParameters().stream()
                       .map(AstToJava::fullyQualifiedParameterizedType)
                       .collect(Collectors.joining(",")));
-      return Fqns.fqn(ast) + typeParameters;
+      return ast.name().toString() + typeParameters;
     }
   }
 
@@ -208,7 +210,7 @@ public class AstToJava {
                         .map(
                             operation ->
                                 Map.of(
-                                    "fqReturnType", Fqns.fqn(operation.operationClass()),
+                                    "fqReturnType", operation.operationClass().name(),
                                     "methodName", operation.operationName().lowerCamelCase()))
                         .collect(toList())));
 
@@ -249,8 +251,8 @@ public class AstToJava {
         """,
             "renderAstOperation",
             Map.of(
-                "packageName", ast.operationClass().packageName(),
-                "simpleName", Support.capitalCamelCase(ast.operationClass().name()),
+                "packageName", ast.operationClass().name().packageName(),
+                "simpleName", ast.operationClass().name().simpleName(),
                 "relativePath", ast.relativePath(),
                 "pathParameters",
                     ast.parameters().stream()
@@ -264,7 +266,7 @@ public class AstToJava {
                                     "oasName", parameter.name().raw()))
                         .collect(toList())));
 
-    return sourceForFqn(ast.operationClass(), content);
+    return createSource(ast.operationClass().name(), content);
   }
 
   private static Source sourceForFqn(Fqn fqn, String content) {
@@ -272,6 +274,6 @@ public class AstToJava {
   }
 
   private static Source createSource(Fqn2 fqn, String content) {
-    return new Source(fqn.toPath(), fqn.fullyQualifiedName(), content);
+    return new Source(fqn.toPath(), fqn.toString(), content);
   }
 }

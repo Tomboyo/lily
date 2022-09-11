@@ -1,55 +1,56 @@
 package io.github.tomboyo.lily.compiler.icg;
 
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import java.util.List;
 
 public class StdlibAstReferences {
 
   public static AstReference astBigInteger() {
-    return new AstReference("java.math", "BigInteger", List.of(), true);
+    return new AstReference(Fqn2.of("java.math", "BigInteger"), List.of(), true, false);
   }
 
   public static AstReference astLong() {
-    return new AstReference("java.lang", "Long", List.of(), true);
+    return new AstReference(Fqn2.of("java.lang", "Long"), List.of(), true, false);
   }
 
   public static AstReference astInteger() {
-    return new AstReference("java.lang", "Integer", List.of(), true);
+    return new AstReference(Fqn2.of("java.lang", "Integer"), List.of(), true, false);
   }
 
   public static AstReference astBigDecimal() {
-    return new AstReference("java.math", "BigDecimal", List.of(), true);
+    return new AstReference(Fqn2.of("java.math", "BigDecimal"), List.of(), true, false);
   }
 
   public static AstReference astDouble() {
-    return new AstReference("java.lang", "Double", List.of(), true);
+    return new AstReference(Fqn2.of("java.lang", "Double"), List.of(), true, false);
   }
 
   public static AstReference astFloat() {
-    return new AstReference("java.lang", "Float", List.of(), true);
+    return new AstReference(Fqn2.of("java.lang", "Float"), List.of(), true, false);
   }
 
   public static AstReference astString() {
-    return new AstReference("java.lang", "String", List.of(), true);
+    return new AstReference(Fqn2.of("java.lang", "String"), List.of(), true, false);
   }
 
   public static AstReference astByteArray() {
-    return new AstReference("java.lang", "Byte[]", List.of(), true);
+    return new AstReference(Fqn2.of("java.lang", "Byte[]"), List.of(), true, true);
   }
 
   public static AstReference astLocalDate() {
-    return new AstReference("java.time", "LocalDate", List.of(), true);
+    return new AstReference(Fqn2.of("java.time", "LocalDate"), List.of(), true, false);
   }
 
   public static AstReference astOffsetDateTime() {
-    return new AstReference("java.time", "OffsetDateTime", List.of(), true);
+    return new AstReference(Fqn2.of("java.time", "OffsetDateTime"), List.of(), true, false);
   }
 
   public static AstReference astBoolean() {
-    return new AstReference("java.lang", "Boolean", List.of(), true);
+    return new AstReference(Fqn2.of("java.lang", "Boolean"), List.of(), true, false);
   }
 
   public static AstReference astListOf(AstReference t) {
-    return new AstReference("java.util", "List", List.of(t), true);
+    return new AstReference(Fqn2.of("java.util", "List"), List.of(t), true, false);
   }
 }

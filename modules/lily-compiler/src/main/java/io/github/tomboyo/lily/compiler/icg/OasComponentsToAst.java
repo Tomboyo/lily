@@ -11,11 +11,10 @@ import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
-import io.github.tomboyo.lily.compiler.cg.Fqns;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -40,7 +39,8 @@ public class OasComponentsToAst {
    * @param component The schema of the component
    * @return A stream of AST
    */
-  public static Stream<Ast> evaluate(String basePackage, String componentName, Schema component) {
+  public static Stream<Ast> evaluate(
+      PackageName basePackage, SimpleName componentName, Schema component) {
     var refAndAst = OasSchemaToAst.evaluate(basePackage, componentName, component);
 
     if (null == component.getType()) {
@@ -74,11 +74,13 @@ public class OasComponentsToAst {
    * references which evaluate from this array schema definition.
    */
   private static Stream<Ast> evaluateArray(
-      String basePackage, Pair<AstReference, Stream<Ast>> refAndAst, String componentName) {
+      PackageName basePackage,
+      Pair<AstReference, Stream<Ast>> refAndAst,
+      SimpleName componentName) {
     var ast = refAndAst.right().collect(toList());
     // 1. Create a mapping of FQNs that need to move => their updated package names.
     var pattern = Pattern.compile("^" + basePackage);
-    var replacement = Support.joinPackages(basePackage, componentName);
+    var replacement = basePackage.resolve(componentName.toString()).toString();
     var fqnToPackage =
         ast.stream()
             .filter(it -> it instanceof AstClass)
@@ -119,19 +121,14 @@ public class OasComponentsToAst {
   }
 
   private static AstField moveField(AstField field, Map<Fqn2, Fqn2> nameMap) {
-    var key = Fqns.fqn(field.astReference());
     return new AstField(moveReference(field.astReference(), nameMap), field.name());
   }
 
   private static AstReference moveReference(AstReference ref, Map<Fqn2, Fqn2> nameMap) {
-    var key = Fqn2.of(ref.packageName(), ref.name());
     return new AstReference(
-        Optional.ofNullable(nameMap.get(key))
-            .map(Fqn2::packageName)
-            .map(PackageName::toString)
-            .orElse(ref.packageName()),
-        ref.name(),
+        nameMap.getOrDefault(ref.name(), ref.name()),
         ref.typeParameters().stream().map(param -> moveReference(param, nameMap)).collect(toList()),
-        ref.isProvidedType());
+        ref.isProvidedType(),
+        ref.isArray());
   }
 }

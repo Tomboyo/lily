@@ -12,8 +12,7 @@ public class Fqn2Test {
   class FullyQualifiedName {
     @Test
     void fullyQualifiedName() {
-      assertEquals(
-          "com.example.FooBarBaz", Fqn2.of("com.example", "FooBarBaz").fullyQualifiedName());
+      assertEquals("com.example.FooBarBaz", Fqn2.of("com.example", "FooBarBaz").toString());
     }
   }
 

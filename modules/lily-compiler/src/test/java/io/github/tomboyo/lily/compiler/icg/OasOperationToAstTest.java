@@ -3,6 +3,7 @@ package io.github.tomboyo.lily.compiler.icg;
 import static io.github.tomboyo.lily.compiler.AstSupport.astReferencePlaceholder;
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.QUERY;
+import static io.github.tomboyo.lily.compiler.ast.AstReference.newTypeRef;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -12,7 +13,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 
 import io.github.tomboyo.lily.compiler.ast.AstParameter;
-import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
 import io.github.tomboyo.lily.compiler.icg.OasParameterToAst.ParameterAndAst;
@@ -41,7 +43,7 @@ public class OasOperationToAstTest {
 
         var actual =
             OasOperationToAst.evaluateOperaton(
-                "p",
+                PackageName.of("p"),
                 "/relative/path",
                 new Operation()
                     .operationId("operationId")
@@ -60,19 +62,27 @@ public class OasOperationToAstTest {
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("A"), eq(new IntegerSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("A")),
+                    eq(new IntegerSchema())));
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("B"), eq(new DateSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("B")),
+                    eq(new DateSchema())));
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("C"), eq(new BooleanSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("C")),
+                    eq(new BooleanSchema())));
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("D"), eq(new StringSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("D")),
+                    eq(new StringSchema())));
       }
     }
 
@@ -83,7 +93,7 @@ public class OasOperationToAstTest {
             .thenAnswer(invocation -> new Pair<>(astBoolean(), Stream.of()));
 
         OasOperationToAst.evaluateOperaton(
-            "p",
+            PackageName.of("p"),
             "/relative/path",
             new Operation()
                 .operationId("operationId")
@@ -109,16 +119,22 @@ public class OasOperationToAstTest {
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("A"), eq(new IntegerSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("A")),
+                    eq(new IntegerSchema())));
         // The other parameters are not affected.
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("A"), eq(new BooleanSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("A")),
+                    eq(new BooleanSchema())));
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("B"), eq(new BooleanSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("B")),
+                    eq(new BooleanSchema())));
       }
     }
 
@@ -132,7 +148,7 @@ public class OasOperationToAstTest {
 
           var actual =
               OasOperationToAst.evaluateOperaton(
-                  "p",
+                  PackageName.of("p"),
                   "/relative/path/",
                   new Operation().operationId("operationId").tags(List.of("tagA", "tagB")),
                   List.of());
@@ -152,7 +168,7 @@ public class OasOperationToAstTest {
 
           var actual =
               OasOperationToAst.evaluateOperaton(
-                  "p",
+                  PackageName.of("p"),
                   "/relative/path/",
                   new Operation().operationId("operationId").tags(List.of()), // empty!
                   List.of());
@@ -169,7 +185,7 @@ public class OasOperationToAstTest {
     class AstOperation {
       TagsOperationAndAst actual() {
         return OasOperationToAst.evaluateOperaton(
-            "p",
+            PackageName.of("p"),
             "/relative/path/",
             new Operation()
                 .operationId("operationId")
@@ -192,7 +208,7 @@ public class OasOperationToAstTest {
         assertThat(
             "The AstReference points to a generated type named after the operation ID",
             actual().operation().operationClass(),
-            is(new AstReference("p", "OperationIdOperation", List.of(), false)));
+            is(newTypeRef(Fqn2.of("p", "OperationIdOperation"), List.of())));
       }
 
       @Test

@@ -3,6 +3,7 @@ package io.github.tomboyo.lily.compiler.ast;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -142,5 +143,22 @@ class SimpleNameTest {
   @ValueSource(strings = {"123Name", "123-name", "123_name"}) // leading digits
   void illegalNameInputs(String input) {
     assertThrows(Exception.class, () -> SimpleName.of(input));
+  }
+
+  @Nested
+  class Append {
+    private static Stream<Arguments> allCasesParameterSource() {
+      return Stream.of(
+              CamelCaseInput.camelCaseParameterSource(),
+              KebabCaseInput.kebabCaseParameterSource(),
+              SnakeCaseInput.snakeCaseParameterSource())
+          .flatMap(Function.identity());
+    }
+
+    @ParameterizedTest
+    @MethodSource("allCasesParameterSource")
+    void testAppend(String input, String upperCase) {
+      assertEquals("FooBar" + upperCase, SimpleName.of("foo-bar").resolve(input).upperCamelCase());
+    }
   }
 }

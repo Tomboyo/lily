@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 
 import io.github.tomboyo.lily.compiler.ast.AstParameterLocation;
+import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -24,7 +25,8 @@ public class OasParameterToAstTest {
   void parameterNamedForOasParameterName() {
     var actual =
         OasParameterToAst.evaluateParameter(
-            "p", new Parameter().name("name").in("path").schema(new StringSchema()));
+            PackageName.of("p"),
+            new Parameter().name("name").in("path").schema(new StringSchema()));
 
     assertThat(actual.parameter().name(), is(SimpleName.of("name")));
   }
@@ -39,7 +41,8 @@ public class OasParameterToAstTest {
       astParameterLocation.when(() -> AstParameterLocation.fromString(any())).thenReturn(PATH);
 
       var actual =
-          OasParameterToAst.evaluateParameter("p", new Parameter().name("name").in("location"));
+          OasParameterToAst.evaluateParameter(
+              PackageName.of("p"), new Parameter().name("name").in("location"));
 
       assertThat(
           "The parameter location is as given by AstParameterLocation",
@@ -58,7 +61,8 @@ public class OasParameterToAstTest {
 
       var actual =
           OasParameterToAst.evaluateParameter(
-              "p", new Parameter().name("name").in("path").schema(new ObjectSchema()));
+              PackageName.of("p"),
+              new Parameter().name("name").in("path").schema(new ObjectSchema()));
 
       assertThat(
           "The astReference is returned as given by OasSchemaToAst",

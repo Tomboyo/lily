@@ -2,7 +2,6 @@ package io.github.tomboyo.lily.compiler;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
-import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -177,7 +176,7 @@ public class SerializationTest {
 
   @AfterAll
   static void afterAll() throws Exception {
-    deleteGeneratedSources();
+    //    deleteGeneratedSources();
   }
 
   @ParameterizedTest
