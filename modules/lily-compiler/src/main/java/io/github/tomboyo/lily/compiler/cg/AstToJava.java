@@ -128,16 +128,16 @@ public class AstToJava {
         writeString(
             """
             package {{packageName}};
-            public class {{simpleName}} {
+            public class {{className}} {
 
               private final String uri;
 
-              private {{simpleName}}(String uri) {
+              private {{className}}(String uri) {
                 this.uri = java.util.Objects.requireNonNull(uri);
               }
 
-              public static {{simpleName}}Builder newBuilder() {
-                return new {{simpleName}}Builder();
+              public static {{className}}Builder newBuilder() {
+                return new {{className}}Builder();
               }
 
               {{#tags}}
@@ -148,15 +148,15 @@ public class AstToJava {
 
               {{/tags}}
 
-              public static class {{simpleName}}Builder {
+              public static class {{className}}Builder {
                 private String uri;
 
-                private {{simpleName}}Builder() {}
+                private {{className}}Builder() {}
 
-                public {{simpleName}}Builder uri(String uri) { this.uri = uri; return this; }
+                public {{className}}Builder uri(String uri) { this.uri = uri; return this; }
 
-                public {{simpleName}} build() {
-                  return new {{simpleName}}(uri);
+                public {{className}} build() {
+                  return new {{className}}(uri);
                 }
               }
             }
@@ -164,7 +164,7 @@ public class AstToJava {
             "renderAstApi",
             Map.of(
                 "packageName", ast.fqn().packageName(),
-                "simpleName", ast.fqn().simpleName().upperCamelCase(),
+                "className", ast.fqn().simpleName().upperCamelCase(),
                 "tags",
                     ast.taggedOperations().stream()
                         .map(
@@ -182,11 +182,11 @@ public class AstToJava {
         writeString(
             """
             package {{packageName}};
-            public class {{simpleName}} {
+            public class {{className}} {
 
               private final String uri;
 
-              public {{simpleName}}(String uri) {
+              public {{className}}(String uri) {
                 this.uri = uri;
               }
 
@@ -202,7 +202,7 @@ public class AstToJava {
             "renderAstTaggedOperations",
             Map.of(
                 "packageName", ast.name().packageName(),
-                "simpleName", ast.name().simpleName().upperCamelCase(),
+                "className", ast.name().simpleName().upperCamelCase(),
                 "operations",
                     ast.operations().stream()
                         .map(
@@ -220,16 +220,16 @@ public class AstToJava {
         writeString(
             """
         package {{packageName}};
-        public class {{simpleName}} {
+        public class {{className}} {
           private final io.github.tomboyo.lily.http.UriTemplate uriTemplate;
 
-          public {{simpleName}}(String uri) {
+          public {{className}}(String uri) {
             this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.forPath(uri, "{{{relativePath}}}");
           }
 
           {{#pathParameters}}
           private {{{fqpt}}} {{name}};
-          public {{simpleName}} {{name}}({{{fqpt}}} {{name}}) {
+          public {{className}} {{name}}({{{fqpt}}} {{name}}) {
             this.{{name}} = {{name}};
             return this;
           }
@@ -250,7 +250,7 @@ public class AstToJava {
             "renderAstOperation",
             Map.of(
                 "packageName", ast.operationClass().name().packageName(),
-                "simpleName", ast.operationClass().name().simpleName(),
+                "className", ast.operationClass().name().simpleName(),
                 "relativePath", ast.relativePath(),
                 "pathParameters",
                     ast.parameters().stream()
