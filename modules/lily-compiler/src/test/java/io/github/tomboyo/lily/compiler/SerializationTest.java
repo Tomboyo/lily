@@ -2,6 +2,7 @@ package io.github.tomboyo.lily.compiler;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
+import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -50,6 +51,18 @@ public class SerializationTest {
               version: 0.1.0
             components:
               schemas:
+                # An object with kebab, snake, camel, and pascal case parameters
+                ParameterCaseObject:
+                  type: object
+                  properties:
+                    kebab-case:
+                      type: string
+                    snake_case:
+                      type: string
+                    camelCase:
+                      type: string
+                    PascalCase:
+                      type: string
                 # An object with fields of every scalar type except byte and binary
                 MyScalarsObject:
                   type: object
@@ -176,7 +189,7 @@ public class SerializationTest {
 
   @AfterAll
   static void afterAll() throws Exception {
-    //    deleteGeneratedSources();
+    deleteGeneratedSources();
   }
 
   @ParameterizedTest
@@ -205,6 +218,7 @@ public class SerializationTest {
 
   public static Stream<Arguments> parameterSource() throws Exception {
     return Stream.of(
+            parameterCaseObject(),
             myScalarsObject(),
             myByteAndBinaryObject(),
             myObject2TestParameter(),
@@ -217,6 +231,23 @@ public class SerializationTest {
             myCompositeScalarArrayAliasTestParameter(),
             myCompositeInlineObjectArrayAliasTestParameter())
         .map(x -> arguments(Named.of(x.type.getSimpleName(), x)));
+  }
+
+  private static TestParameter parameterCaseObject() throws Exception {
+    var clazz = Class.forName(packageName + ".ParameterCaseObject");
+    return new TestParameter(
+        """
+        {
+          "kebab-case": "value",
+          "snake_case": "value",
+          "camelCase": "value",
+          "PascalCase": "value"
+        }
+        """,
+        clazz
+            .getConstructor(String.class, String.class, String.class, String.class)
+            .newInstance("value", "value", "value", "value"),
+        clazz);
   }
 
   private static TestParameter myScalarsObject() throws Exception {

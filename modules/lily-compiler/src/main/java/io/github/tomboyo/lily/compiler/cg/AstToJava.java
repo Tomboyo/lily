@@ -75,11 +75,12 @@ public class AstToJava {
 
   private String recordField(AstField field) {
     return writeString(
-        "{{{fqpt}}} {{name}}",
+        "@com.fasterxml.jackson.annotation.JsonProperty(\"{{rawName}}\") {{{fqpt}}} {{name}}",
         "recordField",
         Map.of(
             "fqpt", fullyQualifiedParameterizedType(field.astReference()),
-            "name", field.name().lowerCamelCase()));
+            "name", field.name().lowerCamelCase(),
+            "rawName", field.name().raw()));
   }
 
   private static String fullyQualifiedParameterizedType(AstReference ast) {
