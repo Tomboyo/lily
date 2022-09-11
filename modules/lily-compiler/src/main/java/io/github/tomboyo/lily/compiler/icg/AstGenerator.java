@@ -3,6 +3,8 @@ package io.github.tomboyo.lily.compiler.icg;
 import static java.util.function.Function.identity;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
+import io.github.tomboyo.lily.compiler.ast.PackageName;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
@@ -14,13 +16,13 @@ import java.util.stream.Stream;
 
 public class AstGenerator {
 
-  private final String basePackage;
+  private final PackageName basePackage;
 
-  private AstGenerator(String basePackage) {
+  private AstGenerator(PackageName basePackage) {
     this.basePackage = basePackage;
   }
 
-  public static Stream<Ast> evaluate(String basePackage, OpenAPI openAPI) {
+  public static Stream<Ast> evaluate(PackageName basePackage, OpenAPI openAPI) {
     return new AstGenerator(basePackage).evaluate(openAPI);
   }
 
@@ -35,7 +37,9 @@ public class AstGenerator {
         .entrySet()
         .stream()
         .flatMap(
-            entry -> OasComponentsToAst.evaluate(basePackage, entry.getKey(), entry.getValue()));
+            entry ->
+                OasComponentsToAst.evaluate(
+                    basePackage, SimpleName.of(entry.getKey()), entry.getValue()));
   }
 
   private Stream<Ast> evaluatePaths(OpenAPI openAPI) {

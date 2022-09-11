@@ -143,8 +143,9 @@ public class CompilerSupport {
     int to = (int) toLong;
 
     // Move pointers to the beginning and end of their respective lines if they aren't already there
-    from = source.lastIndexOf('\n', from);
-    to = source.indexOf('\n', to);
+    // index may be -1 if absent, so we Max to 0.
+    from = Math.max(0, source.lastIndexOf('\n', from));
+    to = Math.max(0, source.indexOf('\n', to));
 
     return source.substring(from, to).trim();
   }

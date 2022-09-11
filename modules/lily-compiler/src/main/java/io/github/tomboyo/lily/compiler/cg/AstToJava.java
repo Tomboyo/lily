@@ -1,7 +1,6 @@
 package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
-import static io.github.tomboyo.lily.compiler.icg.Support.lowerCamelCase;
 import static java.util.stream.Collectors.toList;
 
 import com.github.mustachejava.DefaultMustacheFactory;
@@ -15,7 +14,6 @@ import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
-import io.github.tomboyo.lily.compiler.icg.Support;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
@@ -66,27 +64,30 @@ public class AstToJava {
             "renderClass",
             Map.of(
                 "packageName",
-                ast.packageName(),
+                ast.name().packageName(),
                 "recordName",
-                Support.capitalCamelCase(ast.name()),
+                ast.name().simpleName().upperCamelCase(),
                 "fields",
                 ast.fields().stream().map(this::recordField).collect(Collectors.joining(",\n"))));
 
-    return sourceForFqn(ast, content);
+    return createSource(ast.name(), content);
   }
 
   private String recordField(AstField field) {
     return writeString(
-        "{{{fqpt}}} {{name}}",
+        "@com.fasterxml.jackson.annotation.JsonProperty(\"{{rawName}}\") {{{fqpt}}} {{name}}",
         "recordField",
         Map.of(
             "fqpt", fullyQualifiedParameterizedType(field.astReference()),
-            "name", lowerCamelCase(field.name())));
+            "name", field.name().lowerCamelCase(),
+            "rawName", field.name().raw()));
   }
 
   private static String fullyQualifiedParameterizedType(AstReference ast) {
-    if (ast.typeParameters().isEmpty()) {
-      return Fqns.fqn(ast);
+    if (ast.isArray()) {
+      return ast.name().toString() + "[]";
+    } else if (ast.typeParameters().isEmpty()) {
+      return ast.name().toString();
     } else {
       var typeParameters =
           "<%s>"
@@ -94,7 +95,7 @@ public class AstToJava {
                   ast.typeParameters().stream()
                       .map(AstToJava::fullyQualifiedParameterizedType)
                       .collect(Collectors.joining(",")));
-      return Fqns.fqn(ast) + typeParameters;
+      return ast.name().toString() + typeParameters;
     }
   }
 
@@ -115,10 +116,11 @@ public class AstToJava {
             """,
             "renderAstClassAlias",
             Map.of(
-                "packageName", ast.packageName(),
-                "recordName", Support.capitalCamelCase(ast.name()),
+                "packageName", ast.name().packageName(),
+                "recordName", ast.name().simpleName().upperCamelCase(),
                 "fqpValueName", fullyQualifiedParameterizedType(ast.aliasedType())));
-    return sourceForFqn(ast, content);
+
+    return createSource(ast.name(), content);
   }
 
   private Source renderAstAPi(AstApi ast) {
@@ -161,18 +163,18 @@ public class AstToJava {
             """,
             "renderAstApi",
             Map.of(
-                "packageName", ast.packageName(),
-                "className", Support.capitalCamelCase(ast.name()),
+                "packageName", ast.fqn().packageName(),
+                "className", ast.fqn().simpleName().upperCamelCase(),
                 "tags",
                     ast.taggedOperations().stream()
                         .map(
                             tag ->
                                 Map.of(
-                                    "fqReturnType", Fqns.fqn(tag),
-                                    "methodName", lowerCamelCase(tag.name())))
+                                    "fqReturnType", tag.name().toString(),
+                                    "methodName", tag.name().simpleName().lowerCamelCase()))
                         .collect(toList())));
 
-    return sourceForFqn(ast, content);
+    return createSource(ast.fqn(), content);
   }
 
   private Source renderAstTaggedOperations(AstTaggedOperations ast) {
@@ -199,18 +201,18 @@ public class AstToJava {
             """,
             "renderAstTaggedOperations",
             Map.of(
-                "packageName", ast.packageName(),
-                "className", Support.capitalCamelCase(ast.name()),
+                "packageName", ast.name().packageName(),
+                "className", ast.name().simpleName().upperCamelCase(),
                 "operations",
                     ast.operations().stream()
                         .map(
                             operation ->
                                 Map.of(
-                                    "fqReturnType", Fqns.fqn(operation.operationClass()),
-                                    "methodName", operation.operationName()))
+                                    "fqReturnType", operation.operationClass().name(),
+                                    "methodName", operation.operationName().lowerCamelCase()))
                         .collect(toList())));
 
-    return sourceForFqn(ast, content);
+    return createSource(ast.name(), content);
   }
 
   private Source renderAstOperation(AstOperation ast) {
@@ -247,8 +249,8 @@ public class AstToJava {
         """,
             "renderAstOperation",
             Map.of(
-                "packageName", ast.operationClass().packageName(),
-                "className", Support.capitalCamelCase(ast.operationClass().name()),
+                "packageName", ast.operationClass().name().packageName(),
+                "className", ast.operationClass().name().simpleName(),
                 "relativePath", ast.relativePath(),
                 "pathParameters",
                     ast.parameters().stream()
@@ -258,14 +260,14 @@ public class AstToJava {
                                 Map.of(
                                     "fqpt",
                                         fullyQualifiedParameterizedType(parameter.astReference()),
-                                    "name", lowerCamelCase(parameter.name()),
-                                    "oasName", parameter.name()))
+                                    "name", parameter.name().lowerCamelCase(),
+                                    "oasName", parameter.name().raw()))
                         .collect(toList())));
 
-    return sourceForFqn(ast.operationClass(), content);
+    return createSource(ast.operationClass().name(), content);
   }
 
-  private static Source sourceForFqn(Fqn fqn, String content) {
-    return new Source(Fqns.filePath(fqn), Fqns.fqn(fqn), content);
+  private static Source createSource(Fqn fqn, String content) {
+    return new Source(fqn.toPath(), fqn.toString(), content);
   }
 }

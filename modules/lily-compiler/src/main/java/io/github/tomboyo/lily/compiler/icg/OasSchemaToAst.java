@@ -7,6 +7,9 @@ import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
+import io.github.tomboyo.lily.compiler.ast.PackageName;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -21,9 +24,9 @@ public class OasSchemaToAst {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OasSchemaToAst.class);
 
-  private final String basePackage;
+  private final PackageName basePackage;
 
-  private OasSchemaToAst(String basePackage) {
+  private OasSchemaToAst(PackageName basePackage) {
     this.basePackage = basePackage;
   }
 
@@ -37,12 +40,12 @@ public class OasSchemaToAst {
    * @return A pair describing the root reference and stream of evaluated AST.
    */
   public static Pair<AstReference, Stream<Ast>> evaluate(
-      String basePackage, String name, Schema<?> schema) {
+      PackageName basePackage, SimpleName name, Schema<?> schema) {
     return new OasSchemaToAst(basePackage).evaluateSchema(basePackage, name, schema);
   }
 
   private Pair<AstReference, Stream<Ast>> evaluateSchema(
-      String currentPackage, String name, Schema<?> schema) {
+      PackageName currentPackage, SimpleName name, Schema<?> schema) {
     var type = schema.getType();
     if (type == null) {
       return new Pair<>(toBasePackageClassReference(requireNonNull(schema.get$ref())), Stream.of());
@@ -59,7 +62,9 @@ public class OasSchemaToAst {
 
   private AstReference toBasePackageClassReference(String $ref) {
     return new AstReference(
-        basePackage, $ref.replaceFirst("^#/components/schemas/", ""), List.of(), false);
+        Fqn.of(basePackage, SimpleName.of($ref.replaceFirst("^#/components/schemas/", ""))),
+        List.of(),
+        false);
   }
 
   private AstReference toStdLibAstReference(String type, String format) {
@@ -116,7 +121,7 @@ public class OasSchemaToAst {
   }
 
   private Pair<AstReference, Stream<Ast>> evaluateArray(
-      String currentPackage, String name, ArraySchema arraySchema) {
+      PackageName currentPackage, SimpleName name, ArraySchema arraySchema) {
     if ("object".equals(arraySchema.getItems().getType())) {
       /*
        AST generated from objects in arrays are named similarly to all other objects in that they
@@ -140,7 +145,7 @@ public class OasSchemaToAst {
        name of the referent
        type.
       */
-      var interior = evaluateSchema(currentPackage, name + "Item", arraySchema.getItems());
+      var interior = evaluateSchema(currentPackage, name.resolve("Item"), arraySchema.getItems());
       return new Pair<>(StdlibAstReferences.astListOf(interior.left()), interior.right());
     } else {
       // All types other than Object do not result in new AST, so we do not use the naming strategy
@@ -151,7 +156,7 @@ public class OasSchemaToAst {
   }
 
   private Pair<AstReference, Stream<Ast>> evaluateObject(
-      String currentPackage, String name, Schema<?> schema) {
+      PackageName currentPackage, SimpleName name, Schema<?> schema) {
     /*
      Generate the AST required to define the fields of this new class. If we define any classes
      for our fields, we
@@ -160,29 +165,28 @@ public class OasSchemaToAst {
      then any classes defined for MyClass' fields are defined under the package.myclass package.
     */
     var properties = Optional.ofNullable(schema.getProperties()).orElse(Map.of());
-    var interiorPackage = Support.joinPackages(currentPackage, name.toLowerCase());
+    var interiorPackage = currentPackage.resolve(name.toString());
     var fieldAndAst =
         properties.entrySet().stream()
             .map(
                 entry -> {
-                  var fieldName = entry.getKey();
+                  var fieldName = SimpleName.of(entry.getKey());
                   var fieldSchema = entry.getValue();
                   var fieldPackage =
                       fieldSchema.get$ref() == null
                           ? interiorPackage
                           : basePackage; // $ref's always point to a base package type.
-                  var refAndAst =
-                      evaluateSchema(
-                          fieldPackage, Support.capitalCamelCase(fieldName), fieldSchema);
+                  var refAndAst = evaluateSchema(fieldPackage, fieldName, fieldSchema);
                   return refAndAst.mapLeft(ref -> new AstField(ref, fieldName));
                 })
             .collect(toList());
 
     var exteriorClass =
-        AstClass.of(currentPackage, name, fieldAndAst.stream().map(Pair::left).collect(toList()));
+        AstClass.of(
+            Fqn.of(currentPackage, name), fieldAndAst.stream().map(Pair::left).collect(toList()));
     var interiorAst = fieldAndAst.stream().flatMap(Pair::right);
     return new Pair<>(
-        new AstReference(currentPackage, name, List.of(), false),
+        new AstReference(Fqn.of(currentPackage, name), List.of(), false),
         Stream.concat(Stream.of(exteriorClass), interiorAst));
   }
 }

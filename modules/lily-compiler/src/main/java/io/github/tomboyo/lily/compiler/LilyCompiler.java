@@ -4,6 +4,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
+import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.cg.AstToJava;
 import io.github.tomboyo.lily.compiler.cg.Source;
 import io.github.tomboyo.lily.compiler.icg.AstGenerator;
@@ -54,7 +55,7 @@ public class LilyCompiler {
   }
 
   private static Set<Path> compile(OpenAPI openAPI, Path outputDir, String basePackage) {
-    return AstGenerator.evaluate(basePackage, openAPI)
+    return AstGenerator.evaluate(PackageName.of(basePackage), openAPI)
         .map(AstToJava::renderAst)
         .map(source -> persistSource(outputDir, source))
         .collect(Collectors.toSet());

@@ -1,8 +1,5 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static io.github.tomboyo.lily.compiler.icg.Support.capitalCamelCase;
-import static io.github.tomboyo.lily.compiler.icg.Support.joinPackages;
-import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -10,6 +7,9 @@ import static java.util.stream.Collectors.toMap;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
+import io.github.tomboyo.lily.compiler.ast.PackageName;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import java.util.Collection;
@@ -21,14 +21,14 @@ import java.util.stream.Stream;
 
 public class OasOperationToAst {
 
-  private final String basePackage;
+  private final PackageName basePackage;
 
-  private OasOperationToAst(String basePackage) {
+  private OasOperationToAst(PackageName basePackage) {
     this.basePackage = basePackage;
   }
 
   public static TagsOperationAndAst evaluateOperaton(
-      String basePackage,
+      PackageName basePackage,
       String relativePath,
       Operation operation,
       List<Parameter> inheritedParameters) {
@@ -38,8 +38,8 @@ public class OasOperationToAst {
 
   private TagsOperationAndAst evaluateOperation(
       String relativePath, Operation operation, List<Parameter> inheritedParameters) {
-    var operationName = requireNonNull(capitalCamelCase(operation.getOperationId())) + "Operation";
-    var subordinatePackageName = joinPackages(basePackage, operationName);
+    var operationName = SimpleName.of(operation.getOperationId()).resolve("operation");
+    var subordinatePackageName = basePackage.resolve(operationName.toString());
     var ownParameters = requireNonNullElse(operation.getParameters(), List.<Parameter>of());
 
     var parametersAndAst =
@@ -59,8 +59,8 @@ public class OasOperationToAst {
     return new TagsOperationAndAst(
         getOperationTags(operation),
         new AstOperation(
-            operation.getOperationId(),
-            new AstReference(basePackage, operationName, List.of(), false),
+            SimpleName.of(operation.getOperationId()),
+            new AstReference(Fqn.of(basePackage, operationName), List.of(), false),
             relativePath,
             parameters),
         ast);

@@ -3,6 +3,7 @@ package io.github.tomboyo.lily.compiler.icg;
 import static io.github.tomboyo.lily.compiler.AstSupport.astReferencePlaceholder;
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.QUERY;
+import static io.github.tomboyo.lily.compiler.ast.AstReference.newTypeRef;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -12,7 +13,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 
 import io.github.tomboyo.lily.compiler.ast.AstParameter;
-import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
+import io.github.tomboyo.lily.compiler.ast.PackageName;
+import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
 import io.github.tomboyo.lily.compiler.icg.OasParameterToAst.ParameterAndAst;
 import io.github.tomboyo.lily.compiler.util.Pair;
@@ -34,14 +37,13 @@ public class OasOperationToAstTest {
     @Test
     void evaluatesAllParametersToAst() {
       try (var mock = mockStatic(OasSchemaToAst.class)) {
-        var ast = astReferencePlaceholder();
         mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
             .thenAnswer(
                 invocation -> new Pair<>(astBoolean(), Stream.of(astReferencePlaceholder())));
 
         var actual =
             OasOperationToAst.evaluateOperaton(
-                "p",
+                PackageName.of("p"),
                 "/relative/path",
                 new Operation()
                     .operationId("operationId")
@@ -60,19 +62,27 @@ public class OasOperationToAstTest {
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("A"), eq(new IntegerSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("A")),
+                    eq(new IntegerSchema())));
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("B"), eq(new DateSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("B")),
+                    eq(new DateSchema())));
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("C"), eq(new BooleanSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("C")),
+                    eq(new BooleanSchema())));
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("D"), eq(new StringSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("D")),
+                    eq(new StringSchema())));
       }
     }
 
@@ -82,47 +92,49 @@ public class OasOperationToAstTest {
         mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
             .thenAnswer(invocation -> new Pair<>(astBoolean(), Stream.of()));
 
-        var actual =
-            OasOperationToAst.evaluateOperaton(
-                "p",
-                "/relative/path",
-                new Operation()
-                    .operationId("operationId")
-                    .addParametersItem(
-                        new Parameter()
-                            .name("a")
-                            .in("query")
-                            .schema(new IntegerSchema())), // the only IntegerSchema
-                List.of(
-                    new Parameter()
-                        .name("a")
-                        .in("path")
-                        .schema(new BooleanSchema()), // different `in`
-                    new Parameter()
-                        .name("b")
-                        .in("query")
-                        .schema(new BooleanSchema()), // different `name`
+        OasOperationToAst.evaluateOperaton(
+            PackageName.of("p"),
+            "/relative/path",
+            new Operation()
+                .operationId("operationId")
+                .addParametersItem(
                     new Parameter()
                         .name("a")
                         .in("query")
-                        .schema(new BooleanSchema()) // equal `name` and `in`
-                    ));
+                        .schema(new IntegerSchema())), // the only IntegerSchema
+            List.of(
+                new Parameter().name("a").in("path").schema(new BooleanSchema()), // different `in`
+                new Parameter()
+                    .name("b")
+                    .in("query")
+                    .schema(new BooleanSchema()), // different `name`
+                new Parameter()
+                    .name("a")
+                    .in("query")
+                    .schema(new BooleanSchema()) // equal `name` and `in`
+                ));
 
         // The PathItem's "a" query parameter is overridden by the Operation's query parameter with
         // the same name.
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("A"), eq(new IntegerSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("A")),
+                    eq(new IntegerSchema())));
         // The other parameters are not affected.
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("A"), eq(new BooleanSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("A")),
+                    eq(new BooleanSchema())));
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq("p.operationidoperation"), eq("B"), eq(new BooleanSchema())));
+                    eq(PackageName.of("p.operationidoperation")),
+                    eq(SimpleName.of("B")),
+                    eq(new BooleanSchema())));
       }
     }
 
@@ -136,7 +148,7 @@ public class OasOperationToAstTest {
 
           var actual =
               OasOperationToAst.evaluateOperaton(
-                  "p",
+                  PackageName.of("p"),
                   "/relative/path/",
                   new Operation().operationId("operationId").tags(List.of("tagA", "tagB")),
                   List.of());
@@ -156,7 +168,7 @@ public class OasOperationToAstTest {
 
           var actual =
               OasOperationToAst.evaluateOperaton(
-                  "p",
+                  PackageName.of("p"),
                   "/relative/path/",
                   new Operation().operationId("operationId").tags(List.of()), // empty!
                   List.of());
@@ -173,7 +185,7 @@ public class OasOperationToAstTest {
     class AstOperation {
       TagsOperationAndAst actual() {
         return OasOperationToAst.evaluateOperaton(
-            "p",
+            PackageName.of("p"),
             "/relative/path/",
             new Operation()
                 .operationId("operationId")
@@ -188,7 +200,7 @@ public class OasOperationToAstTest {
         assertThat(
             "The operation name is taken from the globally unique OAS operationID",
             actual().operation().operationName(),
-            is("operationId"));
+            is(SimpleName.of("operationId")));
       }
 
       @Test
@@ -196,7 +208,7 @@ public class OasOperationToAstTest {
         assertThat(
             "The AstReference points to a generated type named after the operation ID",
             actual().operation().operationClass(),
-            is(new AstReference("p", "OperationIdOperation", List.of(), false)));
+            is(newTypeRef(Fqn.of("p", "OperationIdOperation"), List.of())));
       }
 
       @Test
@@ -212,17 +224,19 @@ public class OasOperationToAstTest {
         try (var mock = mockStatic(OasParameterToAst.class)) {
           mock.when(() -> OasParameterToAst.evaluateParameter(any(), any()))
               .thenReturn(
-                  new ParameterAndAst(new AstParameter("1", PATH, astBoolean()), Stream.of()))
+                  new ParameterAndAst(
+                      new AstParameter(SimpleName.of("A"), PATH, astBoolean()), Stream.of()))
               .thenReturn(
-                  new ParameterAndAst(new AstParameter("2", QUERY, astString()), Stream.of()));
+                  new ParameterAndAst(
+                      new AstParameter(SimpleName.of("B"), QUERY, astString()), Stream.of()));
 
           assertThat(
               "The parameters list is in the original OAS order",
               actual().operation().parameters(),
               is(
                   List.of(
-                      new AstParameter("1", PATH, astBoolean()),
-                      new AstParameter("2", QUERY, astString()))));
+                      new AstParameter(SimpleName.of("A"), PATH, astBoolean()),
+                      new AstParameter(SimpleName.of("B"), QUERY, astString()))));
         }
       }
     }

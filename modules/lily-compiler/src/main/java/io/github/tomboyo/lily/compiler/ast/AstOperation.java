@@ -8,7 +8,7 @@ import java.util.List;
  * <p>The parameters field list reflects the order of parameters as specified in the OAS.
  */
 public record AstOperation(
-    String operationName,
+    SimpleName operationName,
     AstReference operationClass,
     String relativePath,
     List<AstParameter> parameters)
