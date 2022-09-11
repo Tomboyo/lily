@@ -124,7 +124,7 @@ public class OasComponentsToAstTest {
           Set.of(
               new AstClassAlias(
                   Fqn.of("p", "MyComponent"),
-                  AstReference.ref(
+                  ref(
                       Fqn.of("java.util", "List"),
                       List.of(ref(Fqn.of("p.mycomponent", "MyComponentItem"), List.of())))),
               AstClass.of(
