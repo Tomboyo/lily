@@ -1,6 +1,7 @@
 package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
+import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astByteBuffer;
 import static java.util.stream.Collectors.toList;
 
 import com.github.mustachejava.DefaultMustacheFactory;
@@ -74,19 +75,39 @@ public class AstToJava {
   }
 
   private String recordField(AstField field) {
-    return writeString(
-        "@com.fasterxml.jackson.annotation.JsonProperty(\"{{rawName}}\") {{{fqpt}}} {{name}}",
-        "recordField",
+    var scope =
         Map.of(
             "fqpt", fullyQualifiedParameterizedType(field.astReference()),
             "name", field.name().lowerCamelCase(),
-            "rawName", field.name().raw()));
+            "rawName", field.name().raw());
+
+    if (field.astReference().equals(astByteBuffer())) {
+      // Byte buffers will deser as B64 strings by default, which is not compliant with the OpenAPI
+      // specification, so we add custom deser.
+      return writeString(
+          """
+          @com.fasterxml.jackson.annotation.JsonProperty("{{rawName}}")
+          @com.fasterxml.jackson.databind.annotation.JsonSerialize(
+              using=io.github.tomboyo.lily.http.deser.ByteBufferSerializer.class)
+          @com.fasterxml.jackson.databind.annotation.JsonDeserialize(
+              using=io.github.tomboyo.lily.http.deser.ByteBufferDeserializer.class)
+          {{{fqpt}}} {{name}}
+          """,
+          "recordFieldByteBuffer",
+          scope);
+    } else {
+      return writeString(
+          """
+          @com.fasterxml.jackson.annotation.JsonProperty(\"{{rawName}}\")
+          {{{fqpt}}} {{name}}
+          """,
+          "recordField",
+          scope);
+    }
   }
 
   private static String fullyQualifiedParameterizedType(AstReference ast) {
-    if (ast.isArray()) {
-      return ast.name().toString() + "[]";
-    } else if (ast.typeParameters().isEmpty()) {
+    if (ast.typeParameters().isEmpty()) {
       return ast.name().toString();
     } else {
       var typeParameters =

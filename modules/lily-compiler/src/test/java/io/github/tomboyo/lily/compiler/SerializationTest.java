@@ -3,7 +3,6 @@ package io.github.tomboyo.lily.compiler;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
@@ -12,13 +11,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -203,18 +201,10 @@ public class SerializationTest {
   @ParameterizedTest
   @MethodSource("parameterSource")
   public void fromJson(TestParameter params) throws Exception {
-    params.assertObjectEquals.accept(params.asObject, MAPPER.readValue(params.asJson, params.type));
+    assertEquals(params.asObject, MAPPER.readValue(params.asJson, params.type));
   }
 
-  private record TestParameter(
-      String asJson,
-      Object asObject,
-      Class<?> type,
-      BiConsumer<Object, Object> assertObjectEquals) {
-    public TestParameter(String asJson, Object asObject, Class<?> type) {
-      this(asJson, asObject, type, Assertions::assertEquals);
-    }
-  }
+  private record TestParameter(String asJson, Object asObject, Class<?> type) {}
 
   public static Stream<Arguments> parameterSource() throws Exception {
     return Stream.of(
@@ -301,24 +291,9 @@ public class SerializationTest {
     return new TestParameter(
         "{ \"a\": [3], \"b\": [7]}",
         myByteAndBinaryObject
-            .getConstructor(Byte[].class, Byte[].class)
-            .newInstance(new Byte[] {(byte) 3}, new Byte[] {(byte) 7}),
-        myByteAndBinaryObject,
-        // These Byte[] arguments are not value classes, so even though we're using a record, the
-        // equals() definition
-        // will say two by-value-equals instances are unequal.
-        (a, b) -> {
-          try {
-            assertArrayEquals(
-                (Byte[]) a.getClass().getMethod("a").invoke(a),
-                (Byte[]) b.getClass().getMethod("a").invoke(b));
-            assertArrayEquals(
-                (Byte[]) a.getClass().getMethod("b").invoke(a),
-                (Byte[]) b.getClass().getMethod("b").invoke(b));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-        });
+            .getConstructor(ByteBuffer.class, ByteBuffer.class)
+            .newInstance(ByteBuffer.wrap(new byte[] {3}), ByteBuffer.wrap(new byte[] {7})),
+        myByteAndBinaryObject);
   }
 
   private static TestParameter myObject2TestParameter() throws Exception {

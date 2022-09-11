@@ -127,7 +127,8 @@ public class OasComponentsToAst {
   private static AstReference moveReference(AstReference ref, Map<Fqn, Fqn> nameMap) {
     return new AstReference(
         nameMap.getOrDefault(ref.name(), ref.name()),
-        ref.typeParameters().stream().map(param -> moveReference(param, nameMap)).collect(toList()),
-        ref.isArray());
+        ref.typeParameters().stream()
+            .map(param -> moveReference(param, nameMap))
+            .collect(toList()));
   }
 }
