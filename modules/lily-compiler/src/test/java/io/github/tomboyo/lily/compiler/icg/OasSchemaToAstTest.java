@@ -21,7 +21,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
-import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
@@ -106,10 +106,10 @@ class OasSchemaToAstTest {
 
       assertEquals(
           new Pair<>(
-              newTypeRef(Fqn2.of("p", "MyObject"), List.of()),
+              newTypeRef(Fqn.of("p", "MyObject"), List.of()),
               Set.of(
                   AstClass.of(
-                      Fqn2.of("p", "MyObject"),
+                      Fqn.of("p", "MyObject"),
                       List.of(new AstField(expectedRef, SimpleName.of("myField")))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference for the generated type and its AST");
@@ -130,16 +130,16 @@ class OasSchemaToAstTest {
 
       assertEquals(
           new Pair<>(
-              newTypeRef(Fqn2.of("p", "MyObject"), List.of()),
+              newTypeRef(Fqn.of("p", "MyObject"), List.of()),
               Set.of(
                   AstClass.of(
-                      Fqn2.of("p", "MyObject"),
+                      Fqn.of("p", "MyObject"),
                       List.of(
                           new AstField(
-                              newTypeRef(Fqn2.of("p.myobject", "MyInnerObject"), List.of()),
+                              newTypeRef(Fqn.of("p.myobject", "MyInnerObject"), List.of()),
                               SimpleName.of("myInnerObject")))),
                   AstClass.of(
-                      Fqn2.of("p.myobject", "MyInnerObject"),
+                      Fqn.of("p.myobject", "MyInnerObject"),
                       List.of(new AstField(astBoolean(), SimpleName.of("myField")))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference for the outer generated type but the AST for both the outer and"
@@ -157,13 +157,13 @@ class OasSchemaToAstTest {
 
       assertEquals(
           new Pair<>(
-              newTypeRef(Fqn2.of("p", "MyObject"), List.of()),
+              newTypeRef(Fqn.of("p", "MyObject"), List.of()),
               Set.of(
                   AstClass.of(
-                      Fqn2.of("p", "MyObject"),
+                      Fqn.of("p", "MyObject"),
                       List.of(
                           new AstField(
-                              newTypeRef(Fqn2.of("p", "MyRef"), List.of()),
+                              newTypeRef(Fqn.of("p", "MyRef"), List.of()),
                               SimpleName.of("myField")))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference for the outer generated type and its AST, but no AST for the"
@@ -182,10 +182,10 @@ class OasSchemaToAstTest {
 
       assertEquals(
           new Pair<>(
-              newTypeRef(Fqn2.of("p", "MyObject"), List.of()),
+              newTypeRef(Fqn.of("p", "MyObject"), List.of()),
               Set.of(
                   AstClass.of(
-                      Fqn2.of("p", "MyObject"),
+                      Fqn.of("p", "MyObject"),
                       List.of(new AstField(astListOf(astBoolean()), SimpleName.of("myField")))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference to the generated type and its AST, which does not generate any"
@@ -206,14 +206,14 @@ class OasSchemaToAstTest {
 
       assertEquals(
           new Pair<>(
-              newTypeRef(Fqn2.of("p", "MyObject"), List.of()),
+              newTypeRef(Fqn.of("p", "MyObject"), List.of()),
               Set.of(
                   AstClass.of(
-                      Fqn2.of("p", "MyObject"),
+                      Fqn.of("p", "MyObject"),
                       List.of(
                           new AstField(astBoolean(), SimpleName.of("myField1")),
                           new AstField(
-                              newTypeRef(Fqn2.of("p", "MyRef"), List.of()),
+                              newTypeRef(Fqn.of("p", "MyRef"), List.of()),
                               SimpleName.of("myField2")))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "The AST contains one field for each of multiple properties");
@@ -250,10 +250,10 @@ class OasSchemaToAstTest {
 
       assertEquals(
           new Pair<>(
-              astListOf(newTypeRef(Fqn2.of("p", "MyArrayItem"), List.of())),
+              astListOf(newTypeRef(Fqn.of("p", "MyArrayItem"), List.of())),
               Set.of(
                   AstClass.of(
-                      Fqn2.of("p", "MyArrayItem"),
+                      Fqn.of("p", "MyArrayItem"),
                       List.of(new AstField(astBoolean(), SimpleName.of("myField")))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "defines the inline object in the current package with the -Item suffix in its class"
@@ -269,7 +269,7 @@ class OasSchemaToAstTest {
               new ArraySchema().items(new Schema<>().$ref("#/components/schemas/MyRef")));
 
       assertEquals(
-          new Pair<>(astListOf(newTypeRef(Fqn2.of("p", "MyRef"), List.of())), Set.of()),
+          new Pair<>(astListOf(newTypeRef(Fqn.of("p", "MyRef"), List.of())), Set.of()),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference for the list, but no AST since no new types are generated (we"
               + " assume the reference is evaluated separately)");

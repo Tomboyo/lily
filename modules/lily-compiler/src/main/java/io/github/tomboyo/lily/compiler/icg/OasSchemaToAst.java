@@ -7,7 +7,7 @@ import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
-import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
@@ -62,7 +62,7 @@ public class OasSchemaToAst {
 
   private AstReference toBasePackageClassReference(String $ref) {
     return new AstReference(
-        Fqn2.of(basePackage, SimpleName.of($ref.replaceFirst("^#/components/schemas/", ""))),
+        Fqn.of(basePackage, SimpleName.of($ref.replaceFirst("^#/components/schemas/", ""))),
         List.of(),
         false,
         false);
@@ -184,10 +184,10 @@ public class OasSchemaToAst {
 
     var exteriorClass =
         AstClass.of(
-            Fqn2.of(currentPackage, name), fieldAndAst.stream().map(Pair::left).collect(toList()));
+            Fqn.of(currentPackage, name), fieldAndAst.stream().map(Pair::left).collect(toList()));
     var interiorAst = fieldAndAst.stream().flatMap(Pair::right);
     return new Pair<>(
-        new AstReference(Fqn2.of(currentPackage, name), List.of(), false, false),
+        new AstReference(Fqn.of(currentPackage, name), List.of(), false, false),
         Stream.concat(Stream.of(exteriorClass), interiorAst));
   }
 }

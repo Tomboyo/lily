@@ -7,7 +7,7 @@ import static java.util.stream.Collectors.toSet;
 
 import io.github.tomboyo.lily.compiler.ast.AstApi;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
-import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
@@ -33,7 +33,7 @@ public class OasPathsToAst {
    */
   public static AstApi evaluateApi(
       PackageName basePackage, Set<AstTaggedOperations> taggedOperations) {
-    return new AstApi(Fqn2.of(basePackage, SimpleName.of("Api")), taggedOperations);
+    return new AstApi(Fqn.of(basePackage, SimpleName.of("Api")), taggedOperations);
   }
 
   /**
@@ -61,7 +61,7 @@ public class OasPathsToAst {
         .map(
             entry ->
                 new AstTaggedOperations(
-                    Fqn2.of(basePackage, SimpleName.of(entry.getKey()).resolve("operations")),
+                    Fqn.of(basePackage, SimpleName.of(entry.getKey()).resolve("operations")),
                     entry.getValue()));
   }
 

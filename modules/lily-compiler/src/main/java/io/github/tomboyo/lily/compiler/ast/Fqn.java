@@ -5,19 +5,19 @@ import static java.util.Objects.requireNonNull;
 import java.nio.file.Path;
 
 /** A fully-qualified name composed of a package name and a simple name, like java.util.String. */
-public record Fqn2(PackageName packageName, SimpleName simpleName) {
+public record Fqn(PackageName packageName, SimpleName simpleName) {
 
-  public Fqn2(PackageName packageName, SimpleName simpleName) {
+  public Fqn(PackageName packageName, SimpleName simpleName) {
     this.packageName = requireNonNull(packageName);
     this.simpleName = requireNonNull(simpleName);
   }
 
-  public static Fqn2 of(String packageName, String className) {
-    return new Fqn2(PackageName.of(packageName), SimpleName.of(className));
+  public static Fqn of(String packageName, String className) {
+    return new Fqn(PackageName.of(packageName), SimpleName.of(className));
   }
 
-  public static Fqn2 of(PackageName packageName, SimpleName className) {
-    return new Fqn2(packageName, className);
+  public static Fqn of(PackageName packageName, SimpleName className) {
+    return new Fqn(packageName, className);
   }
 
   /**
@@ -36,7 +36,7 @@ public record Fqn2(PackageName packageName, SimpleName simpleName) {
   }
 
   /** Create a copy of this object but with the given package name */
-  public Fqn2 withPackage(String newPackage) {
-    return new Fqn2(PackageName.of(newPackage), simpleName);
+  public Fqn withPackage(String newPackage) {
+    return new Fqn(PackageName.of(newPackage), simpleName);
   }
 }

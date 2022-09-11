@@ -13,7 +13,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 
 import io.github.tomboyo.lily.compiler.ast.AstParameter;
-import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
@@ -208,7 +208,7 @@ public class OasOperationToAstTest {
         assertThat(
             "The AstReference points to a generated type named after the operation ID",
             actual().operation().operationClass(),
-            is(newTypeRef(Fqn2.of("p", "OperationIdOperation"), List.of())));
+            is(newTypeRef(Fqn.of("p", "OperationIdOperation"), List.of())));
       }
 
       @Test

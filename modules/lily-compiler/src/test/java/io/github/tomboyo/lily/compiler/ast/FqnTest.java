@@ -6,13 +6,13 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-public class Fqn2Test {
+public class FqnTest {
 
   @Nested
   class FullyQualifiedName {
     @Test
     void fullyQualifiedName() {
-      assertEquals("com.example.FooBarBaz", Fqn2.of("com.example", "FooBarBaz").toString());
+      assertEquals("com.example.FooBarBaz", Fqn.of("com.example", "FooBarBaz").toString());
     }
   }
 
@@ -20,6 +20,6 @@ public class Fqn2Test {
   void asPath() {
     assertEquals(
         Path.of("io/github/tomboyo/lily/example/Test.java"),
-        Fqn2.of("io.github.tomboyo.lily.example", "Test").toPath());
+        Fqn.of("io.github.tomboyo.lily.example", "Test").toPath());
   }
 }

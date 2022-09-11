@@ -9,7 +9,7 @@ import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
-import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
@@ -46,13 +46,13 @@ public class OasComponentsToAst {
     if (null == component.getType()) {
       // Create a AstClassAlias of a referent type. There are no AST elements.
       return Stream.concat(
-          Stream.of(new AstClassAlias(Fqn2.of(basePackage, componentName), refAndAst.left())),
+          Stream.of(new AstClassAlias(Fqn.of(basePackage, componentName), refAndAst.left())),
           refAndAst.right());
     }
 
     return switch (component.getType()) {
       case "integer", "number", "string", "boolean" -> Stream.concat(
-          Stream.of(new AstClassAlias(Fqn2.of(basePackage, componentName), refAndAst.left())),
+          Stream.of(new AstClassAlias(Fqn.of(basePackage, componentName), refAndAst.left())),
           refAndAst.right());
       case "array" -> evaluateArray(basePackage, refAndAst, componentName);
       case "object" -> refAndAst.right();
@@ -109,22 +109,22 @@ public class OasComponentsToAst {
     // 3. Create the final AstClassAlias (with updated AstRef!)
     var alias =
         new AstClassAlias(
-            Fqn2.of(basePackage, componentName), moveReference(refAndAst.left(), fqnToPackage));
+            Fqn.of(basePackage, componentName), moveReference(refAndAst.left(), fqnToPackage));
 
     return Stream.concat(Stream.of(alias), mappedAst);
   }
 
-  private static AstClass moveClass(AstClass astClass, Map<Fqn2, Fqn2> nameMap) {
+  private static AstClass moveClass(AstClass astClass, Map<Fqn, Fqn> nameMap) {
     return AstClass.of(
         nameMap.get(astClass.name()),
         astClass.fields().stream().map(ref -> moveField(ref, nameMap)).collect(toList()));
   }
 
-  private static AstField moveField(AstField field, Map<Fqn2, Fqn2> nameMap) {
+  private static AstField moveField(AstField field, Map<Fqn, Fqn> nameMap) {
     return new AstField(moveReference(field.astReference(), nameMap), field.name());
   }
 
-  private static AstReference moveReference(AstReference ref, Map<Fqn2, Fqn2> nameMap) {
+  private static AstReference moveReference(AstReference ref, Map<Fqn, Fqn> nameMap) {
     return new AstReference(
         nameMap.getOrDefault(ref.name(), ref.name()),
         ref.typeParameters().stream().map(param -> moveReference(param, nameMap)).collect(toList()),

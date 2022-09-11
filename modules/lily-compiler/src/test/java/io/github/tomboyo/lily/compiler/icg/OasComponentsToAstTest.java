@@ -20,7 +20,7 @@ import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
-import io.github.tomboyo.lily.compiler.ast.Fqn2;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.media.ArraySchema;
@@ -73,7 +73,7 @@ public class OasComponentsToAstTest {
               new Schema().type(oasType).format(oasFormat));
 
       assertEquals(
-          Set.of(new AstClassAlias(Fqn2.of("p", "MyComponent"), expectedRef)),
+          Set.of(new AstClassAlias(Fqn.of("p", "MyComponent"), expectedRef)),
           actual.collect(Collectors.toSet()));
     }
   }
@@ -91,7 +91,7 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  Fqn2.of("p", "MyComponent"), newTypeRef(Fqn2.of("p", "MyRef"), List.of()))),
+                  Fqn.of("p", "MyComponent"), newTypeRef(Fqn.of("p", "MyRef"), List.of()))),
           actual.collect(Collectors.toSet()));
     }
   }
@@ -107,7 +107,7 @@ public class OasComponentsToAstTest {
               new ArraySchema().items(new Schema<>().type("boolean")));
 
       assertEquals(
-          Set.of(new AstClassAlias(Fqn2.of("p", "MyComponent"), astListOf(astBoolean()))),
+          Set.of(new AstClassAlias(Fqn.of("p", "MyComponent"), astListOf(astBoolean()))),
           actual.collect(Collectors.toSet()),
           "Array components evaluate to aliases of lists");
     }
@@ -124,20 +124,19 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  Fqn2.of("p", "MyComponent"),
+                  Fqn.of("p", "MyComponent"),
                   new AstReference(
-                      Fqn2.of("java.util", "List"),
-                      List.of(newTypeRef(Fqn2.of("p.mycomponent", "MyComponentItem"), List.of())),
+                      Fqn.of("java.util", "List"),
+                      List.of(newTypeRef(Fqn.of("p.mycomponent", "MyComponentItem"), List.of())),
                       true,
                       false)),
               AstClass.of(
-                  Fqn2.of("p.mycomponent", "MyComponentItem"),
+                  Fqn.of("p.mycomponent", "MyComponentItem"),
                   List.of(
                       new AstField(
-                          newTypeRef(
-                              Fqn2.of("p.mycomponent.mycomponentitem", "MyField"), List.of()),
+                          newTypeRef(Fqn.of("p.mycomponent.mycomponentitem", "MyField"), List.of()),
                           SimpleName.of("myField")))),
-              AstClass.of(Fqn2.of("p.mycomponent.mycomponentitem", "MyField"), List.of())),
+              AstClass.of(Fqn.of("p.mycomponent.mycomponentitem", "MyField"), List.of())),
           actual.collect(Collectors.toSet()),
           "Inline types within aliases are defined in packages subordinate to the class alias");
     }
@@ -152,12 +151,12 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              AstClass.of(Fqn2.of("p.mycomponent", "MyComponentItem"), List.of()),
+              AstClass.of(Fqn.of("p.mycomponent", "MyComponentItem"), List.of()),
               new AstClassAlias(
-                  Fqn2.of("p", "MyComponent"),
+                  Fqn.of("p", "MyComponent"),
                   astListOf(
                       astListOf(
-                          newTypeRef(Fqn2.of("p.mycomponent", "MyComponentItem"), List.of()))))),
+                          newTypeRef(Fqn.of("p.mycomponent", "MyComponentItem"), List.of()))))),
           actual.collect(Collectors.toSet()),
           "item schemas in nested arrays evaluate to AstClasses nested beneath the alias and not"
               + " deeper");
@@ -174,8 +173,8 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  Fqn2.of("p", "MyComponent"),
-                  astListOf(newTypeRef(Fqn2.of("p", "MyRef"), List.of())))),
+                  Fqn.of("p", "MyComponent"),
+                  astListOf(newTypeRef(Fqn.of("p", "MyRef"), List.of())))),
           actual.collect(Collectors.toSet()),
           "arrays of refs evaluate to aliases of lists of the referent type");
     }
