@@ -13,7 +13,6 @@ import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
-import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -265,10 +264,6 @@ public class AstToJava {
                         .collect(toList())));
 
     return createSource(ast.operationClass().name(), content);
-  }
-
-  private static Source sourceForFqn(Fqn fqn, String content) {
-    return new Source(Fqns.filePath(fqn), Fqns.fqn(fqn), content);
   }
 
   private static Source createSource(Fqn2 fqn, String content) {
