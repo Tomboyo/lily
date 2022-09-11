@@ -60,7 +60,7 @@ public class OasOperationToAst {
         getOperationTags(operation),
         new AstOperation(
             SimpleName.of(operation.getOperationId()),
-            AstReference.of(Fqn.of(basePackage, operationName), List.of()),
+            AstReference.ref(Fqn.of(basePackage, operationName), List.of()),
             relativePath,
             parameters),
         ast);

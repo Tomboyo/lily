@@ -1,6 +1,6 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static io.github.tomboyo.lily.compiler.ast.AstReference.of;
+import static io.github.tomboyo.lily.compiler.ast.AstReference.ref;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBigDecimal;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBigInteger;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
@@ -90,7 +90,7 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              new AstClassAlias(Fqn.of("p", "MyComponent"), of(Fqn.of("p", "MyRef"), List.of()))),
+              new AstClassAlias(Fqn.of("p", "MyComponent"), ref(Fqn.of("p", "MyRef"), List.of()))),
           actual.collect(Collectors.toSet()));
     }
   }
@@ -124,14 +124,14 @@ public class OasComponentsToAstTest {
           Set.of(
               new AstClassAlias(
                   Fqn.of("p", "MyComponent"),
-                  AstReference.of(
+                  AstReference.ref(
                       Fqn.of("java.util", "List"),
-                      List.of(of(Fqn.of("p.mycomponent", "MyComponentItem"), List.of())))),
+                      List.of(ref(Fqn.of("p.mycomponent", "MyComponentItem"), List.of())))),
               AstClass.of(
                   Fqn.of("p.mycomponent", "MyComponentItem"),
                   List.of(
                       new AstField(
-                          of(Fqn.of("p.mycomponent.mycomponentitem", "MyField"), List.of()),
+                          ref(Fqn.of("p.mycomponent.mycomponentitem", "MyField"), List.of()),
                           SimpleName.of("myField")))),
               AstClass.of(Fqn.of("p.mycomponent.mycomponentitem", "MyField"), List.of())),
           actual.collect(Collectors.toSet()),
@@ -151,7 +151,8 @@ public class OasComponentsToAstTest {
               AstClass.of(Fqn.of("p.mycomponent", "MyComponentItem"), List.of()),
               new AstClassAlias(
                   Fqn.of("p", "MyComponent"),
-                  astListOf(astListOf(of(Fqn.of("p.mycomponent", "MyComponentItem"), List.of()))))),
+                  astListOf(
+                      astListOf(ref(Fqn.of("p.mycomponent", "MyComponentItem"), List.of()))))),
           actual.collect(Collectors.toSet()),
           "item schemas in nested arrays evaluate to AstClasses nested beneath the alias and not"
               + " deeper");
@@ -168,7 +169,7 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  Fqn.of("p", "MyComponent"), astListOf(of(Fqn.of("p", "MyRef"), List.of())))),
+                  Fqn.of("p", "MyComponent"), astListOf(ref(Fqn.of("p", "MyRef"), List.of())))),
           actual.collect(Collectors.toSet()),
           "arrays of refs evaluate to aliases of lists of the referent type");
     }
