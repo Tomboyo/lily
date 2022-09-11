@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
+import io.github.tomboyo.lily.compiler.ast.Fqn2;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
@@ -81,8 +82,9 @@ public class OasPathsToAstTest {
           is(
               Set.of(
                   new AstTaggedOperations(
-                      "p", "TagAOperations", Set.of(getAOperation, getABOperation)),
-                  new AstTaggedOperations("p", "TagBOperations", Set.of(getABOperation)))));
+                      Fqn2.of("p", "TagAOperations"), Set.of(getAOperation, getABOperation)),
+                  new AstTaggedOperations(
+                      Fqn2.of("p", "TagBOperations"), Set.of(getABOperation)))));
     }
   }
 }

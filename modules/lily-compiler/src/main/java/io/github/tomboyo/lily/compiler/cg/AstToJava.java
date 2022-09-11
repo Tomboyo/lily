@@ -1,7 +1,6 @@
 package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
-import static io.github.tomboyo.lily.compiler.icg.Support.lowerCamelCase;
 import static java.util.stream.Collectors.toList;
 
 import com.github.mustachejava.DefaultMustacheFactory;
@@ -16,7 +15,6 @@ import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.Fqn2;
-import io.github.tomboyo.lily.compiler.icg.Support;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
@@ -172,8 +170,8 @@ public class AstToJava {
                         .map(
                             tag ->
                                 Map.of(
-                                    "fqReturnType", Fqns.fqn(tag),
-                                    "methodName", lowerCamelCase(tag.name())))
+                                    "fqReturnType", tag.name().toString(),
+                                    "methodName", tag.name().simpleName().lowerCamelCase()))
                         .collect(toList())));
 
     return createSource(ast.fqn(), content);
@@ -203,8 +201,8 @@ public class AstToJava {
             """,
             "renderAstTaggedOperations",
             Map.of(
-                "packageName", ast.packageName(),
-                "simpleName", Support.capitalCamelCase(ast.name()),
+                "packageName", ast.name().packageName(),
+                "simpleName", ast.name().simpleName().upperCamelCase(),
                 "operations",
                     ast.operations().stream()
                         .map(
@@ -214,7 +212,7 @@ public class AstToJava {
                                     "methodName", operation.operationName().lowerCamelCase()))
                         .collect(toList())));
 
-    return sourceForFqn(ast, content);
+    return createSource(ast.name(), content);
   }
 
   private Source renderAstOperation(AstOperation ast) {

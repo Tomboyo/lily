@@ -61,7 +61,8 @@ public class OasPathsToAst {
         .map(
             entry ->
                 new AstTaggedOperations(
-                    basePackage.toString(), entry.getKey() + "Operations", entry.getValue()));
+                    Fqn2.of(basePackage, SimpleName.of(entry.getKey()).resolve("operations")),
+                    entry.getValue()));
   }
 
   private Stream<TagsOperationAndAst> evaluatePathItem(String relativePath, PathItem pathItem) {
