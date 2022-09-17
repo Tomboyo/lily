@@ -63,7 +63,6 @@ public class FormExplodeGenerator extends GeneratorBase {
     if (isObjectStarted) {
       writer.write('&');
     } else {
-      writer.write('?');
       isObjectStarted = true;
     }
 
