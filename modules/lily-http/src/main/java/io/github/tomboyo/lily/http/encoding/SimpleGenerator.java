@@ -17,6 +17,7 @@ public class SimpleGenerator extends GeneratorBase {
 
   private final Writer writer;
 
+  private boolean inObject = false;
   private boolean inArray = false;
   private boolean isFirstArrayElement = true;
   private boolean isFirstObjectField = true;
@@ -38,6 +39,14 @@ public class SimpleGenerator extends GeneratorBase {
 
   @Override
   public void writeStartArray() throws IOException {
+    if (inArray) {
+      throw new UnsupportedOperationException("Nested lists are not supported");
+    }
+
+    if (inObject) {
+      throw new UnsupportedOperationException("Nested lists are not supported");
+    }
+
     inArray = true;
     isFirstArrayElement = true;
   }
@@ -49,11 +58,22 @@ public class SimpleGenerator extends GeneratorBase {
 
   @Override
   public void writeStartObject() throws IOException {
+    if (inArray) {
+      throw new UnsupportedOperationException("Nested objects are not supported");
+    }
+
+    if (inObject) {
+      throw new UnsupportedOperationException("Nested objects are not supported");
+    }
+
+    inObject = true;
     isFirstObjectField = true;
   }
 
   @Override
-  public void writeEndObject() throws IOException {}
+  public void writeEndObject() throws IOException {
+    inObject = false;
+  }
 
   @Override
   public void writeFieldName(String name) throws IOException {
@@ -161,7 +181,7 @@ public class SimpleGenerator extends GeneratorBase {
 
   @Override
   public void writeNull() throws IOException {
-    throw new UnsupportedOperationException();
+    writeSeparator();
   }
 
   @Override
