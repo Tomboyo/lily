@@ -27,22 +27,9 @@ public class FormExplodeGenerator extends GeneratorBase {
     this.writer = writer;
   }
 
-  private void handleExplodedArray() throws IOException {
-    if (isInArray) {
-      // We need to write the lst field name before writing the value: &key=
-      if (!isFirstArrayItem) {
-        writer.write('&');
-        writer.write(lastFieldName);
-        writer.write('=');
-      } else {
-        // We just wrote &key= or ?key= for the field name, so we can write the value next.
-        isFirstArrayItem = false;
-      }
-    }
-  }
-
   @Override
   public void writeStartArray() throws IOException {
+    requireInObject();
     isInArray = true;
     isFirstArrayItem = true;
   }
@@ -53,7 +40,11 @@ public class FormExplodeGenerator extends GeneratorBase {
   }
 
   @Override
-  public void writeStartObject() throws IOException {}
+  public void writeStartObject() throws IOException {
+    if (isObjectStarted) {
+      throw new UnsupportedOperationException("Nested objects are not supported");
+    }
+  }
 
   @Override
   public void writeEndObject() throws IOException {}
@@ -73,6 +64,7 @@ public class FormExplodeGenerator extends GeneratorBase {
 
   @Override
   public void writeString(String text) throws IOException {
+    requireInObject();
     handleExplodedArray();
     writer.write(text);
   }
@@ -125,30 +117,35 @@ public class FormExplodeGenerator extends GeneratorBase {
 
   @Override
   public void writeNumber(long v) throws IOException {
+    requireInObject();
     handleExplodedArray();
     writer.write(Long.toString(v));
   }
 
   @Override
   public void writeNumber(BigInteger v) throws IOException {
+    requireInObject();
     handleExplodedArray();
     writer.write(v.toString());
   }
 
   @Override
   public void writeNumber(double v) throws IOException {
+    requireInObject();
     handleExplodedArray();
     writer.write(Double.toString(v));
   }
 
   @Override
   public void writeNumber(float v) throws IOException {
+    requireInObject();
     handleExplodedArray();
     writer.write(Float.toString(v));
   }
 
   @Override
   public void writeNumber(BigDecimal v) throws IOException {
+    requireInObject();
     handleExplodedArray();
     writer.write(v.toString());
   }
@@ -160,13 +157,15 @@ public class FormExplodeGenerator extends GeneratorBase {
 
   @Override
   public void writeBoolean(boolean state) throws IOException {
+    requireInObject();
     handleExplodedArray();
     writer.write(Boolean.toString(state));
   }
 
   @Override
   public void writeNull() throws IOException {
-    throw new UnsupportedOperationException();
+    requireInObject();
+    handleExplodedArray();
   }
 
   @Override
@@ -179,4 +178,26 @@ public class FormExplodeGenerator extends GeneratorBase {
 
   @Override
   protected void _verifyValueWrite(String typeMsg) throws IOException {}
+
+  private void handleExplodedArray() throws IOException {
+    if (isInArray) {
+      // We need to write the lst field name before writing the value: &key=
+      if (!isFirstArrayItem) {
+        writer.write('&');
+        writer.write(lastFieldName);
+        writer.write('=');
+      } else {
+        // We just wrote &key= or ?key= for the field name, so we can write the value next.
+        isFirstArrayItem = false;
+      }
+    }
+  }
+
+  private void requireInObject() {
+    if (!isObjectStarted) {
+      throw new UnsupportedOperationException(
+          "Can only form-explode encode top-level key-value objects (e.g. maps but not standalone"
+              + " primitives or lists)");
+    }
+  }
 }
