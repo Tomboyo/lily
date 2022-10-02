@@ -154,7 +154,12 @@ public class AstToJava {
               private final String uri;
 
               private {{className}}(String uri) {
-                this.uri = java.util.Objects.requireNonNull(uri);
+                java.util.Objects.requireNonNull(uri);
+                if (uri.endsWith("/")) {
+                  this.uri = uri;
+                } else {
+                  this.uri = uri + "/";
+                }
               }
 
               public static {{className}}Builder newBuilder() {
@@ -208,6 +213,7 @@ public class AstToJava {
               private final String uri;
 
               public {{className}}(String uri) {
+                // Assumed non-null and to end with a trailing '/'.
                 this.uri = uri;
               }
 
@@ -245,7 +251,8 @@ public class AstToJava {
           private final io.github.tomboyo.lily.http.UriTemplate uriTemplate;
 
           public {{className}}(String uri) {
-            this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri, "{{{relativePath}}}");
+            // We assume uri is non-null and ends with a trailing '/'.
+            this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri + "{{{relativePath}}}");
           }
 
           {{#pathParameters}}
@@ -273,7 +280,7 @@ public class AstToJava {
             Map.of(
                 "packageName", ast.operationClass().name().packageName(),
                 "className", ast.operationClass().name().simpleName(),
-                "relativePath", ast.relativePath(),
+                "relativePath", withoutLeadingSlash(ast.relativePath()),
                 "pathParameters",
                     ast.parameters().stream()
                         .filter(parameter -> parameter.location() == PATH)
@@ -291,5 +298,13 @@ public class AstToJava {
 
   private static Source createSource(Fqn fqn, String content) {
     return new Source(fqn.toPath(), fqn.toString(), content);
+  }
+
+  private static String withoutLeadingSlash(String path) {
+    if (path.startsWith("/")) {
+      return path.substring(1);
+    } else {
+      return path;
+    }
   }
 }

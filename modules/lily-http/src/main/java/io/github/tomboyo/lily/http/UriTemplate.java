@@ -1,13 +1,24 @@
 package io.github.tomboyo.lily.http;
 
+import static java.util.Objects.requireNonNullElse;
+
 import io.github.tomboyo.lily.http.encoding.Encoder;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+/**
+ * A utility that creates URIs from template strings and parameter bindings. <code>
+ *   UriTemplate
+ *     .of("https://example.com/", "{myParam}", "{query}{continuation}")
+ *     .bind("myParam", "some;value")
+ *     .bind("query", Map.of("key1", "value1"), Encoding.form(EXPLODE))
+ *     .bind("continuation", List.of("a", "b"), Encoding.formContinuation(EXPLODE))
+ *     .toURI()
+ *     .toString();
+ *     // => https://example.com/some;value?/?key1=value1&continuation=a&continuation=b
+ * </code>
+ */
 public class UriTemplate {
 
   private final String template;
@@ -19,32 +30,15 @@ public class UriTemplate {
   }
 
   /**
-   * Create a UriTemplate from one or more strings which are joined together by '/' characters.
+   * Create a UriTemplate from the given string.
    *
-   * <p>For example, {@code of("http://foo", "bar/", "/baz"} will return a UriTemplate for the
-   * complete path {@code "http://foo/bar/baz}, with all unnecessary slashes removed.
-   *
-   * @param first The beginning of the URI template.
-   * @param rest Subsequent portions of the URI template.
+   * @param template The template string.
    * @return A UriTemplate for the given template strings.
    */
-  public static UriTemplate of(String first, String... rest) {
-    if (rest == null) {
-      rest = new String[] {};
-    }
-
-    var uri =
-        Stream.concat(Stream.of(first), Arrays.stream(rest))
-            .map(UriTemplate::removeLeadingAndTrailingSlash)
-            .collect(Collectors.joining("/"));
-
-    // If the given template ended with a trailing slash, restore that slash.
-    if ((rest.length == 0 && first.endsWith("/"))
-        || (rest.length > 0 && rest[rest.length - 1].endsWith(("/")))) {
-      uri = uri + "/";
-    }
-
-    return new UriTemplate(uri);
+  // Note: we do not support a `String first, String... rest` API because some scenarios are
+  // ambiguous; consider `of("http://example.com/", "{pathParameter}", "{queryParameter}")`.
+  public static UriTemplate of(String template) {
+    return new UriTemplate(template);
   }
 
   /**
@@ -106,23 +100,8 @@ public class UriTemplate {
                 (matchResult -> {
                   var name = template.substring(matchResult.start() + 1, matchResult.end() - 1);
                   var value = bindings.get(name);
-                  if (value == null) {
-                    return "";
-                  }
-                  return value;
+                  return requireNonNullElse(value, "");
                 }));
     return URI.create(uri);
-  }
-
-  private static String removeLeadingAndTrailingSlash(String part) {
-    if (part.codePointAt(0) == '/') {
-      part = part.substring(1);
-    }
-
-    if (part.codePointAt(part.length() - 1) == '/') {
-      part = part.substring(0, part.length() - 1);
-    }
-
-    return part;
   }
 }
