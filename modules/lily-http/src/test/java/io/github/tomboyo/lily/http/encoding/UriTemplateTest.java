@@ -1,44 +1,66 @@
 package io.github.tomboyo.lily.http.encoding;
 
+import static io.github.tomboyo.lily.http.encoding.Encoding.Modifiers.EXPLODE;
+import static io.github.tomboyo.lily.http.encoding.Encoding.form;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.github.tomboyo.lily.http.UriTemplate;
-import io.github.tomboyo.lily.http.UriTemplateException;
-import java.net.URI;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class UriTemplateTest {
   @Test
-  void requiresAllParameters() {
-    assertThrows(
-        UriTemplateException.class,
-        () ->
-            UriTemplate.of("https://example.com/pets/{petId}/foo/{foo}/")
-                .bind("petId", "5")
-                .toURI());
-  }
-
-  @Test
-  void interpolatesParameters() {
+  void bindInterpolatesGivenStringsExactly() {
     var uri =
-        UriTemplate.of("https://example.com/pets/{petId}/foo/{foo}")
-            .bind("petId", "5")
-            .bind("foo", "f%35oo")
-            .toURI();
+        UriTemplate.of("https://example.com/pets/{petId}/").bind("petId", "?").toURI().toString();
 
-    assertEquals(uri, URI.create("https://example.com/pets/5/foo/f%35oo"));
+    assertEquals("https://example.com/pets/?/", uri);
   }
 
   @Test
-  void removesExtraneousSlashes() {
-    var uri = UriTemplate.of("https://example.com/pets/", "/foo/", "/bar/").toURI();
+  void bindInterpolatesUsingEncoders() {
+    var uri =
+        UriTemplate.of("https://example.com/pets/{colors}")
+            .bind("colors", Map.of("key", "value?"), form(EXPLODE))
+            .toURI()
+            .toString();
 
-    assertEquals(uri, URI.create("https://example.com/pets/foo/bar"));
+    assertEquals("https://example.com/pets/?key=value%3F", uri);
+  }
+
+  @Nested
+  class Of {
+    @Test
+    void removesExtraneousSlashes() {
+      var uri = UriTemplate.of("https://example.com/pets/", "/foo/", "/bar/").toURI().toString();
+
+      assertEquals("https://example.com/pets/foo/bar/", uri);
+    }
+
+    static Stream<Arguments> parameters() {
+      return Stream.of(
+          arguments("https://example.com/foo", "https://example.com/foo", null),
+          arguments("https://example.com/foo", "https://example.com", new String[] {"foo"}),
+          arguments("https://example.com/foo/", "https://example.com/foo/", null),
+          arguments("https://example.com/foo/", "https://example.com", new String[] {"foo/"}));
+    }
+
+    @ParameterizedTest
+    @MethodSource("parameters")
+    void preservesTrailingSlashOrLackThereof(String expected, String first, String[] rest) {
+      var uri = UriTemplate.of(first, rest);
+      assertEquals(expected, uri.toURI().toString());
+    }
   }
 
   @Test
-  void unbind() {
+  void unbindRemovesBindings() {
     var uri =
         UriTemplate.of("https://example.com/foo/{bar}")
             .bind("bar", "?key=value")
@@ -46,6 +68,13 @@ public class UriTemplateTest {
             .toURI()
             .toString();
 
-    assertEquals(uri, "https://example.com/foo/");
+    assertEquals("https://example.com/foo/", uri);
+  }
+
+  @Test
+  void unboundParametersAreLeftBlank() {
+    var uri = UriTemplate.of("https://example.com/{foo}/{?bar}").toURI().toString();
+
+    assertEquals("https://example.com//", uri);
   }
 }

@@ -261,7 +261,8 @@ public class AstToJava {
             if (this.{{name}} != null) {
               uriTemplate.bind(
                   "{{oasName}}",
-                  io.github.tomboyo.lily.http.encoding.Encoding.simple(this.{{name}}));
+                  this.{{name}},
+                  io.github.tomboyo.lily.http.encoding.Encoding.simple());
             }
             {{/pathParameters}}
             return uriTemplate;

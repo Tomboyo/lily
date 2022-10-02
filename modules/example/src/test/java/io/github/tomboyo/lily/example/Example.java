@@ -100,7 +100,7 @@ public class Example {
             // Bind "1234" to the petId path parameter. The Encoding class supports several formats,
             // like formExplode for
             // query parameters. We can override values already set using the operation API.
-            .bind("petId", Encoding.simple(1234))
+            .bind("petId", 1234, Encoding.simple())
             .toURI();
 
     uri = URI.create(uri.toString() + "?foo=foo&bar=bar");
