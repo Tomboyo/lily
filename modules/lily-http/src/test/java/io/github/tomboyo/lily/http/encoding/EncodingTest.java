@@ -2,6 +2,7 @@ package io.github.tomboyo.lily.http.encoding;
 
 import static io.github.tomboyo.lily.http.encoding.Encoding.Modifiers.EXPLODE;
 import static io.github.tomboyo.lily.http.encoding.Encoding.form;
+import static io.github.tomboyo.lily.http.encoding.Encoding.formContinuation;
 import static io.github.tomboyo.lily.http.encoding.Encoding.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,76 +33,81 @@ public class EncodingTest {
   class Simple {
 
     static Stream<Arguments> simpleSource() {
+      // arguments: expected, parameter name, object to encode
       return Stream.of(
           /*
            * Primitives
            */
-          arguments("101", BigInteger.valueOf(101)),
-          arguments("101", 101L),
-          arguments("1", 1),
-          arguments("10.1", BigDecimal.valueOf(10.1)),
-          arguments("1.2", 1.2d),
-          arguments("1.2", 1.2f),
-          arguments("Foo", "Foo"),
+          arguments("101", "key", BigInteger.valueOf(101)),
+          arguments("101", "key", 101L),
+          arguments("1", "key", 1),
+          arguments("10.1", "key", BigDecimal.valueOf(10.1)),
+          arguments("1.2", "key", 1.2d),
+          arguments("1.2", "key", 1.2f),
+          arguments("Foo", "key", "Foo"),
           // RFC3339 (ISO8601) full-date
-          arguments("2000-10-01", LocalDate.of(2000, 10, 1)),
+          arguments("2000-10-01", "key", LocalDate.of(2000, 10, 1)),
           // RFC3339 (ISO8601) date-time
           arguments(
               "2000-10-01T06:30:25.00052Z",
+              "key",
               OffsetDateTime.of(2000, 10, 1, 6, 30, 25, 520_000, ZoneOffset.UTC)),
-          arguments("false", false),
+          arguments("false", "key", false),
+          // Null pointer
+          arguments("", "key", null),
           /*
            * Arrays
            */
-          arguments("123,cats,22.34", List.of(123, "cats", 22.34)),
-          arguments("123", List.of(123)),
+          arguments("123,cats,22.34", "keys", List.of(123, "cats", 22.34)),
+          arguments("123", "keys", List.of(123)),
+          // Null pointer
+          arguments("x,,y", "keys", nullableList("x", null, "y")),
           /*
            * Objects
            */
-          arguments("number,5,text,Foo", new Multiton(5, "Foo")),
-          arguments("number,7", new Singleton(7)),
-          /*
-           * Null pointers
-           */
-          arguments("", null),
-          arguments("x,,y", nullableList("x", null, "y")),
-          arguments("x,,y,", nullableOrderedMap("x", null, "y", null)));
+          arguments("number,5,text,Foo", "keys", new Multiton(5, "Foo")),
+          arguments("number,7", "keys", new Singleton(7)),
+          arguments("x,,y,", "keys", nullableOrderedMap("x", null, "y", null)));
     }
 
     @ParameterizedTest
     @MethodSource("simpleSource")
-    void test(String expected, Object arg) {
-      assertEquals(expected, simple(arg));
+    void test(String expected, String parameterName, Object obj) {
+      assertEquals(expected, simple().encode(parameterName, obj));
     }
 
     @Test
     void nestedObjectsInObjects() {
       assertThrows(
-          Exception.class, () -> Encoding.simple(Map.of("foo", Map.of("not", "supported"))));
+          Exception.class,
+          () -> simple().encode("keys", Map.of("foo", Map.of("not", "supported"))));
     }
 
     @Test
     void nestedObjectsInLists() {
       assertThrows(
-          Exception.class, () -> Encoding.simple(List.of("foo", Map.of("not", "supported"))));
+          Exception.class,
+          () -> simple().encode("keys", List.of("foo", Map.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInObjects() {
       assertThrows(
-          Exception.class, () -> Encoding.simple(Map.of("foo", List.of("not", "supported"))));
+          Exception.class,
+          () -> simple().encode("keys", Map.of("foo", List.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInLists() {
       assertThrows(
-          Exception.class, () -> Encoding.simple(List.of("foo", List.of("not", "supported"))));
+          Exception.class,
+          () -> simple().encode("keys", List.of("foo", List.of("not", "supported"))));
     }
   }
 
   @Nested
-  class Form {
-    static Stream<Arguments> formStyleQueryExpansionParameters() {
+  class FormExploded {
+    static Stream<Arguments> parameters() {
       // arguments: expected encoding, parameter name, object to encode.
       return Stream.of(
           /*
@@ -144,36 +150,119 @@ public class EncodingTest {
     }
 
     @ParameterizedTest
-    @MethodSource("formStyleQueryExpansionParameters")
+    @MethodSource("parameters")
     void formExplodeTest(String expected, String name, Object obj) {
-      assertEquals(expected, form(EXPLODE).apply(name, obj));
+      assertEquals(expected, form(EXPLODE).encode(name, obj));
     }
 
     @Test
     void nestedObjectsInObjects() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).apply("param", Map.of("foo", Map.of("not", "supported"))));
+          () -> form(EXPLODE).encode("param", Map.of("foo", Map.of("not", "supported"))));
     }
 
     @Test
     void nestedObjectsInLists() {
       assertThrows(
-          Exception.class, () -> form(EXPLODE).apply("param", List.of(Map.of("not", "supported"))));
+          Exception.class,
+          () -> form(EXPLODE).encode("param", List.of(Map.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInLists() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).apply("param", List.of(List.of("not", "supported"))));
+          () -> form(EXPLODE).encode("param", List.of(List.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInObjects() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).apply("param", Map.of("key", List.of("not", "supported"))));
+          () -> form(EXPLODE).encode("param", Map.of("key", List.of("not", "supported"))));
+    }
+  }
+
+  @Nested
+  class FormContinuationExploded {
+    static Stream<Arguments> parameters() {
+      // arguments: expected encoding, parameter name, object to encode.
+      return Stream.of(
+          /*
+           * Primitives
+           */
+          arguments("&key=101", "key", BigInteger.valueOf(101)),
+          arguments("&key=101", "key", 101L),
+          arguments("&key=1", "key", 1),
+          arguments("&key=10.1", "key", BigDecimal.valueOf(10.1)),
+          arguments("&key=1.2", "key", 1.2d),
+          arguments("&key=1.2", "key", 1.2f),
+          arguments("&key=Foo", "key", "Foo"),
+          // RFC3339 (ISO8601) full-date
+          arguments("&key=2000-10-01", "key", LocalDate.of(2000, 10, 1)),
+          // RFC3339 (ISO8601) date-time
+          arguments(
+              "&key=2000-10-01T06%3A30%3A25.00052Z",
+              "key", OffsetDateTime.of(2000, 10, 1, 6, 30, 25, 520_000, ZoneOffset.UTC)),
+          arguments("&key=false", "key", false),
+          // Reserved string
+          arguments("&key%3F=%3F", "key?", "?"),
+          /*
+           * Arrays
+           */
+          arguments("&keys=123&keys=cats&keys=22.34", "keys", List.of(123, "cats", 22.34)),
+          arguments("&keys=123", "keys", List.of(123)),
+          // Null pointers
+          arguments("&keys=&keys=", "keys", nullableList(null, null)),
+          // Reserved string
+          arguments("&keys%3F=%3F&keys%3F=%3F", "keys?", List.of("?", "?")),
+          /*
+           * Objects
+           */
+          arguments("&number=5&text=Foo", "keys", new Multiton(5, "Foo")),
+          arguments("&number=7", "keys", new Singleton(7)),
+          // Null pointers
+          arguments("&foo=&bar=", "keys", nullableOrderedMap("foo", null, "bar", null)),
+          // Reserved string
+          arguments("&foo=%3F&bar%3F=%3F", "keys", nullableOrderedMap("foo", "?", "bar?", "?")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("parameters")
+    void formContinuationExplodedTest(String expected, String name, Object obj) {
+      assertEquals(expected, formContinuation(EXPLODE).encode(name, obj));
+    }
+
+    @Test
+    void nestedObjectsInObjects() {
+      assertThrows(
+          Exception.class,
+          () ->
+              formContinuation(EXPLODE).encode("param", Map.of("foo", Map.of("not", "supported"))));
+    }
+
+    @Test
+    void nestedObjectsInLists() {
+      assertThrows(
+          Exception.class,
+          () -> formContinuation(EXPLODE).encode("param", List.of(Map.of("not", "supported"))));
+    }
+
+    @Test
+    void nestedListsInLists() {
+      assertThrows(
+          Exception.class,
+          () -> formContinuation(EXPLODE).encode("param", List.of(List.of("not", "supported"))));
+    }
+
+    @Test
+    void nestedListsInObjects() {
+      assertThrows(
+          Exception.class,
+          () ->
+              formContinuation(EXPLODE)
+                  .encode("param", Map.of("key", List.of("not", "supported"))));
     }
   }
 

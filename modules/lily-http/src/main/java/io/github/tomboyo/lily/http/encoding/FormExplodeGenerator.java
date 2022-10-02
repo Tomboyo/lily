@@ -12,7 +12,8 @@ import java.net.URLEncoder;
 
 /**
  * Expands all objects according to RFC6570 form-style query expansion or query continuation with
- * the 'explode' modifier, like {@code ?key=value&key=value} and {@code &key=value&key=value}.
+ * the 'explode' modifier, like {@code ?key=value&key=value} and {@code &key=value&key=value}. All
+ * key and value pairs are URL encoded, as requried.
  *
  * <p>All objects to be encoded MUST be passed in as a Map with one key-value pair, where the key is
  * the name of the parameter to encode and the value is the object. For example, to encode the

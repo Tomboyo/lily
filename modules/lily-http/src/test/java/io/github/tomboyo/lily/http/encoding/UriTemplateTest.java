@@ -1,6 +1,5 @@
 package io.github.tomboyo.lily.http.encoding;
 
-import static io.github.tomboyo.lily.http.encoding.Encoding.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -16,7 +15,7 @@ public class UriTemplateTest {
         UriTemplateException.class,
         () ->
             UriTemplate.of("https://example.com/pets/{petId}/foo/{foo}/")
-                .bind("petId", simple(5))
+                .bind("petId", "5")
                 .toURI());
   }
 
@@ -24,15 +23,15 @@ public class UriTemplateTest {
   void interpolatesParameters() {
     var uri =
         UriTemplate.of("https://example.com/pets/{petId}/foo/{foo}")
-            .bind("petId", simple(5))
-            .bind("foo", simple("f%o/o!"))
+            .bind("petId", "5")
+            .bind("foo", "f%35oo")
             .toURI();
 
-    assertEquals(uri, URI.create("https://example.com/pets/5/foo/f%25o%2Fo%21"));
+    assertEquals(uri, URI.create("https://example.com/pets/5/foo/f%35oo"));
   }
 
   @Test
-  void removesExtraneousSlashes() throws Exception {
+  void removesExtraneousSlashes() {
     var uri = UriTemplate.of("https://example.com/pets/", "/foo/", "/bar/").toURI();
 
     assertEquals(uri, URI.create("https://example.com/pets/foo/bar"));
