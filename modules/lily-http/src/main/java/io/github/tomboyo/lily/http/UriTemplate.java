@@ -8,7 +8,11 @@ import java.util.HashMap;
 import java.util.regex.Pattern;
 
 /**
- * A utility that creates URIs from template strings and parameter bindings. <code>
+ * A utility that creates URIs from template strings and parameter bindings.
+ *
+ * <p>
+ *
+ * <pre>
  *   UriTemplate
  *     .of("https://example.com/", "{myParam}", "{query}{continuation}")
  *     .bind("myParam", "some;value")
@@ -17,7 +21,7 @@ import java.util.regex.Pattern;
  *     .toURI()
  *     .toString();
  *     // => https://example.com/some;value?/?key1=value1&continuation=a&continuation=b
- * </code>
+ * </pre>
  */
 public class UriTemplate {
 
