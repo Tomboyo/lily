@@ -46,4 +46,17 @@ public class UriTemplateTest {
 
     assertEquals("https://example.com/foo/1234", uri);
   }
+
+  @Test
+  void appendTemplate() {
+    var uri =
+        UriTemplate.of("https://example.com/{id}")
+            .bind("id", "1234")
+            .appendTemplate("/{queryString}")
+            .bind("queryString", "?foo=bar")
+            .toURI()
+            .toString();
+
+    assertEquals("https://example.com/1234/?foo=bar", uri);
+  }
 }

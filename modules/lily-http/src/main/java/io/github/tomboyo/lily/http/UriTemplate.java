@@ -52,6 +52,16 @@ public class UriTemplate {
   }
 
   /**
+   * Return a new UriTemplate with an extended template string and the same parameter bindings.
+   *
+   * @param more The string to append to the current template.
+   * @return A new UriTemplate instance.
+   */
+  public UriTemplate appendTemplate(String more) {
+    return new UriTemplate(template + more, bindings);
+  }
+
+  /**
    * Bind a URL-encoded string to template parameters with the given name, once per name.
    *
    * @param parameter The name of an unbound template parameter
