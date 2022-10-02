@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 public class UriTemplateTest {
   @Test
-  public void requiresAllParameters() {
+  void requiresAllParameters() {
     assertThrows(
         UriTemplateException.class,
         () ->
@@ -21,7 +21,7 @@ public class UriTemplateTest {
   }
 
   @Test
-  public void interpolatesParameters() {
+  void interpolatesParameters() {
     var uri =
         UriTemplate.of("https://example.com/pets/{petId}/foo/{foo}")
             .bind("petId", simple(5))
@@ -32,9 +32,21 @@ public class UriTemplateTest {
   }
 
   @Test
-  public void removesExtraneousSlashes() throws Exception {
+  void removesExtraneousSlashes() throws Exception {
     var uri = UriTemplate.of("https://example.com/pets/", "/foo/", "/bar/").toURI();
 
     assertEquals(uri, URI.create("https://example.com/pets/foo/bar"));
+  }
+
+  @Test
+  void unbind() {
+    var uri =
+        UriTemplate.of("https://example.com/foo/{bar}")
+            .bind("bar", "?key=value")
+            .unbind("bar")
+            .toURI()
+            .toString();
+
+    assertEquals(uri, "https://example.com/foo/");
   }
 }

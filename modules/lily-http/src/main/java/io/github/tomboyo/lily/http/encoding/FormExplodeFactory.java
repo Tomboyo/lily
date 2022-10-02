@@ -7,6 +7,6 @@ import java.io.Writer;
 class FormExplodeFactory extends JsonFactory {
   @Override
   public JsonGenerator createGenerator(Writer w) {
-    return new FormExplodeGenerator(w);
+    return new FormExplodeGenerator("?", w);
   }
 }

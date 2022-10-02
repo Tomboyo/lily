@@ -58,7 +58,20 @@ public class UriTemplate {
   }
 
   /**
+   * Remove the value, if any, bound to the template parameter with the given name.
+   *
+   * @param parameter The name of the template parameter.
+   * @return This instance for chaining.
+   */
+  public UriTemplate unbind(String parameter) {
+    bindings.put(parameter, null);
+    return this;
+  }
+
+  /**
    * Create a URI from the given template and interpolated, URL-encoded parameters.
+   *
+   * <p>Empty parameters are encoded as empty strings.
    *
    * @return The finished URI.
    * @throws UriTemplateException If the URI cannot be generated for any reason.
@@ -73,7 +86,7 @@ public class UriTemplate {
                   var name = template.substring(matchResult.start() + 1, matchResult.end() - 1);
                   var value = bindings.get(name);
                   if (value == null) {
-                    throw new UriTemplateException("No value set for parameter named " + name);
+                    return "";
                   }
                   return URLEncoder.encode(value, UTF_8);
                 }));
