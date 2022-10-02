@@ -24,9 +24,9 @@ public class UriTemplate {
   private final String template;
   private final HashMap<String, String> bindings;
 
-  private UriTemplate(String template) {
+  private UriTemplate(String template, HashMap<String, String> bindings) {
     this.template = template;
-    this.bindings = new HashMap<>();
+    this.bindings = bindings;
   }
 
   /**
@@ -38,7 +38,17 @@ public class UriTemplate {
   // Note: we do not support a `String first, String... rest` API because some scenarios are
   // ambiguous; consider `of("http://example.com/", "{pathParameter}", "{queryParameter}")`.
   public static UriTemplate of(String template) {
-    return new UriTemplate(template);
+    return new UriTemplate(template, new HashMap<>());
+  }
+
+  /**
+   * Return a new UriTemplate with the same parameter bindings but a new template string.
+   *
+   * @param template The new template string.
+   * @return A new UriTemplate instance.
+   */
+  public UriTemplate withTemplate(String template) {
+    return new UriTemplate(template, bindings);
   }
 
   /**
