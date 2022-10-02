@@ -245,7 +245,7 @@ public class AstToJava {
           private final io.github.tomboyo.lily.http.UriTemplate uriTemplate;
 
           public {{className}}(String uri) {
-            this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.forPath(uri, "{{{relativePath}}}");
+            this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri, "{{{relativePath}}}");
           }
 
           {{#pathParameters}}
@@ -259,7 +259,7 @@ public class AstToJava {
           public io.github.tomboyo.lily.http.UriTemplate uriTemplate() {
             {{#pathParameters}}
             if (this.{{name}} != null) {
-              uriTemplate.put(
+              uriTemplate.bind(
                   "{{oasName}}",
                   io.github.tomboyo.lily.http.encoding.Encoding.simple(this.{{name}}));
             }

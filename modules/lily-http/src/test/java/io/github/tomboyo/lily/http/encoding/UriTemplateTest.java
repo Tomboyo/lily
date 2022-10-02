@@ -15,17 +15,17 @@ public class UriTemplateTest {
     assertThrows(
         UriTemplateException.class,
         () ->
-            UriTemplate.forPath("https://example.com/pets/{petId}/foo/{foo}/")
-                .put("petId", simple(5))
+            UriTemplate.of("https://example.com/pets/{petId}/foo/{foo}/")
+                .bind("petId", simple(5))
                 .toURI());
   }
 
   @Test
-  public void interpolatesParameters() throws Exception {
+  public void interpolatesParameters() {
     var uri =
-        UriTemplate.forPath("https://example.com/pets/{petId}/foo/{foo}")
-            .put("petId", simple(5))
-            .put("foo", simple("f%o/o!"))
+        UriTemplate.of("https://example.com/pets/{petId}/foo/{foo}")
+            .bind("petId", simple(5))
+            .bind("foo", simple("f%o/o!"))
             .toURI();
 
     assertEquals(uri, URI.create("https://example.com/pets/5/foo/f%25o%2Fo%21"));
@@ -33,7 +33,7 @@ public class UriTemplateTest {
 
   @Test
   public void removesExtraneousSlashes() throws Exception {
-    var uri = UriTemplate.forPath("https://example.com/pets/", "/foo/", "/bar/").toURI();
+    var uri = UriTemplate.of("https://example.com/pets/", "/foo/", "/bar/").toURI();
 
     assertEquals(uri, URI.create("https://example.com/pets/foo/bar"));
   }

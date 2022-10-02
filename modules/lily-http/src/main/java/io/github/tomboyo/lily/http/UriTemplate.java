@@ -13,14 +13,24 @@ import java.util.stream.Stream;
 public class UriTemplate {
 
   private final String template;
-  private final HashMap<String, String> parameters;
+  private final HashMap<String, String> bindings;
 
   private UriTemplate(String template) {
     this.template = template;
-    parameters = new HashMap<>();
+    this.bindings = new HashMap<>();
   }
 
-  public static UriTemplate forPath(String first, String... rest) {
+  /**
+   * Create a UriTemplate from one or more strings which are joined together by '/' characters.
+   *
+   * <p>For example, {@code of("http://foo", "bar/", "/baz"} will return a UriTemplate for the
+   * complete path {@code "http://foo/bar/baz}, with all unnecessary slashes removed.
+   *
+   * @param first The beginning of the URI template.
+   * @param rest Subsequent portions of the URI template.
+   * @return A UriTemplate for the given template strings.
+   */
+  public static UriTemplate of(String first, String... rest) {
     var uri =
         Stream.concat(Stream.of(first), Arrays.stream(rest))
             .map(UriTemplate::removeLeadingAndTrailingSlash)
@@ -28,20 +38,22 @@ public class UriTemplate {
     return new UriTemplate(uri);
   }
 
-  private static String removeLeadingAndTrailingSlash(String part) {
-    if (part.codePointAt(0) == '/') {
-      part = part.substring(1);
+  /**
+   * Bind a URL-encoded string to template parameters with the given name, once per name.
+   *
+   * <p>Generally, you should use functions from {@link
+   * io.github.tomboyo.lily.http.encoding.Encoding} to create URL-encoded strings from arbitrary
+   * objects. If those functions are inadequate, however, you can use your own or bind string
+   * literals.
+   *
+   * @param parameter The name of an unbound template parameter
+   * @param value A URL-encoded value
+   * @return This instance for chaining.
+   */
+  public UriTemplate bind(String parameter, String value) {
+    if (bindings.put(parameter, value) != null) {
+      throw new IllegalStateException("Parameter already bound: name='" + parameter + "'");
     }
-
-    if (part.codePointAt(part.length() - 1) == '/') {
-      part = part.substring(0, part.length() - 1);
-    }
-
-    return part;
-  }
-
-  public UriTemplate put(String name, String value) {
-    parameters.put(name, value);
     return this;
   }
 
@@ -59,12 +71,24 @@ public class UriTemplate {
             .replaceAll(
                 (matchResult -> {
                   var name = template.substring(matchResult.start() + 1, matchResult.end() - 1);
-                  var value = parameters.get(name);
+                  var value = bindings.get(name);
                   if (value == null) {
                     throw new UriTemplateException("No value set for parameter named " + name);
                   }
                   return URLEncoder.encode(value, UTF_8);
                 }));
     return URI.create(uri);
+  }
+
+  private static String removeLeadingAndTrailingSlash(String part) {
+    if (part.codePointAt(0) == '/') {
+      part = part.substring(1);
+    }
+
+    if (part.codePointAt(part.length() - 1) == '/') {
+      part = part.substring(0, part.length() - 1);
+    }
+
+    return part;
   }
 }
