@@ -177,7 +177,7 @@ public class PathsTest {
                 .allOperations()
                 .getPetById()
                 .uriTemplate()
-                .put("id", "some-uuid-here")
+                .bind("id", "some-uuid-here")
                 .toURI();
               """
                   .formatted(packageName)),

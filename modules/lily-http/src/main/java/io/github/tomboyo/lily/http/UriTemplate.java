@@ -1,55 +1,122 @@
 package io.github.tomboyo.lily.http;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNullElse;
 
+import io.github.tomboyo.lily.http.encoding.Encoder;
+import io.github.tomboyo.lily.http.encoding.Encoders;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+/**
+ * A utility that creates URIs from template strings and parameter bindings.
+ *
+ * <pre>
+ *   UriTemplate
+ *     .of("https://example.com/{myParam}/{query}{continuation}")
+ *     .bind("myParam", "some;value")
+ *     .bind("query", Map.of("key", "value?"), Encoders.form(EXPLODE))
+ *     .bind("continuation", List.of("a", "b"), Encoders.formContinuation(EXPLODE))
+ *     .toURI()
+ *     .toString();
+ *     // => https://example.com/some;value/?key=value%3F&continuation=a&continuation=b
+ * </pre>
+ *
+ * @see Encoders
+ */
 public class UriTemplate {
 
-  private final String template;
-  private final HashMap<String, String> parameters;
+  private String template;
+  private final HashMap<String, String> bindings;
 
-  private UriTemplate(String template) {
+  private UriTemplate(String template, HashMap<String, String> bindings) {
     this.template = template;
-    parameters = new HashMap<>();
+    this.bindings = bindings;
   }
 
-  public static UriTemplate forPath(String first, String... rest) {
-    var uri =
-        Stream.concat(Stream.of(first), Arrays.stream(rest))
-            .map(UriTemplate::removeLeadingAndTrailingSlash)
-            .collect(Collectors.joining("/"));
-    return new UriTemplate(uri);
+  /**
+   * Create a UriTemplate from the given string.
+   *
+   * @param template The template string.
+   * @return A UriTemplate for the given template strings.
+   */
+  // Note: we do not support a `String first, String... rest` API because some scenarios are
+  // ambiguous; consider `of("http://example.com/", "{pathParameter}", "{queryParameter}")`.
+  public static UriTemplate of(String template) {
+    return new UriTemplate(template, new HashMap<>());
   }
 
-  private static String removeLeadingAndTrailingSlash(String part) {
-    if (part.codePointAt(0) == '/') {
-      part = part.substring(1);
-    }
-
-    if (part.codePointAt(part.length() - 1) == '/') {
-      part = part.substring(0, part.length() - 1);
-    }
-
-    return part;
-  }
-
-  public UriTemplate put(String name, String value) {
-    parameters.put(name, value);
+  /**
+   * Replace this UriTemplate's template string with the given string.
+   *
+   * @param template The new template string.
+   * @return This instance for chaining.
+   */
+  public UriTemplate withTemplate(String template) {
+    this.template = template;
     return this;
   }
 
   /**
-   * Create a URI from the given template and interpolated, URL-encoded parameters.
+   * Append the given template string to the end of this instance's template string.
+   *
+   * @param more The string to append to the current template.
+   * @return This instance for chaining.
+   */
+  public UriTemplate appendTemplate(String more) {
+    this.template += more;
+    return this;
+  }
+
+  /**
+   * Bind a URL-encoded string to template parameters with the given name, once per name.
+   *
+   * @param parameter The name of an unbound template parameter
+   * @param value A URL-encoded value
+   * @throws IllegalStateException if the parameter has already been bound to a value.
+   * @return This instance for chaining.
+   */
+  public UriTemplate bind(String parameter, String value) {
+    if (bindings.put(parameter, value) != null) {
+      throw new IllegalStateException("Parameter already bound: name='" + parameter + "'");
+    }
+    return this;
+  }
+
+  /**
+   * Bind an object to a template parameter, using the given Encoder to expand the object to a URL-
+   * encoded string.
+   *
+   * @param parameter The name of an unbound template parameter.
+   * @param value The value to bind to the parameter.
+   * @param encoder The Encoder used to expand the object to a string.
+   * @throws IllegalStateException if the parameter has already been bound to a value.
+   * @return This instance for chaining.
+   */
+  public UriTemplate bind(String parameter, Object value, Encoder encoder) {
+    if (bindings.put(parameter, encoder.encode(parameter, value)) != null) {
+      throw new IllegalStateException("Parameter already bound: name='" + parameter + "'");
+    }
+    return this;
+  }
+
+  /**
+   * Remove the value, if any, bound to the template parameter with the given name.
+   *
+   * @param parameter The name of the template parameter.
+   * @return This instance for chaining.
+   */
+  public UriTemplate unbind(String parameter) {
+    bindings.put(parameter, null);
+    return this;
+  }
+
+  /**
+   * Create the finished URI from the template and bound parameters.
+   *
+   * <p>Empty parameters are encoded as empty strings.
    *
    * @return The finished URI.
-   * @throws UriTemplateException If the URI cannot be generated for any reason.
    */
   public URI toURI() {
     var pattern = Pattern.compile("\\{([^{}]+)}"); // "{parameterName}"
@@ -59,11 +126,8 @@ public class UriTemplate {
             .replaceAll(
                 (matchResult -> {
                   var name = template.substring(matchResult.start() + 1, matchResult.end() - 1);
-                  var value = parameters.get(name);
-                  if (value == null) {
-                    throw new UriTemplateException("No value set for parameter named " + name);
-                  }
-                  return URLEncoder.encode(value, UTF_8);
+                  var value = bindings.get(name);
+                  return requireNonNullElse(value, "");
                 }));
     return URI.create(uri);
   }

@@ -1,40 +1,74 @@
 package io.github.tomboyo.lily.http.encoding;
 
-import static io.github.tomboyo.lily.http.encoding.Encoding.simple;
+import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
+import static io.github.tomboyo.lily.http.encoding.Encoders.form;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.tomboyo.lily.http.UriTemplate;
-import io.github.tomboyo.lily.http.UriTemplateException;
-import java.net.URI;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class UriTemplateTest {
   @Test
-  public void requiresAllParameters() {
-    assertThrows(
-        UriTemplateException.class,
-        () ->
-            UriTemplate.forPath("https://example.com/pets/{petId}/foo/{foo}/")
-                .put("petId", simple(5))
-                .toURI());
-  }
-
-  @Test
-  public void interpolatesParameters() throws Exception {
+  void bindInterpolatesGivenStringsExactly() {
     var uri =
-        UriTemplate.forPath("https://example.com/pets/{petId}/foo/{foo}")
-            .put("petId", simple(5))
-            .put("foo", simple("f%o/o!"))
-            .toURI();
+        UriTemplate.of("https://example.com/pets/{petId}/").bind("petId", "?").toURI().toString();
 
-    assertEquals(uri, URI.create("https://example.com/pets/5/foo/f%25o%2Fo%21"));
+    assertEquals("https://example.com/pets/?/", uri);
   }
 
   @Test
-  public void removesExtraneousSlashes() throws Exception {
-    var uri = UriTemplate.forPath("https://example.com/pets/", "/foo/", "/bar/").toURI();
+  void bindInterpolatesUsingEncoders() {
+    var uri =
+        UriTemplate.of("https://example.com/pets/{colors}")
+            .bind("colors", Map.of("key", "value?"), form(EXPLODE))
+            .toURI()
+            .toString();
 
-    assertEquals(uri, URI.create("https://example.com/pets/foo/bar"));
+    assertEquals("https://example.com/pets/?key=value%3F", uri);
+  }
+
+  @Test
+  void unboundParametersAreLeftBlank() {
+    var uri = UriTemplate.of("https://example.com/{foo}/{bar}").toURI().toString();
+
+    assertEquals("https://example.com//", uri);
+  }
+
+  @Test
+  void unbindParameters() {
+    var uri =
+        UriTemplate.of("https://example.com{foo}")
+            .bind("foo", "?key=value")
+            .unbind("foo")
+            .toURI()
+            .toString();
+
+    assertEquals("https://example.com", uri);
+  }
+
+  @Test
+  void withTemplate() {
+    var uri =
+        UriTemplate.of("https://example.com/{id}")
+            .bind("id", "1234")
+            .withTemplate("https://example.com/foo/{id}")
+            .toURI()
+            .toString();
+
+    assertEquals("https://example.com/foo/1234", uri);
+  }
+
+  @Test
+  void appendTemplate() {
+    var uri =
+        UriTemplate.of("https://example.com/{id}")
+            .bind("id", "1234")
+            .appendTemplate("/{queryString}")
+            .bind("queryString", "?foo=bar")
+            .toURI()
+            .toString();
+
+    assertEquals("https://example.com/1234/?foo=bar", uri);
   }
 }

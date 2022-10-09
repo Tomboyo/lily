@@ -3,6 +3,9 @@ package io.github.tomboyo.lily.example;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
+import static io.github.tomboyo.lily.http.encoding.Encoders.form;
+import static io.github.tomboyo.lily.http.encoding.Encoders.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -10,10 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.tomboyo.lily.http.JacksonBodyHandler;
-import io.github.tomboyo.lily.http.encoding.Encoding;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 @WireMockTest
@@ -89,21 +91,22 @@ public class Example {
         Api.newBuilder()
             .uri(info.getHttpBaseUrl())
             .build()
-            .petsOperations() // All operations with the `pets` tag. (We could also use
-            // .allOperations())
+            // All operations with the `pets` tag. (We could also use .allOperations())
+            .petsOperations()
             .showPetById(); // the GET /pets/{petId} operation
 
     var uri =
         operation
             // Access the underlying uri template to finish the request manually
             .uriTemplate()
-            // Bind "1234" to the petId path parameter. The Encoding class supports several formats,
-            // like formExplode for
-            // query parameters. We can override values already set using the operation API.
-            .put("petId", Encoding.simple(1234))
+            // Bind "1234" to the petId path parameter. The Encoders class implements several common
+            // formats. We can override bindings set by the operation.
+            .bind("petId", 1234, simple())
+            // The operation doesn't have any query parameter templates, so we'll add one and bind a
+            // value to it.
+            .appendTemplate("{queryParameters}")
+            .bind("queryParameters", Map.of("foo", "foo", "bar", "bar"), form(EXPLODE))
             .toURI();
-
-    uri = URI.create(uri.toString() + "?foo=foo&bar=bar");
 
     /*
      * Finish and send the request manually. Note the use of the generated Pet type. All components schemas and
