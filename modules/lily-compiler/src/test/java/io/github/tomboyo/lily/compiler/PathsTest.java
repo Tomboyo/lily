@@ -230,4 +230,62 @@ public class PathsTest {
           is(URI.create("https://example.com/pets/1234")));
     }
   }
+
+  @Nested
+  class QueryParameterSupport {
+    private static String packageName;
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+      packageName =
+          compileOas(
+              """
+          openapi: 3.0.2
+          paths:
+            /pets:
+              get:
+                operationId: listPets
+                parameters:
+                  - name: limit
+                    in: query
+                    schema:
+                      type: integer
+                      format: int32
+                    # Path parameters are simple by default
+                    # style: simple
+                  - name: include
+                    in: query
+                    schema:
+                      type: array
+                      items:
+                        type: string
+                    # Query parameters are form-explode by default
+                    # style: form
+                    # explode: true
+          """);
+    }
+
+    @Test
+    void hasPathParameterSetters() {
+      var actual =
+          evaluate(
+              """
+          return %s.Api.newBuilder()
+            .uri("https://example.com/")
+            .build()
+            .allOperations()
+            .listPets()
+            .limit(5)
+            .include(java.util.List.of("name", "age"))
+            .uriTemplate()
+            .toURI();
+          """
+                  .formatted(packageName),
+              URI.class);
+      assertThat(
+          "Query parameters may be set via the operation API",
+          actual,
+          is(URI.create("https://example.com/pets?include=name&include=age&limit=5")));
+    }
+  }
 }
