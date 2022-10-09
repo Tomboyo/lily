@@ -269,7 +269,7 @@ public class AstToJava {
               uriTemplate.bind(
                   "{{oasName}}",
                   this.{{name}},
-                  io.github.tomboyo.lily.http.encoding.Encoding.simple());
+                  io.github.tomboyo.lily.http.encoding.Encoders.simple());
             }
             {{/pathParameters}}
             return uriTemplate;
