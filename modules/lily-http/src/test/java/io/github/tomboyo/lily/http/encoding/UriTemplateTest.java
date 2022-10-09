@@ -36,6 +36,18 @@ public class UriTemplateTest {
   }
 
   @Test
+  void unbindParameters() {
+    var uri =
+        UriTemplate.of("https://example.com{foo}")
+            .bind("foo", "?key=value")
+            .unbind("foo")
+            .toURI()
+            .toString();
+
+    assertEquals("https://example.com", uri);
+  }
+
+  @Test
   void withTemplate() {
     var uri =
         UriTemplate.of("https://example.com/{id}")

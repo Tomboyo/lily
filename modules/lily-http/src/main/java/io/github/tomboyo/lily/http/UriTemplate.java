@@ -10,22 +10,22 @@ import java.util.regex.Pattern;
 /**
  * A utility that creates URIs from template strings and parameter bindings.
  *
- * <p>
- *
  * <pre>
  *   UriTemplate
- *     .of("https://example.com/", "{myParam}", "{query}{continuation}")
+ *     .of("https://example.com/{myParam}/{query}{continuation}")
  *     .bind("myParam", "some;value")
- *     .bind("query", Map.of("key1", "value1"), Encoding.form(EXPLODE))
+ *     .bind("query", Map.of("key", "value?"), Encoding.form(EXPLODE))
  *     .bind("continuation", List.of("a", "b"), Encoding.formContinuation(EXPLODE))
  *     .toURI()
  *     .toString();
- *     // => https://example.com/some;value?/?key1=value1&continuation=a&continuation=b
+ *     // => https://example.com/some;value/?key=value%3F&continuation=a&continuation=b
  * </pre>
+ *
+ * @see io.github.tomboyo.lily.http.encoding.Encoding
  */
 public class UriTemplate {
 
-  private final String template;
+  private String template;
   private final HashMap<String, String> bindings;
 
   private UriTemplate(String template, HashMap<String, String> bindings) {
@@ -46,23 +46,25 @@ public class UriTemplate {
   }
 
   /**
-   * Return a new UriTemplate with the same parameter bindings but a new template string.
+   * Replace this UriTemplate's template string with the given string.
    *
    * @param template The new template string.
-   * @return A new UriTemplate instance.
+   * @return This instance for chaining.
    */
   public UriTemplate withTemplate(String template) {
-    return new UriTemplate(template, bindings);
+    this.template = template;
+    return this;
   }
 
   /**
-   * Return a new UriTemplate with an extended template string and the same parameter bindings.
+   * Append the given template string to the end of this instance's template string.
    *
    * @param more The string to append to the current template.
-   * @return A new UriTemplate instance.
+   * @return This instance for chaining.
    */
   public UriTemplate appendTemplate(String more) {
-    return new UriTemplate(template + more, bindings);
+    this.template += more;
+    return this;
   }
 
   /**
@@ -85,13 +87,13 @@ public class UriTemplate {
    * encoded string.
    *
    * @param parameter The name of an unbound template parameter.
-   * @param o The value to bind to the parameter.
+   * @param value The value to bind to the parameter.
    * @param encoder The Encoder used to expand the object to a string.
    * @throws IllegalStateException if the parameter has already been bound to a value.
    * @return This instance for chaining.
    */
-  public UriTemplate bind(String parameter, Object o, Encoder encoder) {
-    if (bindings.put(parameter, encoder.encode(parameter, o)) != null) {
+  public UriTemplate bind(String parameter, Object value, Encoder encoder) {
+    if (bindings.put(parameter, encoder.encode(parameter, value)) != null) {
       throw new IllegalStateException("Parameter already bound: name='" + parameter + "'");
     }
     return this;

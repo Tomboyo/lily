@@ -34,11 +34,10 @@ public class Encoding {
   }
 
   /**
-   * Returns an encoder which implements RFC6570 simple-style string expansion, for the {@code
-   * {var}} template.
+   * Returns an encoder which implements RFC6570 simple-style string expansion.
    *
-   * @param modifiers
-   * @return
+   * @param modifiers A list of string expansion modifiers to parameterize the encoding strategy.
+   * @return The encoder.
    */
   public static Encoder simple(Modifiers... modifiers) {
     if (modifiers.length > 0) {
@@ -56,10 +55,10 @@ public class Encoding {
   }
 
   /**
-   * Returns an Encoder which implements RFC6570 form-style string expansion (for templates {@code {?var*}} and {@code {?var}).
+   * Returns an Encoder which implements RFC6570 form-style string expansion.
    *
-   * @param modifiers A list of string expansion modifiers, like EXPLODE.
-   * @return An RFC6570 form-style encoder.
+   * @param modifiers A list of string expansion modifiers to parameterize the encoding strategy.
+   * @return The encoder.
    */
   public static Encoder form(Modifiers... modifiers) {
     if (Arrays.asList(modifiers).contains(EXPLODE)) {
@@ -77,10 +76,10 @@ public class Encoding {
   }
 
   /**
-   * Returns an Encoder which implements RFC6570 form-style continuation, for templates {@code {&var*}} and {@code {&var}.
+   * Returns an Encoder which implements RFC6570 form-style continuation.
    *
-   * @param modifiers A list of string expansion modifiers, like EXPLODE.
-   * @return An RFC6570 form-style continuation encoder.
+   * @param modifiers A list of string expansion modifiers to parameterize the encoding strategy.
+   * @return The encoder.
    */
   public static Encoder formContinuation(Modifiers... modifiers) {
     if (Arrays.asList(modifiers).contains(EXPLODE)) {
