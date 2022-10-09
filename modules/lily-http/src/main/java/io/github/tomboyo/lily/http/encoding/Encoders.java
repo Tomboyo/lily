@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A collection of Encoder implementations for frequently-used formats, such as RFC6570 simple- and
@@ -58,6 +59,39 @@ public class Encoders {
         throw new UncheckedIOException(e);
       }
     };
+  }
+
+  /**
+   * Returns an encoder which uses RFC6570 form-style string expansion for the first parameter it
+   * encounters and form-continuation string expansion for the rest, such that a sequence of
+   * parameters begins with the '?' query string delimiter and uses the '&' continuation delimiter
+   * elsewhere.
+   *
+   * @param modifiers A list of string expansion modifiers to parameterize the encoding strategy.
+   * @return The (stateful!) encoder.
+   */
+  public static Encoder smartForm(Modifiers... modifiers) {
+    if (Arrays.asList(modifiers).contains(EXPLODE)) {
+      var isFirstParam = new AtomicBoolean(true);
+      return (String paramName, Object o) -> {
+        if (isFirstParam.compareAndSet(true, false)) {
+          try {
+            return formExplodeMapper.writer().writeValueAsString(Map.of(paramName, o));
+          } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+          }
+        } else {
+          try {
+            return formContinuationExplodeMapper.writeValueAsString(Map.of(paramName, o));
+          } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+          }
+        }
+      };
+    } else {
+      throw new UnsupportedOperationException(
+          "Only form-style expansion with explode is currently supported");
+    }
   }
 
   /**

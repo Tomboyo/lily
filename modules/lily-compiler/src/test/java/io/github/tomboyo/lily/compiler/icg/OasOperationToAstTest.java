@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 
+import io.github.tomboyo.lily.compiler.ast.AstEncoding;
 import io.github.tomboyo.lily.compiler.ast.AstParameter;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
@@ -225,18 +226,24 @@ public class OasOperationToAstTest {
           mock.when(() -> OasParameterToAst.evaluateParameter(any(), any()))
               .thenReturn(
                   new ParameterAndAst(
-                      new AstParameter(SimpleName.of("A"), PATH, astBoolean()), Stream.of()))
+                      new AstParameter(
+                          SimpleName.of("A"), PATH, AstEncoding.simple(), astBoolean()),
+                      Stream.of()))
               .thenReturn(
                   new ParameterAndAst(
-                      new AstParameter(SimpleName.of("B"), QUERY, astString()), Stream.of()));
+                      new AstParameter(
+                          SimpleName.of("B"), QUERY, AstEncoding.formExplode(), astString()),
+                      Stream.of()));
 
           assertThat(
               "The parameters list is in the original OAS order",
               actual().operation().parameters(),
               is(
                   List.of(
-                      new AstParameter(SimpleName.of("A"), PATH, astBoolean()),
-                      new AstParameter(SimpleName.of("B"), QUERY, astString()))));
+                      new AstParameter(
+                          SimpleName.of("A"), PATH, AstEncoding.simple(), astBoolean()),
+                      new AstParameter(
+                          SimpleName.of("B"), QUERY, AstEncoding.formExplode(), astString()))));
         }
       }
     }

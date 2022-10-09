@@ -1,6 +1,8 @@
 package io.github.tomboyo.lily.compiler.cg;
 
+import static io.github.tomboyo.lily.compiler.ast.AstEncoding.Style.FORM;
 import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
+import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.QUERY;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astByteBuffer;
 import static java.util.stream.Collectors.toList;
 
@@ -10,6 +12,7 @@ import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstApi;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
+import io.github.tomboyo.lily.compiler.ast.AstEncoding;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
@@ -243,6 +246,9 @@ public class AstToJava {
   }
 
   private Source renderAstOperation(AstOperation ast) {
+    var hasQueryParameters =
+        ast.parameters().stream().anyMatch(parameter -> parameter.location() == QUERY);
+
     var content =
         writeString(
             """
@@ -252,26 +258,29 @@ public class AstToJava {
 
           public {{className}}(String uri) {
             // We assume uri is non-null and ends with a trailing '/'.
-            this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri + "{{{relativePath}}}");
+            this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri + "{{{relativePath}}}{{{queryTemplate}}}");
           }
 
-          {{#pathParameters}}
+          {{#urlParameters}}
           private {{{fqpt}}} {{name}};
           public {{className}} {{name}}({{{fqpt}}} {{name}}) {
             this.{{name}} = {{name}};
             return this;
           }
-          {{/pathParameters}}
+          {{/urlParameters}}
 
           public io.github.tomboyo.lily.http.UriTemplate uriTemplate() {
-            {{#pathParameters}}
+            {{#hasQueryParameters}}
+            var formEncoder = io.github.tomboyo.lily.http.encoding.Encoders.smartForm({{modifiers}});
+            {{/hasQueryParameters}}
+            {{#urlParameters}}
             if (this.{{name}} != null) {
               uriTemplate.bind(
                   "{{oasName}}",
                   this.{{name}},
-                  io.github.tomboyo.lily.http.encoding.Encoders.simple());
+                  {{{encoder}}});
             }
-            {{/pathParameters}}
+            {{/urlParameters}}
             return uriTemplate;
           }
         }
@@ -281,19 +290,52 @@ public class AstToJava {
                 "packageName", ast.operationClass().name().packageName(),
                 "className", ast.operationClass().name().simpleName(),
                 "relativePath", withoutLeadingSlash(ast.relativePath()),
-                "pathParameters",
+                "queryTemplate",
                     ast.parameters().stream()
-                        .filter(parameter -> parameter.location() == PATH)
+                        .filter(parameter -> parameter.location() == QUERY)
+                        .map(parameter -> "{" + parameter.name().raw() + "}")
+                        .collect(Collectors.joining("")),
+                "hasQueryParameters", hasQueryParameters,
+                "modifiers",
+                    ast.parameters().stream()
+                            .anyMatch(
+                                parameter -> parameter.encoding().equals(AstEncoding.formExplode()))
+                        ? "io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE"
+                        : "",
+                // path and query parameters -- anything in the URL itself
+                "urlParameters",
+                    ast.parameters().stream()
+                        .filter(
+                            parameter ->
+                                parameter.location() == PATH || parameter.location() == QUERY)
                         .map(
                             parameter ->
                                 Map.of(
                                     "fqpt",
                                         fullyQualifiedParameterizedType(parameter.astReference()),
                                     "name", parameter.name().lowerCamelCase(),
-                                    "oasName", parameter.name().raw()))
+                                    "oasName", parameter.name().raw(),
+                                    "encoder", getEncoder(parameter.encoding())))
                         .collect(toList())));
 
     return createSource(ast.operationClass().name(), content);
+  }
+
+  private static String getEncoder(AstEncoding encoding) {
+    if (encoding.style() == FORM) {
+      // use the stateful smartForm encoder local variable.
+      return "formEncoder";
+    }
+
+    var encoder = "io.github.tomboyo.lily.http.encoding.Encoders.simple(";
+
+    if (encoding.explode()) {
+      encoder += "io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE";
+    }
+
+    encoder += ")";
+
+    return encoder;
   }
 
   private static Source createSource(Fqn fqn, String content) {
