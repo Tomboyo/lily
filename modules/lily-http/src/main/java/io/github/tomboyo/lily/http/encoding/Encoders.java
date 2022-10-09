@@ -1,7 +1,7 @@
 package io.github.tomboyo.lily.http.encoding;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
-import static io.github.tomboyo.lily.http.encoding.Encoding.Modifiers.EXPLODE;
+import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,7 +10,13 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Map;
 
-public class Encoding {
+/**
+ * A collection of Encoder implementations for frequently-used formats, such as RFC6570 simple- and
+ * form-style string expansion.
+ *
+ * @see io.github.tomboyo.lily.http.UriTemplate
+ */
+public class Encoders {
 
   private static final ObjectMapper simpleMapper =
       new ObjectMapper(new SimpleFactory())
@@ -27,7 +33,7 @@ public class Encoding {
           .registerModule(new JavaTimeModule())
           .configure(WRITE_DATES_AS_TIMESTAMPS, false);
 
-  private Encoding() {}
+  private Encoders() {}
 
   public enum Modifiers {
     EXPLODE;

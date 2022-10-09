@@ -1,9 +1,9 @@
 package io.github.tomboyo.lily.http.encoding;
 
-import static io.github.tomboyo.lily.http.encoding.Encoding.Modifiers.EXPLODE;
-import static io.github.tomboyo.lily.http.encoding.Encoding.form;
-import static io.github.tomboyo.lily.http.encoding.Encoding.formContinuation;
-import static io.github.tomboyo.lily.http.encoding.Encoding.simple;
+import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
+import static io.github.tomboyo.lily.http.encoding.Encoders.form;
+import static io.github.tomboyo.lily.http.encoding.Encoders.formContinuation;
+import static io.github.tomboyo.lily.http.encoding.Encoders.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -27,7 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class EncodingTest {
+public class EncodersTest {
 
   @Nested
   class Simple {

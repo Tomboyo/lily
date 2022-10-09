@@ -3,6 +3,7 @@ package io.github.tomboyo.lily.http;
 import static java.util.Objects.requireNonNullElse;
 
 import io.github.tomboyo.lily.http.encoding.Encoder;
+import io.github.tomboyo.lily.http.encoding.Encoders;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.regex.Pattern;
@@ -14,14 +15,14 @@ import java.util.regex.Pattern;
  *   UriTemplate
  *     .of("https://example.com/{myParam}/{query}{continuation}")
  *     .bind("myParam", "some;value")
- *     .bind("query", Map.of("key", "value?"), Encoding.form(EXPLODE))
- *     .bind("continuation", List.of("a", "b"), Encoding.formContinuation(EXPLODE))
+ *     .bind("query", Map.of("key", "value?"), Encoders.form(EXPLODE))
+ *     .bind("continuation", List.of("a", "b"), Encoders.formContinuation(EXPLODE))
  *     .toURI()
  *     .toString();
  *     // => https://example.com/some;value/?key=value%3F&continuation=a&continuation=b
  * </pre>
  *
- * @see io.github.tomboyo.lily.http.encoding.Encoding
+ * @see Encoders
  */
 public class UriTemplate {
 

@@ -3,9 +3,9 @@ package io.github.tomboyo.lily.example;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static io.github.tomboyo.lily.http.encoding.Encoding.Modifiers.EXPLODE;
-import static io.github.tomboyo.lily.http.encoding.Encoding.form;
-import static io.github.tomboyo.lily.http.encoding.Encoding.simple;
+import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
+import static io.github.tomboyo.lily.http.encoding.Encoders.form;
+import static io.github.tomboyo.lily.http.encoding.Encoders.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -99,7 +99,7 @@ public class Example {
         operation
             // Access the underlying uri template to finish the request manually
             .uriTemplate()
-            // Bind "1234" to the petId path parameter. The Encoding class implements several common
+            // Bind "1234" to the petId path parameter. The Encoders class implements several common
             // formats. We can override bindings set by the operation.
             .bind("petId", 1234, simple())
             // The operation doesn't have any query parameter templates, so we'll add one and bind a

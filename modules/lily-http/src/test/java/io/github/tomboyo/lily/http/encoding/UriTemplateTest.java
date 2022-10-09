@@ -1,7 +1,7 @@
 package io.github.tomboyo.lily.http.encoding;
 
-import static io.github.tomboyo.lily.http.encoding.Encoding.Modifiers.EXPLODE;
-import static io.github.tomboyo.lily.http.encoding.Encoding.form;
+import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
+import static io.github.tomboyo.lily.http.encoding.Encoders.form;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.tomboyo.lily.http.UriTemplate;
