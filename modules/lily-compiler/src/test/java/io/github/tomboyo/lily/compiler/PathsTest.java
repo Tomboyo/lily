@@ -1,6 +1,7 @@
 package io.github.tomboyo.lily.compiler;
 
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
+import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -17,7 +18,7 @@ public class PathsTest {
 
   @AfterAll
   static void afterAll() throws Exception {
-    //    deleteGeneratedSources();
+    deleteGeneratedSources();
   }
 
   @Nested

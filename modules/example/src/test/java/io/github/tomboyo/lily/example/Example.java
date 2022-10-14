@@ -3,7 +3,8 @@ package io.github.tomboyo.lily.example;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static io.github.tomboyo.lily.http.encoding.Encoders.*;
+import static io.github.tomboyo.lily.http.encoding.Encoders.formExploded;
+import static io.github.tomboyo.lily.http.encoding.Encoders.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.type.TypeReference;
