@@ -1,7 +1,6 @@
 package io.github.tomboyo.lily.http.encoding;
 
-import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
-import static io.github.tomboyo.lily.http.encoding.Encoders.form;
+import static io.github.tomboyo.lily.http.encoding.Encoders.formExploded;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.tomboyo.lily.http.UriTemplate;
@@ -21,7 +20,7 @@ public class UriTemplateTest {
   void bindInterpolatesUsingEncoders() {
     var uri =
         UriTemplate.of("https://example.com/pets/{colors}")
-            .bind("colors", Map.of("key", "value?"), form(EXPLODE))
+            .bind("colors", Map.of("key", "value?"), formExploded())
             .toURI()
             .toString();
 

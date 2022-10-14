@@ -1,12 +1,14 @@
 package io.github.tomboyo.lily.http.encoding;
 
-import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
-import static io.github.tomboyo.lily.http.encoding.Encoders.form;
-import static io.github.tomboyo.lily.http.encoding.Encoders.formContinuation;
+import static io.github.tomboyo.lily.http.encoding.Encoders.formContinuationExploded;
+import static io.github.tomboyo.lily.http.encoding.Encoders.formExploded;
 import static io.github.tomboyo.lily.http.encoding.Encoders.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -152,35 +154,35 @@ public class EncodersTest {
     @ParameterizedTest
     @MethodSource("parameters")
     void formExplodeTest(String expected, String name, Object obj) {
-      assertEquals(expected, form(EXPLODE).encode(name, obj));
+      assertEquals(expected, formExploded().encode(name, obj));
     }
 
     @Test
     void nestedObjectsInObjects() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).encode("param", Map.of("foo", Map.of("not", "supported"))));
+          () -> formExploded().encode("param", Map.of("foo", Map.of("not", "supported"))));
     }
 
     @Test
     void nestedObjectsInLists() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).encode("param", List.of(Map.of("not", "supported"))));
+          () -> formExploded().encode("param", List.of(Map.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInLists() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).encode("param", List.of(List.of("not", "supported"))));
+          () -> formExploded().encode("param", List.of(List.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInObjects() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).encode("param", Map.of("key", List.of("not", "supported"))));
+          () -> formExploded().encode("param", Map.of("key", List.of("not", "supported"))));
     }
   }
 
@@ -231,7 +233,7 @@ public class EncodersTest {
     @ParameterizedTest
     @MethodSource("parameters")
     void formContinuationExplodedTest(String expected, String name, Object obj) {
-      assertEquals(expected, formContinuation(EXPLODE).encode(name, obj));
+      assertEquals(expected, formContinuationExploded().encode(name, obj));
     }
 
     @Test
@@ -239,21 +241,22 @@ public class EncodersTest {
       assertThrows(
           Exception.class,
           () ->
-              formContinuation(EXPLODE).encode("param", Map.of("foo", Map.of("not", "supported"))));
+              formContinuationExploded()
+                  .encode("param", Map.of("foo", Map.of("not", "supported"))));
     }
 
     @Test
     void nestedObjectsInLists() {
       assertThrows(
           Exception.class,
-          () -> formContinuation(EXPLODE).encode("param", List.of(Map.of("not", "supported"))));
+          () -> formContinuationExploded().encode("param", List.of(Map.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInLists() {
       assertThrows(
           Exception.class,
-          () -> formContinuation(EXPLODE).encode("param", List.of(List.of("not", "supported"))));
+          () -> formContinuationExploded().encode("param", List.of(List.of("not", "supported"))));
     }
 
     @Test
@@ -261,8 +264,30 @@ public class EncodersTest {
       assertThrows(
           Exception.class,
           () ->
-              formContinuation(EXPLODE)
+              formContinuationExploded()
                   .encode("param", Map.of("key", List.of("not", "supported"))));
+    }
+  }
+
+  @Nested
+  class FirstThenRestEncoder {
+    @Test
+    void alternatesStrategyAfterFirstCall() {
+      var first = mock(Encoder.class);
+      var rest = mock(Encoder.class);
+
+      var subject = new Encoders.FirstThenRestEncoder(first, rest);
+
+      subject.encode("key1", "value1");
+      subject.encode("key2", "value2");
+      subject.encode("key3", "value3");
+
+      // The first parameter is encoded using the 'first' encoder.
+      verify(first).encode(eq("key1"), eq("value1"));
+
+      // The second and subsequent parameters are encoded usig the 'rest' encoder.
+      verify(rest).encode(eq("key2"), eq("value2"));
+      verify(rest).encode(eq("key3"), eq("value3"));
     }
   }
 
