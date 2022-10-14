@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.UncheckedIOException;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A collection of Encoder implementations for frequently-used formats, such as RFC6570 simple- and
@@ -50,24 +49,15 @@ public class Encoders {
   }
 
   /**
-   * Returns an encoder which uses RFC6570 form-style string expansion with the "explode" modifier for
-   * the first parameter it encounters and form-continuation string expansion for the rest, such
+   * Returns an encoder which uses RFC6570 form-style string expansion with the "explode" modifier
+   * for the first parameter it encounters and form-continuation string expansion for the rest, such
    * that a sequence of parameters begins with the '?' query string delimiter and uses the '&'
    * continuation delimiter elsewhere.
    *
    * @return The (stateful!) encoder.
    */
   public static Encoder smartFormExploded() {
-    var isFirstParam = new AtomicBoolean(true);
-    var form = formExploded();
-    var formContinuation = formContinuationExploded();
-    return (String paramName, Object o) -> {
-      if (isFirstParam.compareAndSet(true, false)) {
-        return form.encode(paramName, o);
-      } else {
-        return formContinuation.encode(paramName, o);
-      }
-    };
+    return new FirstThenRestEncoder(formExploded(), formContinuationExploded());
   }
 
   /**
@@ -87,7 +77,8 @@ public class Encoders {
   }
 
   /**
-   * Returns an Encoder which implements RFC6570 form-style continuation with the "explode" modifier.
+   * Returns an Encoder which implements RFC6570 form-style continuation with the "explode"
+   * modifier.
    *
    * @return The encoder.
    */
@@ -99,5 +90,33 @@ public class Encoders {
         throw new UncheckedIOException(e);
       }
     };
+  }
+
+  /**
+   * A composite encoder that uses the {@code firstEncoder} to encode the first parameter is
+   * receives, and the {@code restEncoder} for all subsequent parameters.
+   */
+  public static final class FirstThenRestEncoder implements Encoder {
+
+    private final Encoder firstEncoder;
+    private final Encoder restEncoder;
+
+    private boolean isFirstParam;
+
+    public FirstThenRestEncoder(Encoder firstEncoder, Encoder restEncoder) {
+      this.firstEncoder = firstEncoder;
+      this.restEncoder = restEncoder;
+      isFirstParam = true;
+    }
+
+    @Override
+    public String encode(String parameterName, Object value) {
+      if (isFirstParam) {
+        isFirstParam = false;
+        return firstEncoder.encode(parameterName, value);
+      } else {
+        return restEncoder.encode(parameterName, value);
+      }
+    }
   }
 }

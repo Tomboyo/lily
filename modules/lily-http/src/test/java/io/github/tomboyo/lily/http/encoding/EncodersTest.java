@@ -4,6 +4,7 @@ import static io.github.tomboyo.lily.http.encoding.Encoders.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -261,6 +262,28 @@ public class EncodersTest {
           () ->
               formContinuationExploded()
                   .encode("param", Map.of("key", List.of("not", "supported"))));
+    }
+  }
+
+  @Nested
+  class FirstThenRestEncoder {
+    @Test
+    void alternatesStrategyAfterFirstCall() {
+      var first = mock(Encoder.class);
+      var rest = mock(Encoder.class);
+
+      var subject = new Encoders.FirstThenRestEncoder(first, rest);
+
+      subject.encode("key1", "value1");
+      subject.encode("key2", "value2");
+      subject.encode("key3", "value3");
+
+      // The first parameter is encoded using the 'first' encoder.
+      verify(first).encode(eq("key1"), eq("value1"));
+
+      // The second and subsequent parameters are encoded usig the 'rest' encoder.
+      verify(rest).encode(eq("key2"), eq("value2"));
+      verify(rest).encode(eq("key3"), eq("value3"));
     }
   }
 
