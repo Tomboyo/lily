@@ -46,7 +46,7 @@ public class OasOperationToAst {
         mergeParameters(inheritedParameters, ownParameters).stream()
             .map(
                 parameter -> OasParameterToAst.evaluateParameter(subordinatePackageName, parameter))
-            .collect(Collectors.toList());
+            .toList();
     var ast =
         parametersAndAst.stream()
             .flatMap(OasParameterToAst.ParameterAndAst::ast)
