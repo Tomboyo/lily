@@ -101,7 +101,7 @@ public class AstToJava {
     } else {
       return writeString(
           """
-          @com.fasterxml.jackson.annotation.JsonProperty(\"{{rawName}}\")
+          @com.fasterxml.jackson.annotation.JsonProperty("{{rawName}}")
           {{{fqpt}}} {{name}}
           """,
           "recordField",
@@ -246,9 +246,6 @@ public class AstToJava {
   }
 
   private Source renderAstOperation(AstOperation ast) {
-    var hasQueryParameters =
-        ast.parameters().stream().anyMatch(parameter -> parameter.location() == QUERY);
-
     var content =
         writeString(
             """
@@ -270,9 +267,9 @@ public class AstToJava {
           {{/urlParameters}}
 
           public io.github.tomboyo.lily.http.UriTemplate uriTemplate() {
-            {{#hasQueryParameters}}
-            var formEncoder = io.github.tomboyo.lily.http.encoding.Encoders.smartForm({{modifiers}});
-            {{/hasQueryParameters}}
+            {{#smartFormEncoder}}
+            var smartFormEncoder = io.github.tomboyo.lily.http.encoding.Encoders.smartFormExploded(); // stateful
+            {{/smartFormEncoder}}
             {{#urlParameters}}
             if (this.{{name}} != null) {
               uriTemplate.bind(
@@ -295,13 +292,8 @@ public class AstToJava {
                         .filter(parameter -> parameter.location() == QUERY)
                         .map(parameter -> "{" + parameter.name().raw() + "}")
                         .collect(Collectors.joining("")),
-                "hasQueryParameters", hasQueryParameters,
-                "modifiers",
-                    ast.parameters().stream()
-                            .anyMatch(
-                                parameter -> parameter.encoding().equals(AstEncoding.formExplode()))
-                        ? "io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE"
-                        : "",
+                "smartFormEncoder",
+                    ast.parameters().stream().anyMatch(parameter -> parameter.location() == QUERY),
                 // path and query parameters -- anything in the URL itself
                 "urlParameters",
                     ast.parameters().stream()
@@ -323,19 +315,15 @@ public class AstToJava {
 
   private static String getEncoder(AstEncoding encoding) {
     if (encoding.style() == FORM) {
-      // use the stateful smartForm encoder local variable.
-      return "formEncoder";
+      // use the stateful smartFormEncoder local variable.
+      return "smartFormEncoder";
     }
-
-    var encoder = "io.github.tomboyo.lily.http.encoding.Encoders.simple(";
 
     if (encoding.explode()) {
-      encoder += "io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE";
+      return "io.github.tomboyo.lily.http.encoding.Encoders.simpleExplode()";
+    } else {
+      return "io.github.tomboyo.lily.http.encoding.Encoders.simple()";
     }
-
-    encoder += ")";
-
-    return encoder;
   }
 
   private static Source createSource(Fqn fqn, String content) {

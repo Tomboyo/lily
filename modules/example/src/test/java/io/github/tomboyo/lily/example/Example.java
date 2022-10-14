@@ -3,9 +3,7 @@ package io.github.tomboyo.lily.example;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
-import static io.github.tomboyo.lily.http.encoding.Encoders.form;
-import static io.github.tomboyo.lily.http.encoding.Encoders.simple;
+import static io.github.tomboyo.lily.http.encoding.Encoders.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -105,7 +103,7 @@ public class Example {
             // The operation doesn't have any query parameter templates, so we'll add one and bind a
             // value to it.
             .appendTemplate("{queryParameters}")
-            .bind("queryParameters", Map.of("foo", "foo", "bar", "bar"), form(EXPLODE))
+            .bind("queryParameters", Map.of("foo", "foo", "bar", "bar"), formExploded())
             .toURI();
 
     /*

@@ -1,13 +1,11 @@
 package io.github.tomboyo.lily.http.encoding;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
-import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,22 +34,12 @@ public class Encoders {
 
   private Encoders() {}
 
-  public enum Modifiers {
-    EXPLODE;
-  }
-
   /**
    * Returns an encoder which implements RFC6570 simple-style string expansion.
    *
-   * @param modifiers A list of string expansion modifiers to parameterize the encoding strategy.
    * @return The encoder.
    */
-  public static Encoder simple(Modifiers... modifiers) {
-    if (modifiers.length > 0) {
-      throw new UnsupportedOperationException(
-          "Only non-exploded simple expansion is currently supported");
-    }
-
+  public static Encoder simple() {
     return (String paramName, Object o) -> {
       try {
         return simpleMapper.writer().writeValueAsString(o);
@@ -62,77 +50,54 @@ public class Encoders {
   }
 
   /**
-   * Returns an encoder which uses RFC6570 form-style string expansion for the first parameter it
-   * encounters and form-continuation string expansion for the rest, such that a sequence of
-   * parameters begins with the '?' query string delimiter and uses the '&' continuation delimiter
-   * elsewhere.
+   * Returns an encoder which uses RFC6570 form-style string expansion with the "explode" modifier for
+   * the first parameter it encounters and form-continuation string expansion for the rest, such
+   * that a sequence of parameters begins with the '?' query string delimiter and uses the '&'
+   * continuation delimiter elsewhere.
    *
-   * @param modifiers A list of string expansion modifiers to parameterize the encoding strategy.
    * @return The (stateful!) encoder.
    */
-  public static Encoder smartForm(Modifiers... modifiers) {
-    if (Arrays.asList(modifiers).contains(EXPLODE)) {
-      var isFirstParam = new AtomicBoolean(true);
-      return (String paramName, Object o) -> {
-        if (isFirstParam.compareAndSet(true, false)) {
-          try {
-            return formExplodeMapper.writer().writeValueAsString(Map.of(paramName, o));
-          } catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-          }
-        } else {
-          try {
-            return formContinuationExplodeMapper.writeValueAsString(Map.of(paramName, o));
-          } catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-          }
-        }
-      };
-    } else {
-      throw new UnsupportedOperationException(
-          "Only form-style expansion with explode is currently supported");
-    }
+  public static Encoder smartFormExploded() {
+    var isFirstParam = new AtomicBoolean(true);
+    var form = formExploded();
+    var formContinuation = formContinuationExploded();
+    return (String paramName, Object o) -> {
+      if (isFirstParam.compareAndSet(true, false)) {
+        return form.encode(paramName, o);
+      } else {
+        return formContinuation.encode(paramName, o);
+      }
+    };
   }
 
   /**
-   * Returns an Encoder which implements RFC6570 form-style string expansion.
+   * Returns an Encoder which implements RFC6570 form-style string expansion with the "explode"
+   * modifier.
    *
-   * @param modifiers A list of string expansion modifiers to parameterize the encoding strategy.
    * @return The encoder.
    */
-  public static Encoder form(Modifiers... modifiers) {
-    if (Arrays.asList(modifiers).contains(EXPLODE)) {
-      return (String paramName, Object o) -> {
-        try {
-          return formExplodeMapper.writer().writeValueAsString(Map.of(paramName, o));
-        } catch (JsonProcessingException e) {
-          throw new UncheckedIOException(e);
-        }
-      };
-    } else {
-      throw new UnsupportedOperationException(
-          "Only form-style expansion with explode is currently supported");
-    }
+  public static Encoder formExploded() {
+    return (String paramName, Object o) -> {
+      try {
+        return formExplodeMapper.writer().writeValueAsString(Map.of(paramName, o));
+      } catch (JsonProcessingException e) {
+        throw new UncheckedIOException(e);
+      }
+    };
   }
 
   /**
-   * Returns an Encoder which implements RFC6570 form-style continuation.
+   * Returns an Encoder which implements RFC6570 form-style continuation with the "explode" modifier.
    *
-   * @param modifiers A list of string expansion modifiers to parameterize the encoding strategy.
    * @return The encoder.
    */
-  public static Encoder formContinuation(Modifiers... modifiers) {
-    if (Arrays.asList(modifiers).contains(EXPLODE)) {
-      return (String paramName, Object o) -> {
-        try {
-          return formContinuationExplodeMapper.writeValueAsString(Map.of(paramName, o));
-        } catch (JsonProcessingException e) {
-          throw new UncheckedIOException(e);
-        }
-      };
-    } else {
-      throw new UnsupportedOperationException(
-          "Only form-style expansion with explode is currently supported");
-    }
+  public static Encoder formContinuationExploded() {
+    return (String paramName, Object o) -> {
+      try {
+        return formContinuationExplodeMapper.writeValueAsString(Map.of(paramName, o));
+      } catch (JsonProcessingException e) {
+        throw new UncheckedIOException(e);
+      }
+    };
   }
 }

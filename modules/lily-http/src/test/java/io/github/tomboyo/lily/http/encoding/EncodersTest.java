@@ -1,9 +1,6 @@
 package io.github.tomboyo.lily.http.encoding;
 
-import static io.github.tomboyo.lily.http.encoding.Encoders.Modifiers.EXPLODE;
-import static io.github.tomboyo.lily.http.encoding.Encoders.form;
-import static io.github.tomboyo.lily.http.encoding.Encoders.formContinuation;
-import static io.github.tomboyo.lily.http.encoding.Encoders.simple;
+import static io.github.tomboyo.lily.http.encoding.Encoders.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -152,35 +149,35 @@ public class EncodersTest {
     @ParameterizedTest
     @MethodSource("parameters")
     void formExplodeTest(String expected, String name, Object obj) {
-      assertEquals(expected, form(EXPLODE).encode(name, obj));
+      assertEquals(expected, formExploded().encode(name, obj));
     }
 
     @Test
     void nestedObjectsInObjects() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).encode("param", Map.of("foo", Map.of("not", "supported"))));
+          () -> formExploded().encode("param", Map.of("foo", Map.of("not", "supported"))));
     }
 
     @Test
     void nestedObjectsInLists() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).encode("param", List.of(Map.of("not", "supported"))));
+          () -> formExploded().encode("param", List.of(Map.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInLists() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).encode("param", List.of(List.of("not", "supported"))));
+          () -> formExploded().encode("param", List.of(List.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInObjects() {
       assertThrows(
           Exception.class,
-          () -> form(EXPLODE).encode("param", Map.of("key", List.of("not", "supported"))));
+          () -> formExploded().encode("param", Map.of("key", List.of("not", "supported"))));
     }
   }
 
@@ -231,7 +228,7 @@ public class EncodersTest {
     @ParameterizedTest
     @MethodSource("parameters")
     void formContinuationExplodedTest(String expected, String name, Object obj) {
-      assertEquals(expected, formContinuation(EXPLODE).encode(name, obj));
+      assertEquals(expected, formContinuationExploded().encode(name, obj));
     }
 
     @Test
@@ -239,21 +236,22 @@ public class EncodersTest {
       assertThrows(
           Exception.class,
           () ->
-              formContinuation(EXPLODE).encode("param", Map.of("foo", Map.of("not", "supported"))));
+              formContinuationExploded()
+                  .encode("param", Map.of("foo", Map.of("not", "supported"))));
     }
 
     @Test
     void nestedObjectsInLists() {
       assertThrows(
           Exception.class,
-          () -> formContinuation(EXPLODE).encode("param", List.of(Map.of("not", "supported"))));
+          () -> formContinuationExploded().encode("param", List.of(Map.of("not", "supported"))));
     }
 
     @Test
     void nestedListsInLists() {
       assertThrows(
           Exception.class,
-          () -> formContinuation(EXPLODE).encode("param", List.of(List.of("not", "supported"))));
+          () -> formContinuationExploded().encode("param", List.of(List.of("not", "supported"))));
     }
 
     @Test
@@ -261,7 +259,7 @@ public class EncodersTest {
       assertThrows(
           Exception.class,
           () ->
-              formContinuation(EXPLODE)
+              formContinuationExploded()
                   .encode("param", Map.of("key", List.of("not", "supported"))));
     }
   }
