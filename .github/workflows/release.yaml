@@ -4,6 +4,11 @@ on:
     types:
       - created
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: What tag to release
+        required: true
+        type: string
 jobs:
   check_tag:
     runs-on: ubuntu-latest
@@ -14,13 +19,31 @@ jobs:
       - name: check tag (${{ github.event.release.tag_name }})
         id: check-tag
         run: |
-          # parse the version out of VALUE
+          if [[ "$RELEASE_TAG" != "" ]] ; then
+            >&2 echo "Manual release requested"
+            # This is a manual release
+            if [[ $RELEASE_TAG =~ v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+              VERSION=${RELEASE_TAG#*v}
+              >&2 echo "Performing manual release of version $VERSION"
+              echo "is_maven_release=true" >> $GITHUB_OUTPUT
+              echo "version=$VERSION" >> $GITHUB_OUTPUT
+              exit 0
+            else
+              >&2 echo "Release tag $RELEASE_TAG does not follow vX.Y.Z format!"
+              exit 1
+            fi
+          fi
+          
+          # This is an automated release, not a manual release.
+          # parse the release version from the tag name
           TAG="${{ github.event.release.tag_name }}"
           if [[ $TAG =~ v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             VERSION=${TAG#*v}
+            >&2 echo "Performing automatic release of version $VERSION"
             echo "is_maven_release=true" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
           else
+            >&2 echo "Ignoring non-release tag $TAG"
             echo "is_maven_release=false" >> $GITHUB_OUTPUT
           fi
   release:
