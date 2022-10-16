@@ -17,10 +17,10 @@ jobs:
           TAG="${{ github.event.release.tag_name }}"
           if [[ $TAG =~ v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             VERSION=${TAG#*v}
-            echo "::set-output name=is_maven_release::true"
-            echo "::set-output name=version::$VERSION"
+            echo "is_maven_release=true" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=is_maven_release::false"
+            echo "is_maven_release=false" >> $GITHUB_OUTPUT
           fi
   release:
     name: 'release'
