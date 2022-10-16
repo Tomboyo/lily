@@ -1,4 +1,4 @@
-package io.github.tomboyo.lily.compiler;
+package io.github.tomboyo.lily.compiler.feature;
 
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
@@ -13,16 +13,17 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/** Tests the APIs generated from OAS paths. */
-public class PathsTest {
+/** The fluent API supports chaining calls to prepare and execute requests. */
+public class FluentApiTest {
 
   @AfterAll
   static void afterAll() throws Exception {
     deleteGeneratedSources();
   }
 
+  /** All operations are organized by their OpenAPI tags. */
   @Nested
-  class TaggedOperationsApiTests {
+  class OrganizesOperationsByTag {
 
     private static String packageName;
 
@@ -81,69 +82,12 @@ public class PathsTest {
     }
   }
 
+  /**
+   * To facilitate temporary work-arounds, users can access the underlying UriTemplate from
+   * operations. This allows users to override and otherwise customize request paths and queries.
+   */
   @Nested
-  class ParameterSchemaGeneration {
-    private static String packageName;
-
-    @BeforeAll
-    static void beforeAll() throws Exception {
-      packageName =
-          compileOas(
-              """
-          openapi: 3.0.2
-          paths:
-            /foo/{foo}/bar:
-              parameters:
-                - name: foo
-                  in: path
-                  required: true
-                  schema:
-                    type: object
-                    properties:
-                      foo:
-                        type: string
-              get:
-                operationId: GetById
-                parameters:
-                  - name: bar
-                    in: query
-                    schema:
-                      type: object
-                      properties:
-                        bar:
-                          type: boolean
-          """);
-    }
-
-    @Test
-    void pathItemParametersAreGeneratedToTypes() {
-      assertThat(
-          "Lily generates new types for path (item) parameter object schemas",
-          "value",
-          is(
-              evaluate(
-                  """
-              return new %s.getbyidoperation.Foo("value").foo();
-              """
-                      .formatted(packageName))));
-    }
-
-    @Test
-    void operationParametersAreGeneratedToTypes() {
-      assertThat(
-          "Lily generates new types for operation parameter object schemas",
-          true,
-          is(
-              evaluate(
-                  """
-              return new %s.getbyidoperation.Bar(true).bar();
-              """
-                      .formatted(packageName))));
-    }
-  }
-
-  @Nested
-  class UriTemplates {
+  class ExposesUnderlyingUriTemplates {
     private static String packageName;
 
     @BeforeAll
@@ -185,8 +129,9 @@ public class PathsTest {
     }
   }
 
+  /** Lily generates fluent-style setters for all path parameters. */
   @Nested
-  class PathParameterSupport {
+  class HasFluentPathParameters {
     private static String packageName;
 
     @BeforeAll
@@ -231,8 +176,9 @@ public class PathsTest {
     }
   }
 
+  /** Lily generates fluent-style setters for all query parameters. */
   @Nested
-  class QueryParameterSupport {
+  class HasFluentQueryParameters {
     private static String packageName;
 
     @BeforeAll

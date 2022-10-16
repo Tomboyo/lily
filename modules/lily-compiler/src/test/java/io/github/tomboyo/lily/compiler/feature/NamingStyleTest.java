@@ -1,4 +1,4 @@
-package io.github.tomboyo.lily.compiler;
+package io.github.tomboyo.lily.compiler.feature;
 
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
@@ -13,7 +13,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Lily supports identifiers in snake_case, kebab-case, and camelCase (and PascalCase, or "upper
  * camel case" in the code).
  */
-public class NameStyleSupportTest {
+public class NamingStyleTest {
 
   private static String packageName;
 

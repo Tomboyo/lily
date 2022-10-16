@@ -1,4 +1,4 @@
-package io.github.tomboyo.lily.compiler;
+package io.github.tomboyo.lily.compiler.feature;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
@@ -9,6 +9,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.github.tomboyo.lily.compiler.OasParseException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -23,8 +24,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/** Tests that all generated sources serialize and deserialize to expected values. */
-public class SerializationTest {
+/**
+ * Generated models (like path parameters and components) serialize and deserialize to and from
+ * JSON.
+ */
+public class JsonDeserTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
