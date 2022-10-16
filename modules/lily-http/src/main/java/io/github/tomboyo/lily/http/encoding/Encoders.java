@@ -51,7 +51,7 @@ public class Encoders {
   /**
    * Returns an encoder which uses RFC6570 form-style string expansion with the "explode" modifier
    * for the first parameter it encounters and form-continuation string expansion for the rest, such
-   * that a sequence of parameters begins with the '?' query string delimiter and uses the '&'
+   * that a sequence of parameters begins with the '?' query string delimiter and uses the '&amp;'
    * continuation delimiter elsewhere.
    *
    * @return The (stateful!) encoder.
@@ -103,6 +103,12 @@ public class Encoders {
 
     private boolean isFirstParam;
 
+    /**
+     * Create a first-then-rest encoder from the two given encoders.
+     *
+     * @param firstEncoder The encoder for the first parameter encountered
+     * @param restEncoder The encoder for the second and subsequent parameters encountered.
+     */
     public FirstThenRestEncoder(Encoder firstEncoder, Encoder restEncoder) {
       this.firstEncoder = firstEncoder;
       this.restEncoder = restEncoder;

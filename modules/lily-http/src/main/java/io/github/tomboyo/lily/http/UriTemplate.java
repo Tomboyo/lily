@@ -11,16 +11,16 @@ import java.util.regex.Pattern;
 /**
  * A utility that creates URIs from template strings and parameter bindings.
  *
- * <pre>
- *   UriTemplate
- *     .of("https://example.com/{myParam}/{query}{continuation}")
- *     .bind("myParam", "some;value")
- *     .bind("query", Map.of("key", "value?"), Encoders.form(EXPLODE))
- *     .bind("continuation", List.of("a", "b"), Encoders.formContinuation(EXPLODE))
- *     .toURI()
- *     .toString();
- *     // => https://example.com/some;value/?key=value%3F&continuation=a&continuation=b
- * </pre>
+ * <pre>{@code
+ * UriTemplate
+ *   .of("https://example.com/{myParam}/{query}{continuation}")
+ *   .bind("myParam", "some;value")
+ *   .bind("query", Map.of("key", "value?"), Encoders.form(EXPLODE))
+ *   .bind("continuation", List.of("a", "b"), Encoders.formContinuation(EXPLODE))
+ *   .toURI()
+ *   .toString();
+ *   // => https://example.com/some;value/?key=value%3F&continuation=a&continuation=b
+ * }</pre>
  *
  * @see Encoders
  */

@@ -10,8 +10,10 @@ import java.math.BigInteger;
 /**
  * Expands all objects according to RFC6570 simple string expansion.
  *
- * <p>See https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#style-examples
- * and https://datatracker.ietf.org/doc/html/rfc6570#section-3.2.2.
+ * <p>See <a
+ * href="https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#style-examples">OpenAPI
+ * Style Examples</a> and <a
+ * href="https://datatracker.ietf.org/doc/html/rfc6570#section-3.2.2.">RFC6570 section 3.2.2</a>
  */
 public class SimpleGenerator extends GeneratorBase {
 

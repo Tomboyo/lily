@@ -8,12 +8,18 @@ import java.io.UncheckedIOException;
 import java.net.http.HttpResponse;
 import java.util.function.Supplier;
 
+/** Defines a body handler that JSON-deserializes responses to values of a desired type. */
 public class JacksonBodyHandler {
   private JacksonBodyHandler() {}
 
   /**
    * Return a body handler which deserializes JSON objects of the given type using the provided
    * object mapper.
+   *
+   * @param objectMapper The object mapper with which to read the input stream.
+   * @param type The type (reference) of values to deserialize.
+   * @param <T> The type of values to deserialize.
+   * @return The body handler.
    */
   public static <T> HttpResponse.BodyHandler<Supplier<T>> of(
       ObjectMapper objectMapper, TypeReference<T> type) {
