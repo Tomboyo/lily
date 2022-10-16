@@ -46,6 +46,8 @@ jobs:
             >&2 echo "Ignoring non-release tag $TAG"
             echo "is_maven_release=false" >> $GITHUB_OUTPUT
           fi
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
   release:
     name: 'release'
     needs: [check_tag]
