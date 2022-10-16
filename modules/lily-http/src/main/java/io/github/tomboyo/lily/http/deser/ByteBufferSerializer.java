@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/** Serializes ByteBuffers into JSON binaries */
 public class ByteBufferSerializer extends JsonSerializer<ByteBuffer> {
   @Override
   public void serialize(ByteBuffer value, JsonGenerator gen, SerializerProvider serializers)

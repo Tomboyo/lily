@@ -24,9 +24,12 @@ import java.net.URLEncoder;
  * <p>Refer to the following resources:
  *
  * <ul>
- *   <li>https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#style-examples
- *   <li>https://datatracker.ietf.org/doc/html/rfc6570#section-3.2.8
- *   <li>https://www.rfc-editor.org/rfc/rfc6570#section-3.2.9
+ *   <li><a
+ *       href="https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#style-examples">OpenAPI
+ *       Style Examples</a>
+ *   <li><a href="https://datatracker.ietf.org/doc/html/rfc6570#section-3.2.8">RFC6570 section
+ *       3.2.8</a>
+ *   <li><a href="https://www.rfc-editor.org/rfc/rfc6570#section-3.2.9">RFC6570 section 3.2.9</a>
  * </ul>
  */
 public class FormExplodeGenerator extends GeneratorBase {

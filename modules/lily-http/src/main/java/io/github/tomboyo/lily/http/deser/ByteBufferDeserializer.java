@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/** Deserializes JSON binaries into ByteBuffers */
 public class ByteBufferDeserializer extends StdDeserializer<ByteBuffer> {
 
   public ByteBufferDeserializer() {
