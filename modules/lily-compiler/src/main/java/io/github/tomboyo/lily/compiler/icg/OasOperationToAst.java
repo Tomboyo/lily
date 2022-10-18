@@ -11,10 +11,13 @@ import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,14 +50,28 @@ public class OasOperationToAst {
             .map(
                 parameter -> OasParameterToAst.evaluateParameter(subordinatePackageName, parameter))
             .toList();
-    var ast =
-        parametersAndAst.stream()
-            .flatMap(OasParameterToAst.ParameterAndAst::ast)
-            .collect(Collectors.toSet());
+    var parameterAst = parametersAndAst.stream().flatMap(OasParameterToAst.ParameterAndAst::ast);
     var parameters =
         parametersAndAst.stream()
             .map(OasParameterToAst.ParameterAndAst::parameter)
             .collect(Collectors.toList());
+
+    var responseAst =
+        requireNonNullElse(operation.getResponses(), new ApiResponses()).entrySet().stream()
+            .flatMap(
+                entry ->
+                    Optional.ofNullable(entry.getValue().getContent())
+                        .map(content -> content.get("application/json"))
+                        .map(MediaType::getSchema)
+                        .map(
+                            schema ->
+                                OasSchemaToAst.evaluate(
+                                    subordinatePackageName,
+                                    // for example: Response200, response404
+                                    SimpleName.of("Response" + entry.getKey()),
+                                    schema))
+                        .orElseThrow()
+                        .right());
 
     return new TagsOperationAndAst(
         getOperationTags(operation),
@@ -63,7 +80,7 @@ public class OasOperationToAst {
             AstReference.ref(Fqn.of(basePackage, operationName), List.of()),
             relativePath,
             parameters),
-        ast);
+        Stream.of(parameterAst, responseAst).flatMap(identity()).collect(Collectors.toSet()));
   }
 
   /** Merge owned parameters with inherited parameters. Owned parameters take precedence. */
