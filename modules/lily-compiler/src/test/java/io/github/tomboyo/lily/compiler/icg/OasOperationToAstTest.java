@@ -26,6 +26,8 @@ import io.swagger.v3.oas.models.media.DateSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -136,6 +138,34 @@ public class OasOperationToAstTest {
                     eq(PackageName.of("p.operationidoperation")),
                     eq(SimpleName.of("B")),
                     eq(new BooleanSchema())));
+      }
+    }
+
+    @Test
+    void evaluatesAllResponsesToAst() {
+      try (var mock = mockStatic(OasApiResponseToAst.class)) {
+        mock.when(() -> OasApiResponseToAst.evaluateApiResponse(any(), any(), any()))
+            .thenAnswer(invocation -> Stream.of());
+
+        OasOperationToAst.evaluateOperaton(
+            PackageName.of("com.example"),
+            "/foo",
+            new Operation()
+                .operationId("getfoo")
+                .responses(
+                    new ApiResponses()
+                        .addApiResponse("200", new ApiResponse())
+                        .addApiResponse("404", new ApiResponse())),
+            List.of());
+
+        mock.verify(
+            () ->
+                OasApiResponseToAst.evaluateApiResponse(
+                    eq(PackageName.of("com.example.getfoooperation")), eq("200"), any()));
+        mock.verify(
+            () ->
+                OasApiResponseToAst.evaluateApiResponse(
+                    eq(PackageName.of("com.example.getfoooperation")), eq("404"), any()));
       }
     }
 

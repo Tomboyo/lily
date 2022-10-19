@@ -11,13 +11,11 @@ import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,6 +28,15 @@ public class OasOperationToAst {
     this.basePackage = basePackage;
   }
 
+  /**
+   * Evaluate an OAS Operation to AST.
+   *
+   * @param basePackage The root package name for all generated types.
+   * @param relativePath The relative URL of the Operation.
+   * @param operation The operation to evaluate.
+   * @param inheritedParameters All OpenAPI parameters inherited from the parent Path Item.
+   * @return A TagsOperationAndAst describing the operation and generated types.
+   */
   public static TagsOperationAndAst evaluateOperaton(
       PackageName basePackage,
       String relativePath,
@@ -59,19 +66,12 @@ public class OasOperationToAst {
     var responseAst =
         requireNonNullElse(operation.getResponses(), new ApiResponses()).entrySet().stream()
             .flatMap(
-                entry ->
-                    Optional.ofNullable(entry.getValue().getContent())
-                        .map(content -> content.get("application/json"))
-                        .map(MediaType::getSchema)
-                        .map(
-                            schema ->
-                                OasSchemaToAst.evaluate(
-                                    subordinatePackageName,
-                                    // for example: Response200, response404
-                                    SimpleName.of("Response" + entry.getKey()),
-                                    schema))
-                        .orElseThrow()
-                        .right());
+                entry -> {
+                  var responseCode = entry.getKey();
+                  var response = entry.getValue();
+                  return OasApiResponseToAst.evaluateApiResponse(
+                      subordinatePackageName, responseCode, response);
+                });
 
     return new TagsOperationAndAst(
         getOperationTags(operation),
@@ -103,8 +103,7 @@ public class OasOperationToAst {
   }
 
   /** Holds the tags, AstOperation, and other Ast from evaluating an OAS Operation. */
-  public static record TagsOperationAndAst(
-      Set<String> tags, AstOperation operation, Set<Ast> ast) {}
+  public record TagsOperationAndAst(Set<String> tags, AstOperation operation, Set<Ast> ast) {}
 
-  private static record ParameterId(String name, String in) {}
+  private record ParameterId(String name, String in) {}
 }
