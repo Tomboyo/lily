@@ -12,6 +12,7 @@ import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +28,15 @@ public class OasOperationToAst {
     this.basePackage = basePackage;
   }
 
+  /**
+   * Evaluate an OAS Operation to AST.
+   *
+   * @param basePackage The root package name for all generated types.
+   * @param relativePath The relative URL of the Operation.
+   * @param operation The operation to evaluate.
+   * @param inheritedParameters All OpenAPI parameters inherited from the parent Path Item.
+   * @return A TagsOperationAndAst describing the operation and generated types.
+   */
   public static TagsOperationAndAst evaluateOperaton(
       PackageName basePackage,
       String relativePath,
@@ -47,14 +57,21 @@ public class OasOperationToAst {
             .map(
                 parameter -> OasParameterToAst.evaluateParameter(subordinatePackageName, parameter))
             .toList();
-    var ast =
-        parametersAndAst.stream()
-            .flatMap(OasParameterToAst.ParameterAndAst::ast)
-            .collect(Collectors.toSet());
+    var parameterAst = parametersAndAst.stream().flatMap(OasParameterToAst.ParameterAndAst::ast);
     var parameters =
         parametersAndAst.stream()
             .map(OasParameterToAst.ParameterAndAst::parameter)
             .collect(Collectors.toList());
+
+    var responseAst =
+        requireNonNullElse(operation.getResponses(), new ApiResponses()).entrySet().stream()
+            .flatMap(
+                entry -> {
+                  var responseCode = entry.getKey();
+                  var response = entry.getValue();
+                  return OasApiResponseToAst.evaluateApiResponse(
+                      subordinatePackageName, responseCode, response);
+                });
 
     return new TagsOperationAndAst(
         getOperationTags(operation),
@@ -63,7 +80,7 @@ public class OasOperationToAst {
             AstReference.ref(Fqn.of(basePackage, operationName), List.of()),
             relativePath,
             parameters),
-        ast);
+        Stream.of(parameterAst, responseAst).flatMap(identity()).collect(Collectors.toSet()));
   }
 
   /** Merge owned parameters with inherited parameters. Owned parameters take precedence. */
@@ -86,8 +103,7 @@ public class OasOperationToAst {
   }
 
   /** Holds the tags, AstOperation, and other Ast from evaluating an OAS Operation. */
-  public static record TagsOperationAndAst(
-      Set<String> tags, AstOperation operation, Set<Ast> ast) {}
+  public record TagsOperationAndAst(Set<String> tags, AstOperation operation, Set<Ast> ast) {}
 
-  private static record ParameterId(String name, String in) {}
+  private record ParameterId(String name, String in) {}
 }
