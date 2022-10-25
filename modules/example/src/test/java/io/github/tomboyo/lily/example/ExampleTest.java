@@ -12,15 +12,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.tomboyo.lily.http.JacksonBodyHandler;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 @WireMockTest
-public class Example {
-
-  private static final HttpClient client = HttpClient.newBuilder().build();
+public class ExampleTest {
 
   /*
    * In this example, we use as much of the Lily generated code support as possible to automate away the complexity of
@@ -40,13 +37,15 @@ public class Example {
      * user must then use the underlying uriTemplate to retrieve the complete URI and send the request manually with
      * java.net.http.
      *
-     * Query, header, and cookie parameters are not yet supported. These must be set manually.
+     * Header and cookie parameters are not yet supported. These must be set manually.
      */
-    var uri =
+    var api =
         Api.newBuilder()
             .uri(info.getHttpBaseUrl())
-            .build()
-            .petsOperations() // All operations with the `pets` tag. (We could also use
+            // .httpClient(httpClient) // optional: inject a customized client.
+            .build();
+    var uri =
+        api.petsOperations() // All operations with the `pets` tag. (We could also use
             // .allOperations())
             .showPetById() // The GET /pets/{petId} operation
             .petId("1234") // bind "1234" to the {petId} parameter of the OAS operation
@@ -57,9 +56,10 @@ public class Example {
      * schema are generated. Also note the use of the provided lily-http JacksonBodyHandler
      */
     var response =
-        client.send(
-            HttpRequest.newBuilder().GET().uri(uri).build(),
-            JacksonBodyHandler.of(new ObjectMapper(), new TypeReference<Pet>() {}));
+        api.httpClient()
+            .send(
+                HttpRequest.newBuilder().GET().uri(uri).build(),
+                JacksonBodyHandler.of(new ObjectMapper(), new TypeReference<Pet>() {}));
 
     assertEquals(200, response.statusCode());
     assertEquals(new Pet(1234L, "Reginald", null), response.body().get());
@@ -86,10 +86,9 @@ public class Example {
      * `otherOperations()` (for operations without a tag), and `allOperations()` (every operation is addressable from
      * here, even if already addressable from another tag).
      */
+    var api = Api.newBuilder().uri(info.getHttpBaseUrl()).build();
     var operation =
-        Api.newBuilder()
-            .uri(info.getHttpBaseUrl())
-            .build()
+        api
             // All operations with the `pets` tag. (We could also use .allOperations())
             .petsOperations()
             .showPetById(); // the GET /pets/{petId} operation
@@ -112,9 +111,10 @@ public class Example {
      * parameter schemas are generated. Also note the use of the provided lily-http JacksonBodyHandler.
      */
     var response =
-        client.send(
-            HttpRequest.newBuilder().GET().uri(uri).build(),
-            JacksonBodyHandler.of(new ObjectMapper(), new TypeReference<Pet>() {}));
+        api.httpClient()
+            .send(
+                HttpRequest.newBuilder().GET().uri(uri).build(),
+                JacksonBodyHandler.of(new ObjectMapper(), new TypeReference<Pet>() {}));
 
     assertEquals(200, response.statusCode());
     assertEquals(new Pet(1234L, "Reginald", null), response.body().get());
