@@ -249,39 +249,39 @@ public class AstToJava {
     var content =
         writeString(
             """
-        package {{packageName}};
-        public class {{className}} {
-          private final io.github.tomboyo.lily.http.UriTemplate uriTemplate;
+            package {{packageName}};
+            public class {{className}} {
+              private final io.github.tomboyo.lily.http.UriTemplate uriTemplate;
 
-          public {{className}}(String uri) {
-            // We assume uri is non-null and ends with a trailing '/'.
-            this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri + "{{{relativePath}}}{{{queryTemplate}}}");
-          }
+              public {{className}}(String uri) {
+                // We assume uri is non-null and ends with a trailing '/'.
+                this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri + "{{{relativePath}}}{{{queryTemplate}}}");
+              }
 
-          {{#urlParameters}}
-          private {{{fqpt}}} {{name}};
-          public {{className}} {{name}}({{{fqpt}}} {{name}}) {
-            this.{{name}} = {{name}};
-            return this;
-          }
-          {{/urlParameters}}
+              {{#urlParameters}}
+              private {{{fqpt}}} {{name}};
+              public {{className}} {{name}}({{{fqpt}}} {{name}}) {
+                this.{{name}} = {{name}};
+                return this;
+              }
+              {{/urlParameters}}
 
-          public io.github.tomboyo.lily.http.UriTemplate uriTemplate() {
-            {{#smartFormEncoder}}
-            var smartFormEncoder = io.github.tomboyo.lily.http.encoding.Encoders.smartFormExploded(); // stateful
-            {{/smartFormEncoder}}
-            {{#urlParameters}}
-            if (this.{{name}} != null) {
-              uriTemplate.bind(
-                  "{{oasName}}",
-                  this.{{name}},
-                  {{{encoder}}});
+              public io.github.tomboyo.lily.http.UriTemplate uriTemplate() {
+                {{#smartFormEncoder}}
+                var smartFormEncoder = io.github.tomboyo.lily.http.encoding.Encoders.smartFormExploded(); // stateful
+                {{/smartFormEncoder}}
+                {{#urlParameters}}
+                if (this.{{name}} != null) {
+                  uriTemplate.bind(
+                      "{{oasName}}",
+                      this.{{name}},
+                      {{{encoder}}});
+                }
+                {{/urlParameters}}
+                return uriTemplate;
+              }
             }
-            {{/urlParameters}}
-            return uriTemplate;
-          }
-        }
-        """,
+            """,
             "renderAstOperation",
             Map.of(
                 "packageName", ast.operationClass().name().packageName(),

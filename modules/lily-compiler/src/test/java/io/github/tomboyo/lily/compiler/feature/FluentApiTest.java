@@ -32,17 +32,17 @@ public class FluentApiTest {
       packageName =
           compileOas(
               """
-          openapi: 3.0.2
-          paths:
-            /pets/:
-              get:
-                operationId: getPet
-                tags:
-                  - dogs
-                  - cats
-              post:
-                operationId: postPet
-          """);
+              openapi: 3.0.2
+              paths:
+                /pets/:
+                  get:
+                    operationId: getPet
+                    tags:
+                      - dogs
+                      - cats
+                  post:
+                    operationId: postPet
+              """);
     }
 
     @Test
@@ -51,8 +51,12 @@ public class FluentApiTest {
           "The getPet operation is addressable via the dogs tag, DogsOperations",
           evaluate(
               """
-            return %s.Api.newBuilder().uri("https://example.com/").build().dogsOperations().getPet();
-          """
+              return %s.Api.newBuilder()
+                .uri("https://example.com/")
+                .build()
+                .dogsOperations()
+                .getPet();
+              """
                   .formatted(packageName)),
           isA(Class.forName(packageName + ".GetPetOperation")));
     }
@@ -63,8 +67,12 @@ public class FluentApiTest {
           "The getPet operation is addressable via the cats tag, CatsOperations",
           evaluate(
               """
-            return %s.Api.newBuilder().uri("https://example.com/").build().catsOperations().getPet();
-          """
+              return %s.Api.newBuilder()
+                .uri("https://example.com/")
+                .build()
+                .catsOperations()
+                .getPet();
+              """
                   .formatted(packageName)),
           isA(Class.forName(packageName + ".GetPetOperation")));
     }
@@ -75,7 +83,11 @@ public class FluentApiTest {
           "The postPet operation is addressable via the other tag, OtherOperations, by default",
           evaluate(
               """
-              return %s.Api.newBuilder().uri("https://example.com/").build().otherOperations().postPet();
+              return %s.Api.newBuilder()
+                .uri("https://example.com/")
+                .build()
+                .otherOperations()
+                .postPet();
               """
                   .formatted(packageName)),
           isA(Class.forName(packageName + ".PostPetOperation")));
@@ -95,18 +107,18 @@ public class FluentApiTest {
       packageName =
           compileOas(
               """
-          openapi: 3.0.2
-          paths:
-            /pets/{id}:
-              get:
-                operationId: getPetById
-                parameters:
-                  - name: id
-                    in: path
-                    required: true
-                    schema:
-                      type: string
-          """);
+              openapi: 3.0.2
+              paths:
+                /pets/{id}:
+                  get:
+                    operationId: getPetById
+                    parameters:
+                      - name: id
+                        in: path
+                        required: true
+                        schema:
+                          type: string
+              """);
     }
 
     @Test
@@ -139,18 +151,18 @@ public class FluentApiTest {
       packageName =
           compileOas(
               """
-          openapi: 3.0.2
-          paths:
-            /pets/{id}:
-              get:
-                operationId: getPetById
-                parameters:
-                  - name: id
-                    in: path
-                    required: true
-                    schema:
-                      type: string
-          """);
+              openapi: 3.0.2
+              paths:
+                /pets/{id}:
+                  get:
+                    operationId: getPetById
+                    parameters:
+                      - name: id
+                        in: path
+                        required: true
+                        schema:
+                          type: string
+              """);
     }
 
     @Test
@@ -158,15 +170,15 @@ public class FluentApiTest {
       var actual =
           evaluate(
               """
-          return %s.Api.newBuilder()
-            .uri("https://example.com/")
-            .build()
-            .allOperations()
-            .getPetById()
-            .id("1234")
-            .uriTemplate()
-            .toURI();
-          """
+              return %s.Api.newBuilder()
+                .uri("https://example.com/")
+                .build()
+                .allOperations()
+                .getPetById()
+                .id("1234")
+                .uriTemplate()
+                .toURI();
+              """
                   .formatted(packageName),
               URI.class);
       assertThat(
@@ -186,29 +198,29 @@ public class FluentApiTest {
       packageName =
           compileOas(
               """
-          openapi: 3.0.2
-          paths:
-            /pets:
-              get:
-                operationId: listPets
-                parameters:
-                  - name: limit
-                    in: query
-                    schema:
-                      type: integer
-                      format: int32
-                    # Path parameters are simple by default
-                    # style: simple
-                  - name: include
-                    in: query
-                    schema:
-                      type: array
-                      items:
-                        type: string
-                    # Query parameters are form-explode by default
-                    # style: form
-                    # explode: true
-          """);
+              openapi: 3.0.2
+              paths:
+                /pets:
+                  get:
+                    operationId: listPets
+                    parameters:
+                      - name: limit
+                        in: query
+                        schema:
+                          type: integer
+                          format: int32
+                        # Path parameters are simple by default
+                        # style: simple
+                      - name: include
+                        in: query
+                        schema:
+                          type: array
+                          items:
+                            type: string
+                        # Query parameters are form-explode by default
+                        # style: form
+                        # explode: true
+              """);
     }
 
     @Test
@@ -216,16 +228,16 @@ public class FluentApiTest {
       var actual =
           evaluate(
               """
-          return %s.Api.newBuilder()
-            .uri("https://example.com/")
-            .build()
-            .allOperations()
-            .listPets()
-            .limit(5)
-            .include(java.util.List.of("name", "age"))
-            .uriTemplate()
-            .toURI();
-          """
+              return %s.Api.newBuilder()
+                .uri("https://example.com/")
+                .build()
+                .allOperations()
+                .listPets()
+                .limit(5)
+                .include(java.util.List.of("name", "age"))
+                .uriTemplate()
+                .toURI();
+              """
                   .formatted(packageName),
               URI.class);
       assertThat(

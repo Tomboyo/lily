@@ -27,31 +27,31 @@ public class NamingStyleTest {
     packageName =
         compileOas(
             """
-        openapi: 3.0.2
-        paths:
-          /pets/:
-            get:
-              operationId: get-pet
-              parameters:
-                - name: some-parameter
-                  in: query
-                  schema:
-                    type: object
-            post:
-              operationId: post_pet
-              parameters:
-                - name: some_parameter
-                  in: query
-                  schema:
-                    type: object
-            delete:
-              operationId: deletePet
-              parameters:
-                - name: SomeParameter
-                  in: query
-                  schema:
-                    type: object
-        """);
+            openapi: 3.0.2
+            paths:
+              /pets/:
+                get:
+                  operationId: get-pet
+                  parameters:
+                    - name: some-parameter
+                      in: query
+                      schema:
+                        type: object
+                post:
+                  operationId: post_pet
+                  parameters:
+                    - name: some_parameter
+                      in: query
+                      schema:
+                        type: object
+                delete:
+                  operationId: deletePet
+                  parameters:
+                    - name: SomeParameter
+                      in: query
+                      schema:
+                        type: object
+            """);
   }
 
   @ParameterizedTest

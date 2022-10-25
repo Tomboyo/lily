@@ -248,20 +248,20 @@ public class JsonDeserTest {
     var myScalarsObject = Class.forName(packageName + ".MyScalarsObject");
     return new TestParameter(
         """
-              {
-                "a": true,
-                "b": 0,
-                "c": 1,
-                "d": 2,
-                "e": 3,
-                "f": 4.1,
-                "g": 5.2,
-                "h": "foo",
-                "i": "password",
-                "j": "2021-01-01",
-                "k": "2021-01-01T00:00:00.012Z"
-              }
-              """,
+        {
+          "a": true,
+          "b": 0,
+          "c": 1,
+          "d": 2,
+          "e": 3,
+          "f": 4.1,
+          "g": 5.2,
+          "h": "foo",
+          "i": "password",
+          "j": "2021-01-01",
+          "k": "2021-01-01T00:00:00.012Z"
+        }
+        """,
         myScalarsObject
             .getConstructor(
                 Boolean.class,

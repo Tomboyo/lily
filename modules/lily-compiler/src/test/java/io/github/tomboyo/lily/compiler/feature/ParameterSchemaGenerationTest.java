@@ -19,29 +19,29 @@ class ParameterSchemaGenerationTest {
     packageName =
         compileOas(
             """
-                                openapi: 3.0.2
-                                paths:
-                                  /foo/{foo}/bar:
-                                    parameters:
-                                      - name: foo
-                                        in: path
-                                        required: true
-                                        schema:
-                                          type: object
-                                          properties:
-                                            foo:
-                                              type: string
-                                    get:
-                                      operationId: GetById
-                                      parameters:
-                                        - name: bar
-                                          in: query
-                                          schema:
-                                            type: object
-                                            properties:
-                                              bar:
-                                                type: boolean
-                                """);
+            openapi: 3.0.2
+            paths:
+              /foo/{foo}/bar:
+                parameters:
+                  - name: foo
+                    in: path
+                    required: true
+                    schema:
+                      type: object
+                      properties:
+                        foo:
+                          type: string
+                get:
+                  operationId: GetById
+                  parameters:
+                    - name: bar
+                      in: query
+                      schema:
+                        type: object
+                        properties:
+                          bar:
+                            type: boolean
+            """);
   }
 
   @Test
@@ -52,8 +52,8 @@ class ParameterSchemaGenerationTest {
         is(
             evaluate(
                 """
-                                        return new %s.getbyidoperation.Foo("value").foo();
-                                        """
+                return new %s.getbyidoperation.Foo("value").foo();
+                """
                     .formatted(packageName))));
   }
 
@@ -65,8 +65,8 @@ class ParameterSchemaGenerationTest {
         is(
             evaluate(
                 """
-                                        return new %s.getbyidoperation.Bar(true).bar();
-                                        """
+                return new %s.getbyidoperation.Bar(true).bar();
+                """
                     .formatted(packageName))));
   }
 }
