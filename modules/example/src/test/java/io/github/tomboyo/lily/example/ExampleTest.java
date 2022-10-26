@@ -44,13 +44,12 @@ public class ExampleTest {
             .uri(info.getHttpBaseUrl())
             // .httpClient(httpClient) // optional: inject a customized client.
             .build();
-    var uri =
+    var request =
         api.petsOperations() // All operations with the `pets` tag. (We could also use
             // .allOperations())
             .showPetById() // The GET /pets/{petId} operation
             .petId("1234") // bind "1234" to the {petId} parameter of the OAS operation
-            .uriTemplate() // Access the underlying URI to finish the request manually
-            .toURI();
+            .httpRequest(); // Access the templated httpRequest.
 
     /* Finish and send the request manually. Note the use of the generated Pet type. All component and path parameter
      * schema are generated. Also note the use of the provided lily-http JacksonBodyHandler
@@ -58,7 +57,7 @@ public class ExampleTest {
     var response =
         api.httpClient()
             .send(
-                HttpRequest.newBuilder().GET().uri(uri).build(),
+                HttpRequest.newBuilder(request, (a, b) -> true).GET().build(),
                 JacksonBodyHandler.of(new ObjectMapper(), new TypeReference<Pet>() {}));
 
     assertEquals(200, response.statusCode());

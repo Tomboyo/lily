@@ -316,6 +316,17 @@ public class AstToJava {
                 {{/urlParameters}}
                 return uriTemplate;
               }
+
+              /**
+               * Return an HttpRequest which may be sent directly or further customized with the
+               * {@link java.net.http.HttpRequest#newBuilder(java.net.http.HttpRequest, java.util.function.BiPredicate)}} static
+               * function.
+               */
+              public java.net.http.HttpRequest httpRequest() {
+                return java.net.http.HttpRequest.newBuilder()
+                  .uri(uriTemplate().toURI())
+                  .build();
+              }
             }
             """,
             "renderAstOperation",
