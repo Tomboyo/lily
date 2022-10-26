@@ -155,14 +155,19 @@ public class AstToJava {
             public class {{className}} {
 
               private final String uri;
+              private final java.net.http.HttpClient httpClient;
 
-              private {{className}}(String uri) {
+              private {{className}}(String uri, java.net.http.HttpClient httpClient) {
                 java.util.Objects.requireNonNull(uri);
+                java.util.Objects.requireNonNull(httpClient);
+
                 if (uri.endsWith("/")) {
                   this.uri = uri;
                 } else {
                   this.uri = uri + "/";
                 }
+
+                this.httpClient = httpClient;
               }
 
               public static {{className}}Builder newBuilder() {
@@ -177,15 +182,46 @@ public class AstToJava {
 
               {{/tags}}
 
+              /**
+               * Get the underlying client used to construct this Api.
+               *
+               * @return the underlying HttpClient.
+               */
+              public java.net.http.HttpClient httpClient() {
+                return httpClient;
+              }
+
               public static class {{className}}Builder {
                 private String uri;
+                private java.net.http.HttpClient httpClient;
 
-                private {{className}}Builder() {}
+                private {{className}}Builder() {
+                  httpClient = java.net.http.HttpClient.newBuilder().build();
+                }
 
+                /**
+                 * Configure the base URL for all requests.
+                 *
+                 * @param uri The base URL for all requests.
+                 * @return This builder for chaining.
+                 */
                 public {{className}}Builder uri(String uri) { this.uri = uri; return this; }
 
+                /**
+                 * Configure the builder with a particular client.
+                 *
+                 * <p/> By default, clients are equal to {@code HttpClient.newBuilder().build()}.
+                 *
+                 * @param httpClient a particular client to use for requests.
+                 * @return This builder for chaining.
+                 */
+                public {{className}}Builder httpClient(java.net.http.HttpClient httpClient) {
+                  this.httpClient = httpClient;
+                  return this;
+                }
+
                 public {{className}} build() {
-                  return new {{className}}(uri);
+                  return new {{className}}(uri, httpClient);
                 }
               }
             }
