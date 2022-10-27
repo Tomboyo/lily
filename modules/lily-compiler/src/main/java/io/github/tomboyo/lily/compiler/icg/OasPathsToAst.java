@@ -67,10 +67,13 @@ public class OasPathsToAst {
 
   private Stream<TagsOperationAndAst> evaluatePathItem(String relativePath, PathItem pathItem) {
     var inheritedParameters = requireNonNullElse(pathItem.getParameters(), List.<Parameter>of());
-    return pathItem.readOperationsMap().values().stream()
+    return pathItem.readOperationsMap().entrySet().stream()
         .map(
-            operation ->
-                OasOperationToAst.evaluateOperaton(
-                    basePackage, relativePath, operation, inheritedParameters));
+            entry -> {
+              var method = entry.getKey();
+              var operation = entry.getValue();
+              return OasOperationToAst.evaluateOperaton(
+                  basePackage, relativePath, method, operation, inheritedParameters);
+            });
   }
 }

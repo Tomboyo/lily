@@ -11,6 +11,7 @@ import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.Collection;
@@ -40,14 +41,18 @@ public class OasOperationToAst {
   public static TagsOperationAndAst evaluateOperaton(
       PackageName basePackage,
       String relativePath,
+      HttpMethod method,
       Operation operation,
       List<Parameter> inheritedParameters) {
     return new OasOperationToAst(basePackage)
-        .evaluateOperation(relativePath, operation, inheritedParameters);
+        .evaluateOperation(relativePath, method, operation, inheritedParameters);
   }
 
   private TagsOperationAndAst evaluateOperation(
-      String relativePath, Operation operation, List<Parameter> inheritedParameters) {
+      String relativePath,
+      HttpMethod method,
+      Operation operation,
+      List<Parameter> inheritedParameters) {
     var operationName = SimpleName.of(operation.getOperationId()).resolve("operation");
     var subordinatePackageName = basePackage.resolve(operationName.toString());
     var ownParameters = requireNonNullElse(operation.getParameters(), List.<Parameter>of());
@@ -78,6 +83,7 @@ public class OasOperationToAst {
         new AstOperation(
             SimpleName.of(operation.getOperationId()),
             AstReference.ref(Fqn.of(basePackage, operationName), List.of()),
+            method.name(),
             relativePath,
             parameters),
         Stream.of(parameterAst, responseAst).flatMap(identity()).collect(Collectors.toSet()));

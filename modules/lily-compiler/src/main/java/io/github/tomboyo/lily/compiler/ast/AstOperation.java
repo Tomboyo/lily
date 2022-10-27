@@ -10,6 +10,7 @@ import java.util.List;
 public record AstOperation(
     SimpleName operationName,
     AstReference operationClass,
+    String method,
     String relativePath,
     List<AstParameter> parameters)
     implements Ast {}

@@ -325,6 +325,7 @@ public class AstToJava {
               public java.net.http.HttpRequest httpRequest() {
                 return java.net.http.HttpRequest.newBuilder()
                   .uri(uriTemplate().toURI())
+                  .method("{{method}}", java.net.http.HttpRequest.BodyPublishers.noBody())
                   .build();
               }
             }
@@ -334,6 +335,7 @@ public class AstToJava {
                 "packageName", ast.operationClass().name().packageName(),
                 "className", ast.operationClass().name().simpleName(),
                 "relativePath", withoutLeadingSlash(ast.relativePath()),
+                "method", ast.method(),
                 "queryTemplate",
                     ast.parameters().stream()
                         .filter(parameter -> parameter.location() == QUERY)

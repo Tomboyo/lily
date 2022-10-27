@@ -1,6 +1,7 @@
 package io.github.tomboyo.lily.compiler.icg;
 
 import static io.github.tomboyo.lily.compiler.AstSupport.astReferencePlaceholder;
+import static io.swagger.v3.oas.models.PathItem.HttpMethod.PUT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,8 +54,31 @@ public class OasPathsToAstTest {
                     eq(PackageName.of("p")),
                     eq("/operation/path"),
                     any(),
+                    any(),
                     eq(List.of(new Parameter().name("name").in("path")))),
             times(7));
+      }
+    }
+
+    @Test
+    void evaluatesOperationsWithHttpMethod() {
+      try (var mock = mockStatic(OasOperationToAst.class)) {
+        OasPathsToAst.evaluatePathItem(
+                PackageName.of("p"),
+                "/operation/path",
+                new PathItem()
+                    .addParametersItem(new Parameter().name("name").in("path"))
+                    .put(new Operation()))
+            .forEach(x -> {}); // consume the stream
+
+        mock.verify(
+            () ->
+                OasOperationToAst.evaluateOperaton(
+                    eq(PackageName.of("p")),
+                    eq("/operation/path"),
+                    eq(PUT),
+                    any(),
+                    eq(List.of(new Parameter().name("name").in("path")))));
       }
     }
   }
@@ -65,9 +89,11 @@ public class OasPathsToAstTest {
     @Test
     void groupsOperationsByTag() {
       var getAOperation =
-          new AstOperation(SimpleName.of("GetA"), astReferencePlaceholder(), "getA/", List.of());
+          new AstOperation(
+              SimpleName.of("GetA"), astReferencePlaceholder(), "GET", "getA/", List.of());
       var getABOperation =
-          new AstOperation(SimpleName.of("GetAB"), astReferencePlaceholder(), "getAB/", List.of());
+          new AstOperation(
+              SimpleName.of("GetAB"), astReferencePlaceholder(), "GET", "getAB/", List.of());
       var actual =
           OasPathsToAst.evaluateTaggedOperations(
                   PackageName.of("p"),
