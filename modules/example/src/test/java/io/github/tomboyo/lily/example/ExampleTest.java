@@ -56,9 +56,7 @@ public class ExampleTest {
      */
     var response =
         api.httpClient()
-            .send(
-                HttpRequest.newBuilder(request, (a, b) -> true).GET().build(),
-                JacksonBodyHandler.of(new ObjectMapper(), new TypeReference<Pet>() {}));
+            .send(request, JacksonBodyHandler.of(new ObjectMapper(), new TypeReference<Pet>() {}));
 
     assertEquals(200, response.statusCode());
     assertEquals(new Pet(1234L, "Reginald", null), response.body().get());
