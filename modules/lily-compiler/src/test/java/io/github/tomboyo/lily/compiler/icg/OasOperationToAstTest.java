@@ -6,6 +6,7 @@ import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.QUERY;
 import static io.github.tomboyo.lily.compiler.ast.AstReference.ref;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astString;
+import static io.swagger.v3.oas.models.PathItem.HttpMethod.GET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,6 +49,7 @@ public class OasOperationToAstTest {
             OasOperationToAst.evaluateOperaton(
                 PackageName.of("p"),
                 "/relative/path",
+                GET,
                 new Operation()
                     .operationId("operationId")
                     .addParametersItem(
@@ -98,6 +100,7 @@ public class OasOperationToAstTest {
         OasOperationToAst.evaluateOperaton(
             PackageName.of("p"),
             "/relative/path",
+            GET,
             new Operation()
                 .operationId("operationId")
                 .addParametersItem(
@@ -150,6 +153,7 @@ public class OasOperationToAstTest {
         OasOperationToAst.evaluateOperaton(
             PackageName.of("com.example"),
             "/foo",
+            GET,
             new Operation()
                 .operationId("getfoo")
                 .responses(
@@ -181,6 +185,7 @@ public class OasOperationToAstTest {
               OasOperationToAst.evaluateOperaton(
                   PackageName.of("p"),
                   "/relative/path/",
+                  GET,
                   new Operation().operationId("operationId").tags(List.of("tagA", "tagB")),
                   List.of());
 
@@ -201,6 +206,7 @@ public class OasOperationToAstTest {
               OasOperationToAst.evaluateOperaton(
                   PackageName.of("p"),
                   "/relative/path/",
+                  GET,
                   new Operation().operationId("operationId").tags(List.of()), // empty!
                   List.of());
 
@@ -218,6 +224,7 @@ public class OasOperationToAstTest {
         return OasOperationToAst.evaluateOperaton(
             PackageName.of("p"),
             "/relative/path/",
+            GET,
             new Operation()
                 .operationId("operationId")
                 .addParametersItem(new Parameter().name("a").in("path").schema(new IntegerSchema()))
@@ -248,6 +255,12 @@ public class OasOperationToAstTest {
             "The operation's relative path is as given",
             actual().operation().relativePath(),
             is("/relative/path/"));
+      }
+
+      @Test
+      void containsMethod() {
+        assertThat(
+            "The operation's http method is as given", actual().operation().method(), is("GET"));
       }
 
       @Test
