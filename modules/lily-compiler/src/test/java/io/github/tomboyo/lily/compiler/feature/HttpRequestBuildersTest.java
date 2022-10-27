@@ -28,8 +28,8 @@ public class HttpRequestBuildersTest {
                 openapi: 3.0.2
                 paths:
                   /foo/{id}:
-                    get:
-                      operationId: getFoo
+                    post:
+                      operationId: postFoo
                       parameters:
                         - name: id
                           in: path
@@ -49,7 +49,7 @@ public class HttpRequestBuildersTest {
               .uri("https://example.com/")
               .build()
               .allOperations()
-              .getFoo()
+              .postFoo()
               .id("1234")
               .color("red")
               .httpRequest();
@@ -61,5 +61,10 @@ public class HttpRequestBuildersTest {
   @Test
   void templatesUriWithPathAndQueryParameters() {
     assertEquals("https://example.com/foo/1234?color=red", actual.uri().toString());
+  }
+
+  @Test
+  void templatesHttpMethod() {
+    assertEquals("POST", actual.method());
   }
 }
