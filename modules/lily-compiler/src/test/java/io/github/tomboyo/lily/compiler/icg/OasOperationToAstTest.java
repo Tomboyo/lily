@@ -147,7 +147,7 @@ public class OasOperationToAstTest {
     @Test
     void evaluatesAllResponsesToAst() {
       try (var mock = mockStatic(OasApiResponseToAst.class)) {
-        mock.when(() -> OasApiResponseToAst.evaluateApiResponse(any(), any(), any()))
+        mock.when(() -> OasApiResponseToAst.evaluateApiResponse(any(), any(), any(), any()))
             .thenAnswer(invocation -> Stream.of());
 
         OasOperationToAst.evaluateOperaton(
@@ -155,7 +155,7 @@ public class OasOperationToAstTest {
             "/foo",
             GET,
             new Operation()
-                .operationId("getfoo")
+                .operationId("getFoo")
                 .responses(
                     new ApiResponses()
                         .addApiResponse("200", new ApiResponse())
@@ -165,11 +165,17 @@ public class OasOperationToAstTest {
         mock.verify(
             () ->
                 OasApiResponseToAst.evaluateApiResponse(
-                    eq(PackageName.of("com.example.getfoooperation")), eq("200"), any()));
+                    eq(PackageName.of("com.example.getfoooperation")),
+                    eq(SimpleName.of("GetFoo")),
+                    eq("200"),
+                    any()));
         mock.verify(
             () ->
                 OasApiResponseToAst.evaluateApiResponse(
-                    eq(PackageName.of("com.example.getfoooperation")), eq("404"), any()));
+                    eq(PackageName.of("com.example.getfoooperation")),
+                    eq(SimpleName.of("GetFoo")),
+                    eq("404"),
+                    any()));
       }
     }
 

@@ -7,9 +7,11 @@ import static java.util.stream.Collectors.toMap;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
+import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.parameters.Parameter;
@@ -53,7 +55,8 @@ public class OasOperationToAst {
       HttpMethod method,
       Operation operation,
       List<Parameter> inheritedParameters) {
-    var operationName = SimpleName.of(operation.getOperationId()).resolve("operation");
+    var operationId = SimpleName.of(operation.getOperationId());
+    var operationName = operationId.resolve("operation");
     var subordinatePackageName = basePackage.resolve(operationName.toString());
     var ownParameters = requireNonNullElse(operation.getParameters(), List.<Parameter>of());
 
@@ -68,15 +71,21 @@ public class OasOperationToAst {
             .map(OasParameterToAst.ParameterAndAst::parameter)
             .collect(Collectors.toList());
 
-    var responseAst =
+    var responseReferencesAndAst =
         requireNonNullElse(operation.getResponses(), new ApiResponses()).entrySet().stream()
             .flatMap(
                 entry -> {
                   var responseCode = entry.getKey();
                   var response = entry.getValue();
                   return OasApiResponseToAst.evaluateApiResponse(
-                      subordinatePackageName, responseCode, response);
-                });
+                      subordinatePackageName, operationId, responseCode, response);
+                })
+            .toList();
+    var responseSum =
+        new AstResponseSum(
+            Fqn.of(subordinatePackageName, operationId.resolve("Response")),
+            responseReferencesAndAst.stream().map(Pair::left).collect(Collectors.toSet()));
+    var responsesAst = responseReferencesAndAst.stream().flatMap(Pair::right);
 
     return new TagsOperationAndAst(
         getOperationTags(operation),
@@ -86,7 +95,9 @@ public class OasOperationToAst {
             method.name(),
             relativePath,
             parameters),
-        Stream.of(parameterAst, responseAst).flatMap(identity()).collect(Collectors.toSet()));
+        Stream.of(parameterAst, Stream.<Ast>of(responseSum), responsesAst)
+            .flatMap(identity())
+            .collect(Collectors.toSet()));
   }
 
   /** Merge owned parameters with inherited parameters. Owned parameters take precedence. */

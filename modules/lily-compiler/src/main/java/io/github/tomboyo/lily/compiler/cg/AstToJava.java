@@ -16,6 +16,7 @@ import io.github.tomboyo.lily.compiler.ast.AstEncoding;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import java.io.StringReader;
@@ -41,16 +42,18 @@ public class AstToJava {
   public static Source renderAst(Ast ast) {
     var self = new AstToJava(new DefaultMustacheFactory());
 
-    if (ast instanceof AstClass astClass) {
+    if (ast instanceof AstApi astApi) {
+      return self.renderAstAPi(astApi);
+    } else if (ast instanceof AstClass astClass) {
       return self.renderClass(astClass);
     } else if (ast instanceof AstClassAlias astClassAlias) {
       return self.renderAstClassAlias(astClassAlias);
-    } else if (ast instanceof AstApi astApi) {
-      return self.renderAstAPi(astApi);
-    } else if (ast instanceof AstTaggedOperations astTaggedOperations) {
-      return self.renderAstTaggedOperations(astTaggedOperations);
     } else if (ast instanceof AstOperation astOperation) {
       return self.renderAstOperation(astOperation);
+    } else if (ast instanceof AstResponseSum astResponseSum) {
+      return self.renderAstResponseSum(astResponseSum);
+    } else if (ast instanceof AstTaggedOperations astTaggedOperations) {
+      return self.renderAstTaggedOperations(astTaggedOperations);
     } else {
       throw new IllegalArgumentException("Unsupported AST: " + ast);
     }
@@ -360,6 +363,26 @@ public class AstToJava {
                         .collect(toList())));
 
     return createSource(ast.operationClass().name(), content);
+  }
+
+  private Source renderAstResponseSum(AstResponseSum astResponseSum) {
+    var content =
+        writeString(
+            """
+        package {{packageName}};
+
+        public sealed interface {{typeName}} permits {{members}} {};
+        """,
+            "renderAstResponseSum",
+            Map.of(
+                "packageName", astResponseSum.fqn().packageName(),
+                "typeName", astResponseSum.fqn().simpleName(),
+                "members",
+                    astResponseSum.members().stream()
+                        .map(astReference -> astReference.name().toString())
+                        .collect(Collectors.joining(", "))));
+
+    return createSource(astResponseSum.fqn(), content);
   }
 
   private static String getEncoder(AstEncoding encoding) {

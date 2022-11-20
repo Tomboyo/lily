@@ -1,7 +1,6 @@
 package io.github.tomboyo.lily.compiler.icg;
 
 import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
@@ -27,22 +26,22 @@ class OasApiResponseToAstTest {
         mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
             .thenAnswer(invocation -> new Pair<>(astBoolean(), Stream.of()));
 
-        var actual =
-            OasApiResponseToAst.evaluateApiResponse(
-                PackageName.of("com.example"),
-                "200",
-                new ApiResponse()
-                    .content(
-                        new Content()
-                            .addMediaType(
-                                "application/json", new MediaType().schema(new ObjectSchema()))
-                            .addMediaType(
-                                "application/xml", new MediaType().schema(new ObjectSchema()))));
+        OasApiResponseToAst.evaluateApiResponse(
+            PackageName.of("com.example"),
+            SimpleName.of("GetFoo"),
+            "200",
+            new ApiResponse()
+                .content(
+                    new Content()
+                        .addMediaType(
+                            "application/json", new MediaType().schema(new ObjectSchema()))
+                        .addMediaType(
+                            "application/xml", new MediaType().schema(new ObjectSchema()))));
 
         mock.verify(
             () ->
                 OasSchemaToAst.evaluate(
-                    eq(PackageName.of("com.example")), eq(SimpleName.of("Response200")), any()));
+                    eq(PackageName.of("com.example")), eq(SimpleName.of("GetFoo200")), any()));
         mock.verifyNoMoreInteractions();
       }
     }

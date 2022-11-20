@@ -40,19 +40,47 @@ class ResponseSchemaGenerationTest {
                             properties:
                               foo:
                                 type: string
+                    '404':
+                      content:
+                        application/json:
+                          schema:
+                            type: object
+                            properties:
+                              foo:
+                                type: string
             """);
   }
 
-  @Test
-  void responseSchemaAreGeneratedToTypes() {
-    assertThat(
-        "Lily generates new types for response schemas",
-        "value",
-        is(
-            evaluate(
-                """
-                return new %s.getfoooperation.Response200("value").foo();
-                """
-                    .formatted(packageName))));
+  /**
+   * Response schema combine to form a sealed interface, which helps the IDE make suggestions and
+   * supports pattern matching.
+   */
+  @Nested
+  class ResponsesFormASealedInterface {
+    @Test
+    void okResponse() {
+      assertThat(
+          "The 200 response is a member of the response sum type",
+          true,
+          is(
+              evaluate(
+                  """
+        return (new %s.getfoooperation.GetFoo200("value")) instanceof %s.getfoooperation.GetFooResponseBody;
+        """
+                      .formatted(packageName, packageName))));
+    }
+
+    @Test
+    void notFoundResponse() {
+      assertThat(
+          "The 404 response is a member of the response sum type",
+          true,
+          is(
+              evaluate(
+                  """
+        return (new %s.getfoooperation.GetFoo404("value")) instanceof %s.getfoooperation.GetFooResponseBody;
+        """
+                      .formatted(packageName, packageName))));
+    }
   }
 }
