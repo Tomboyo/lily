@@ -12,11 +12,12 @@ import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class OasApiResponseToAstTest {
+class OasApiResponsesToAstTest {
 
   @Nested
   class EvaluateApiResponse {
@@ -26,17 +27,20 @@ class OasApiResponseToAstTest {
         mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
             .thenAnswer(invocation -> new Pair<>(astBoolean(), Stream.of()));
 
-        OasApiResponseToAst.evaluateApiResponse(
+        OasApiResponsesToAst.evaluateApiResponses(
             PackageName.of("com.example"),
             SimpleName.of("GetFoo"),
-            "200",
-            new ApiResponse()
-                .content(
-                    new Content()
-                        .addMediaType(
-                            "application/json", new MediaType().schema(new ObjectSchema()))
-                        .addMediaType(
-                            "application/xml", new MediaType().schema(new ObjectSchema()))));
+            new ApiResponses()
+                .addApiResponse(
+                    "200",
+                    new ApiResponse()
+                        .content(
+                            new Content()
+                                .addMediaType(
+                                    "application/json", new MediaType().schema(new ObjectSchema()))
+                                .addMediaType(
+                                    "application/xml",
+                                    new MediaType().schema(new ObjectSchema())))));
 
         mock.verify(
             () ->

@@ -32,7 +32,11 @@ public class OasParameterToAst {
 
     return new ParameterAndAst(
         new AstParameter(
-            SimpleName.of(parameter.getName()), location, encoding, parameterRefAndAst.left()),
+            SimpleName.of(parameter.getName()),
+            parameter.getName(),
+            location,
+            encoding,
+            parameterRefAndAst.left()),
         parameterRefAndAst.right());
   }
 

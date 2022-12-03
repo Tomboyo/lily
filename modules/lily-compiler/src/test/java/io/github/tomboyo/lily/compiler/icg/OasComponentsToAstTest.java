@@ -132,7 +132,8 @@ public class OasComponentsToAstTest {
                   List.of(
                       new AstField(
                           ref(Fqn.of("p.mycomponent.mycomponentitem", "MyField"), List.of()),
-                          SimpleName.of("myField")))),
+                          SimpleName.of("myField"),
+                          "myField"))),
               AstClass.of(Fqn.of("p.mycomponent.mycomponentitem", "MyField"), List.of())),
           actual.collect(Collectors.toSet()),
           "Inline types within aliases are defined in packages subordinate to the class alias");

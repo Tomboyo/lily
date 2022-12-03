@@ -7,7 +7,6 @@ import static java.util.stream.Collectors.toMap;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
-import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
@@ -15,10 +14,10 @@ import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.parameters.Parameter;
-import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -71,21 +70,12 @@ public class OasOperationToAst {
             .map(OasParameterToAst.ParameterAndAst::parameter)
             .collect(Collectors.toList());
 
-    var responseReferencesAndAst =
-        requireNonNullElse(operation.getResponses(), new ApiResponses()).entrySet().stream()
-            .flatMap(
-                entry -> {
-                  var responseCode = entry.getKey();
-                  var response = entry.getValue();
-                  return OasApiResponseToAst.evaluateApiResponse(
-                      subordinatePackageName, operationId, responseCode, response);
-                })
-            .toList();
-    var responseSum =
-        new AstResponseSum(
-            Fqn.of(subordinatePackageName, operationId.resolve("Response")),
-            responseReferencesAndAst.stream().map(Pair::left).collect(Collectors.toSet()));
-    var responsesAst = responseReferencesAndAst.stream().flatMap(Pair::right);
+    var responseSumRefAndAst =
+        Optional.ofNullable(operation.getResponses())
+            .map(
+                responses ->
+                    OasApiResponsesToAst.evaluateApiResponses(
+                        basePackage.resolve(operationName.toString()), operationId, responses));
 
     return new TagsOperationAndAst(
         getOperationTags(operation),
@@ -95,7 +85,10 @@ public class OasOperationToAst {
             method.name(),
             relativePath,
             parameters),
-        Stream.of(parameterAst, Stream.<Ast>of(responseSum), responsesAst)
+        Stream.of(
+                parameterAst,
+                responseSumRefAndAst.map(pair -> (Ast) pair.left()).stream(),
+                responseSumRefAndAst.map(Pair::right).stream().flatMap(identity()))
             .flatMap(identity())
             .collect(Collectors.toSet()));
   }

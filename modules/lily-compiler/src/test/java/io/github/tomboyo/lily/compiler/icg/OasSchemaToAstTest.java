@@ -110,7 +110,7 @@ class OasSchemaToAstTest {
               Set.of(
                   AstClass.of(
                       Fqn.of("p", "MyObject"),
-                      List.of(new AstField(expectedRef, SimpleName.of("myField")))))),
+                      List.of(new AstField(expectedRef, SimpleName.of("myField"), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference for the generated type and its AST");
     }
@@ -137,10 +137,11 @@ class OasSchemaToAstTest {
                       List.of(
                           new AstField(
                               ref(Fqn.of("p.myobject", "MyInnerObject"), List.of()),
-                              SimpleName.of("myInnerObject")))),
+                              SimpleName.of("myInnerObject"),
+                              "myInnerObject"))),
                   AstClass.of(
                       Fqn.of("p.myobject", "MyInnerObject"),
-                      List.of(new AstField(astBoolean(), SimpleName.of("myField")))))),
+                      List.of(new AstField(astBoolean(), SimpleName.of("myField"), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference for the outer generated type but the AST for both the outer and"
               + " nested types");
@@ -163,7 +164,9 @@ class OasSchemaToAstTest {
                       Fqn.of("p", "MyObject"),
                       List.of(
                           new AstField(
-                              ref(Fqn.of("p", "MyRef"), List.of()), SimpleName.of("myField")))))),
+                              ref(Fqn.of("p", "MyRef"), List.of()),
+                              SimpleName.of("myField"),
+                              "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference for the outer generated type and its AST, but no AST for the"
               + " referenced type, which must be evaluated separately");
@@ -185,7 +188,9 @@ class OasSchemaToAstTest {
               Set.of(
                   AstClass.of(
                       Fqn.of("p", "MyObject"),
-                      List.of(new AstField(astListOf(astBoolean()), SimpleName.of("myField")))))),
+                      List.of(
+                          new AstField(
+                              astListOf(astBoolean()), SimpleName.of("myField"), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "returns an AstReference to the generated type and its AST, which does not generate any"
               + " new type for the nested array");
@@ -210,9 +215,11 @@ class OasSchemaToAstTest {
                   AstClass.of(
                       Fqn.of("p", "MyObject"),
                       List.of(
-                          new AstField(astBoolean(), SimpleName.of("myField1")),
+                          new AstField(astBoolean(), SimpleName.of("myField1"), "myField1"),
                           new AstField(
-                              ref(Fqn.of("p", "MyRef"), List.of()), SimpleName.of("myField2")))))),
+                              ref(Fqn.of("p", "MyRef"), List.of()),
+                              SimpleName.of("myField2"),
+                              "myField2"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "The AST contains one field for each of multiple properties");
     }
@@ -252,7 +259,7 @@ class OasSchemaToAstTest {
               Set.of(
                   AstClass.of(
                       Fqn.of("p", "MyArrayItem"),
-                      List.of(new AstField(astBoolean(), SimpleName.of("myField")))))),
+                      List.of(new AstField(astBoolean(), SimpleName.of("myField"), "myField"))))),
           actual.mapRight(stream -> stream.collect(toSet())),
           "defines the inline object in the current package with the -Item suffix in its class"
               + " name");

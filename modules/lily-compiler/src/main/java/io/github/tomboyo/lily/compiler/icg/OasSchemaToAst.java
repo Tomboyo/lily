@@ -169,16 +169,18 @@ public class OasSchemaToAst {
         properties.entrySet().stream()
             .map(
                 entry -> {
-                  var fieldName = SimpleName.of(entry.getKey());
+                  var jsonName = entry.getKey();
                   var fieldSchema = entry.getValue();
                   var fieldPackage =
                       fieldSchema.get$ref() == null
                           ? interiorPackage
                           : basePackage; // $ref's always point to a base package type.
-                  var refAndAst = evaluateSchema(fieldPackage, fieldName, fieldSchema);
-                  return refAndAst.mapLeft(ref -> new AstField(ref, fieldName));
+                  var refAndAst =
+                      evaluateSchema(fieldPackage, SimpleName.of(jsonName), fieldSchema);
+                  return refAndAst.mapLeft(
+                      ref -> new AstField(ref, SimpleName.of(jsonName), jsonName));
                 })
-            .collect(toList());
+            .toList();
 
     var exteriorClass =
         AstClass.of(

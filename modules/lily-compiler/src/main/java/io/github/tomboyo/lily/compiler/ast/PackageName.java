@@ -5,18 +5,11 @@ import static java.util.Objects.requireNonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** A package name without a qualified class, like com.example.foo.bar.baz */
-public class PackageName {
-
-  private final List<String> packageParts;
-
-  private PackageName(List<String> packageParts) {
-    this.packageParts = packageParts;
-  }
+public record PackageName(List<String> packageParts) {
 
   public static PackageName of(String packageName) {
     requireNonNull(packageName);
@@ -48,22 +41,8 @@ public class PackageName {
     return joinPackages(packageParts);
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    PackageName that = (PackageName) o;
-    return packageParts.equals(that.packageParts);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(packageParts);
-  }
-
-  private static List<String> toPackageParts(String first, String... rest) {
-    return Stream.concat(Stream.of(first), Arrays.stream(rest))
-        .filter(it -> !it.isBlank())
+  private static List<String> toPackageParts(String first) {
+    return Stream.of(first)
         .map(PackageName::withoutLeadingOrTrailingDot)
         .map(String::toLowerCase)
         .flatMap(it -> Arrays.stream(it.split("\\.")))

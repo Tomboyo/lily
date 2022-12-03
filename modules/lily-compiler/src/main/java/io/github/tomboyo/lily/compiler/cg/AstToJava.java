@@ -16,6 +16,7 @@ import io.github.tomboyo.lily.compiler.ast.AstEncoding;
 import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
@@ -52,6 +53,8 @@ public class AstToJava {
       return self.renderAstOperation(astOperation);
     } else if (ast instanceof AstResponseSum astResponseSum) {
       return self.renderAstResponseSum(astResponseSum);
+    } else if (ast instanceof AstResponse astResponse) {
+      return self.renderAstResponse(astResponse);
     } else if (ast instanceof AstTaggedOperations astTaggedOperations) {
       return self.renderAstTaggedOperations(astTaggedOperations);
     } else {
@@ -85,14 +88,14 @@ public class AstToJava {
         Map.of(
             "fqpt", fullyQualifiedParameterizedType(field.astReference()),
             "name", field.name().lowerCamelCase(),
-            "rawName", field.name().raw());
+            "jsonName", field.jsonName());
 
     if (field.astReference().equals(astByteBuffer())) {
       // Byte buffers will deser as B64 strings by default, which is not compliant with the OpenAPI
       // specification, so we add custom deser.
       return writeString(
           """
-          @com.fasterxml.jackson.annotation.JsonProperty("{{rawName}}")
+          @com.fasterxml.jackson.annotation.JsonProperty("{{jsonName}}")
           @com.fasterxml.jackson.databind.annotation.JsonSerialize(
               using=io.github.tomboyo.lily.http.deser.ByteBufferSerializer.class)
           @com.fasterxml.jackson.databind.annotation.JsonDeserialize(
@@ -104,7 +107,7 @@ public class AstToJava {
     } else {
       return writeString(
           """
-          @com.fasterxml.jackson.annotation.JsonProperty("{{rawName}}")
+          @com.fasterxml.jackson.annotation.JsonProperty("{{jsonName}}")
           {{{fqpt}}} {{name}}
           """,
           "recordField",
@@ -312,7 +315,7 @@ public class AstToJava {
                 {{#urlParameters}}
                 if (this.{{name}} != null) {
                   uriTemplate.bind(
-                      "{{oasName}}",
+                      "{{apiName}}",
                       this.{{name}},
                       {{{encoder}}});
                 }
@@ -342,7 +345,7 @@ public class AstToJava {
                 "queryTemplate",
                     ast.parameters().stream()
                         .filter(parameter -> parameter.location() == QUERY)
-                        .map(parameter -> "{" + parameter.name().raw() + "}")
+                        .map(parameter -> "{" + parameter.apiName() + "}")
                         .collect(Collectors.joining("")),
                 "smartFormEncoder",
                     ast.parameters().stream().anyMatch(parameter -> parameter.location() == QUERY),
@@ -358,7 +361,7 @@ public class AstToJava {
                                     "fqpt",
                                         fullyQualifiedParameterizedType(parameter.astReference()),
                                     "name", parameter.name().lowerCamelCase(),
-                                    "oasName", parameter.name().raw(),
+                                    "apiName", parameter.apiName(),
                                     "encoder", getEncoder(parameter.encoding())))
                         .collect(toList())));
 
@@ -383,6 +386,29 @@ public class AstToJava {
                         .collect(Collectors.joining(", "))));
 
     return createSource(astResponseSum.fqn(), content);
+  }
+
+  private Source renderAstResponse(AstResponse astResponse) {
+    var content =
+        writeString(
+            """
+        package {{packageName}};
+
+        public record {{typeName}}(
+          {{{fields}}}
+        ) implements {{interfaceName}} {}
+        """,
+            "renderAstResponse",
+            Map.of(
+                "packageName", astResponse.name().packageName(),
+                "typeName", astResponse.name().simpleName(),
+                "fields",
+                    astResponse.fields().stream()
+                        .map(this::recordField)
+                        .collect(Collectors.joining(",\n")),
+                "interfaceName", astResponse.sumTypeName()));
+
+    return createSource(astResponse.name(), content);
   }
 
   private static String getEncoder(AstEncoding encoding) {

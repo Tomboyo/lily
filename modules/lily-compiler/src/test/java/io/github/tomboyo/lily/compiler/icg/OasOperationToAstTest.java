@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mockStatic;
 
 import io.github.tomboyo.lily.compiler.ast.AstEncoding;
 import io.github.tomboyo.lily.compiler.ast.AstParameter;
+import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
@@ -145,10 +146,15 @@ public class OasOperationToAstTest {
     }
 
     @Test
-    void evaluatesAllResponsesToAst() {
-      try (var mock = mockStatic(OasApiResponseToAst.class)) {
-        mock.when(() -> OasApiResponseToAst.evaluateApiResponse(any(), any(), any(), any()))
-            .thenAnswer(invocation -> Stream.of());
+    void evaluatesApiResponsesToAst() {
+      try (var mock = mockStatic(OasApiResponsesToAst.class)) {
+        mock.when(() -> OasApiResponsesToAst.evaluateApiResponses(any(), any(), any()))
+            .thenAnswer(
+                invocation ->
+                    new Pair<>(
+                        new AstResponseSum(
+                            Fqn.of("com.example.getfoooperation", "GetFooResponse"), Set.of()),
+                        Stream.of()));
 
         OasOperationToAst.evaluateOperaton(
             PackageName.of("com.example"),
@@ -164,18 +170,13 @@ public class OasOperationToAstTest {
 
         mock.verify(
             () ->
-                OasApiResponseToAst.evaluateApiResponse(
+                OasApiResponsesToAst.evaluateApiResponses(
                     eq(PackageName.of("com.example.getfoooperation")),
                     eq(SimpleName.of("GetFoo")),
-                    eq("200"),
-                    any()));
-        mock.verify(
-            () ->
-                OasApiResponseToAst.evaluateApiResponse(
-                    eq(PackageName.of("com.example.getfoooperation")),
-                    eq(SimpleName.of("GetFoo")),
-                    eq("404"),
-                    any()));
+                    eq(
+                        new ApiResponses()
+                            .addApiResponse("200", new ApiResponse())
+                            .addApiResponse("404", new ApiResponse()))));
       }
     }
 
@@ -276,12 +277,12 @@ public class OasOperationToAstTest {
               .thenReturn(
                   new ParameterAndAst(
                       new AstParameter(
-                          SimpleName.of("A"), PATH, AstEncoding.simple(), astBoolean()),
+                          SimpleName.of("A"), "a", PATH, AstEncoding.simple(), astBoolean()),
                       Stream.of()))
               .thenReturn(
                   new ParameterAndAst(
                       new AstParameter(
-                          SimpleName.of("B"), QUERY, AstEncoding.formExplode(), astString()),
+                          SimpleName.of("B"), "b", QUERY, AstEncoding.formExplode(), astString()),
                       Stream.of()));
 
           assertThat(
@@ -290,9 +291,13 @@ public class OasOperationToAstTest {
               is(
                   List.of(
                       new AstParameter(
-                          SimpleName.of("A"), PATH, AstEncoding.simple(), astBoolean()),
+                          SimpleName.of("A"), "a", PATH, AstEncoding.simple(), astBoolean()),
                       new AstParameter(
-                          SimpleName.of("B"), QUERY, AstEncoding.formExplode(), astString()))));
+                          SimpleName.of("B"),
+                          "b",
+                          QUERY,
+                          AstEncoding.formExplode(),
+                          astString()))));
         }
       }
     }

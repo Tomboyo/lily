@@ -6,5 +6,6 @@ public sealed interface Ast
         AstClassAlias,
         AstOperation,
         AstParameter,
+        AstResponse,
         AstResponseSum,
         AstTaggedOperations {}

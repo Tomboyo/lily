@@ -65,7 +65,7 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-        return (new %s.getfoooperation.GetFoo200("value")) instanceof %s.getfoooperation.GetFooResponseBody;
+        return (new %s.getfoooperation.GetFoo200("value")) instanceof %s.getfoooperation.GetFooResponse;
         """
                       .formatted(packageName, packageName))));
     }
@@ -78,7 +78,7 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-        return (new %s.getfoooperation.GetFoo404("value")) instanceof %s.getfoooperation.GetFooResponseBody;
+        return (new %s.getfoooperation.GetFoo404("value")) instanceof %s.getfoooperation.GetFooResponse;
         """
                       .formatted(packageName, packageName))));
     }
