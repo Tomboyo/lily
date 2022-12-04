@@ -6,7 +6,6 @@ import static java.util.stream.Collectors.toMap;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
-import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
@@ -81,7 +80,7 @@ public class OasOperationToAst {
         getOperationTags(operation),
         new AstOperation(
             SimpleName.of(operation.getOperationId()),
-            AstReference.ref(Fqn.of(basePackage, operationName), List.of()),
+            Fqn.newBuilder().packageName(basePackage).typeName(operationName).build(),
             method.name(),
             relativePath,
             parameters),

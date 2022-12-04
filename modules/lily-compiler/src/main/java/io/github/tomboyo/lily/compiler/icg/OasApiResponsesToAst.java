@@ -2,7 +2,6 @@ package io.github.tomboyo.lily.compiler.icg;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
-import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
@@ -21,7 +20,8 @@ public class OasApiResponsesToAst {
 
   public static Pair<AstResponseSum, Stream<Ast>> evaluateApiResponses(
       PackageName basePackage, SimpleName operationId, ApiResponses responses) {
-    var responseSumTypeName = Fqn.of(basePackage, operationId.resolve("Response"));
+    var responseSumTypeName =
+        Fqn.newBuilder().packageName(basePackage).typeName(operationId.resolve("Response")).build();
     var definitions =
         responses.entrySet().stream()
             .map(
@@ -36,17 +36,17 @@ public class OasApiResponsesToAst {
             // member otherwise describing
             // the same class.
             .map(
-                refAndAst -> {
-                  var root = refAndAst.left();
+                fqnAndAst -> {
+                  var root = fqnAndAst.left();
                   var asts =
-                      refAndAst
+                      fqnAndAst
                           .right()
                           .map(
                               ast -> {
                                 if (ast instanceof AstClass astClass
-                                    && root.name().equals(astClass.name())) {
+                                    && root.equals(astClass.name())) {
                                   return new AstResponse(
-                                      root.name(), astClass.fields(), responseSumTypeName);
+                                      root, astClass.fields(), responseSumTypeName);
                                 } else {
                                   return ast;
                                 }
@@ -60,7 +60,7 @@ public class OasApiResponsesToAst {
         new AstResponseSum(responseSumTypeName, new LinkedHashSet<>(members)), memberAst);
   }
 
-  private static Optional<Pair<AstReference, Stream<Ast>>> evaluateApiResponse(
+  private static Optional<Pair<Fqn, Stream<Ast>>> evaluateApiResponse(
       PackageName basePackage, SimpleName responseName, ApiResponse response) {
     return Optional.ofNullable(response.getContent())
         .map(content -> content.get("application/json"))

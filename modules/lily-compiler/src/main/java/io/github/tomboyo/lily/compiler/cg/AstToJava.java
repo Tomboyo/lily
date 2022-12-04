@@ -1,9 +1,9 @@
 package io.github.tomboyo.lily.compiler.cg;
 
-import static io.github.tomboyo.lily.compiler.ast.AstEncoding.Style.FORM;
-import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
-import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.QUERY;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astByteBuffer;
+import static io.github.tomboyo.lily.compiler.ast.ParameterEncoding.Style.FORM;
+import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.PATH;
+import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.QUERY;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
 import static java.util.stream.Collectors.toList;
 
 import com.github.mustachejava.DefaultMustacheFactory;
@@ -12,14 +12,13 @@ import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstApi;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
-import io.github.tomboyo.lily.compiler.ast.AstEncoding;
-import io.github.tomboyo.lily.compiler.ast.AstField;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
-import io.github.tomboyo.lily.compiler.ast.AstReference;
 import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
+import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
+import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
@@ -76,17 +75,17 @@ public class AstToJava {
                 "packageName",
                 ast.name().packageName(),
                 "recordName",
-                ast.name().simpleName().upperCamelCase(),
+                ast.name().typeName().upperCamelCase(),
                 "fields",
                 ast.fields().stream().map(this::recordField).collect(Collectors.joining(",\n"))));
 
     return createSource(ast.name(), content);
   }
 
-  private String recordField(AstField field) {
+  private String recordField(Field field) {
     var scope =
         Map.of(
-            "fqpt", fullyQualifiedParameterizedType(field.astReference()),
+            "fqpt", field.astReference().toFqpString(),
             "name", field.name().lowerCamelCase(),
             "jsonName", field.jsonName());
 
@@ -115,20 +114,6 @@ public class AstToJava {
     }
   }
 
-  private static String fullyQualifiedParameterizedType(AstReference ast) {
-    if (ast.typeParameters().isEmpty()) {
-      return ast.name().toString();
-    } else {
-      var typeParameters =
-          "<%s>"
-              .formatted(
-                  ast.typeParameters().stream()
-                      .map(AstToJava::fullyQualifiedParameterizedType)
-                      .collect(Collectors.joining(",")));
-      return ast.name().toString() + typeParameters;
-    }
-  }
-
   private Source renderAstClassAlias(AstClassAlias ast) {
     var content =
         writeString(
@@ -147,8 +132,8 @@ public class AstToJava {
             "renderAstClassAlias",
             Map.of(
                 "packageName", ast.name().packageName(),
-                "recordName", ast.name().simpleName().upperCamelCase(),
-                "fqpValueName", fullyQualifiedParameterizedType(ast.aliasedType())));
+                "recordName", ast.name().typeName().upperCamelCase(),
+                "fqpValueName", ast.aliasedType().toFqpString()));
 
     return createSource(ast.name(), content);
   }
@@ -234,18 +219,18 @@ public class AstToJava {
             """,
             "renderAstApi",
             Map.of(
-                "packageName", ast.fqn().packageName(),
-                "className", ast.fqn().simpleName().upperCamelCase(),
+                "packageName", ast.name().packageName(),
+                "className", ast.name().typeName().upperCamelCase(),
                 "tags",
                     ast.taggedOperations().stream()
                         .map(
                             tag ->
                                 Map.of(
                                     "fqReturnType", tag.name().toString(),
-                                    "methodName", tag.name().simpleName().lowerCamelCase()))
+                                    "methodName", tag.name().typeName().lowerCamelCase()))
                         .collect(toList())));
 
-    return createSource(ast.fqn(), content);
+    return createSource(ast.name(), content);
   }
 
   private Source renderAstTaggedOperations(AstTaggedOperations ast) {
@@ -263,9 +248,8 @@ public class AstToJava {
               }
 
               {{#operations}}
-              {{! Note: Operation types are never parameterized }}
-              public {{fqReturnType}} {{methodName}}() {
-                return new {{fqReturnType}}(uri);
+              public {{{fqReturnType}}} {{methodName}}() {
+                return new {{{fqReturnType}}}(uri);
               }
 
               {{/operations}}
@@ -274,13 +258,13 @@ public class AstToJava {
             "renderAstTaggedOperations",
             Map.of(
                 "packageName", ast.name().packageName(),
-                "className", ast.name().simpleName().upperCamelCase(),
+                "className", ast.name().typeName().upperCamelCase(),
                 "operations",
                     ast.operations().stream()
                         .map(
                             operation ->
                                 Map.of(
-                                    "fqReturnType", operation.operationClass().name(),
+                                    "fqReturnType", operation.name().toFqpString(),
                                     "methodName", operation.operationName().lowerCamelCase()))
                         .collect(toList())));
 
@@ -338,8 +322,8 @@ public class AstToJava {
             """,
             "renderAstOperation",
             Map.of(
-                "packageName", ast.operationClass().name().packageName(),
-                "className", ast.operationClass().name().simpleName(),
+                "packageName", ast.name().packageName(),
+                "className", ast.name().typeName(),
                 "relativePath", withoutLeadingSlash(ast.relativePath()),
                 "method", ast.method(),
                 "queryTemplate",
@@ -358,14 +342,13 @@ public class AstToJava {
                         .map(
                             parameter ->
                                 Map.of(
-                                    "fqpt",
-                                        fullyQualifiedParameterizedType(parameter.astReference()),
+                                    "fqpt", parameter.typeName().toFqpString(),
                                     "name", parameter.name().lowerCamelCase(),
                                     "apiName", parameter.apiName(),
                                     "encoder", getEncoder(parameter.encoding())))
                         .collect(toList())));
 
-    return createSource(ast.operationClass().name(), content);
+    return createSource(ast.name(), content);
   }
 
   private Source renderAstResponseSum(AstResponseSum astResponseSum) {
@@ -378,14 +361,14 @@ public class AstToJava {
         """,
             "renderAstResponseSum",
             Map.of(
-                "packageName", astResponseSum.fqn().packageName(),
-                "typeName", astResponseSum.fqn().simpleName(),
+                "packageName", astResponseSum.name().packageName(),
+                "typeName", astResponseSum.name().typeName(),
                 "members",
                     astResponseSum.members().stream()
-                        .map(astReference -> astReference.name().toString())
+                        .map(Fqn::toFqString)
                         .collect(Collectors.joining(", "))));
 
-    return createSource(astResponseSum.fqn(), content);
+    return createSource(astResponseSum.name(), content);
   }
 
   private Source renderAstResponse(AstResponse astResponse) {
@@ -401,7 +384,7 @@ public class AstToJava {
             "renderAstResponse",
             Map.of(
                 "packageName", astResponse.name().packageName(),
-                "typeName", astResponse.name().simpleName(),
+                "typeName", astResponse.name().typeName(),
                 "fields",
                     astResponse.fields().stream()
                         .map(this::recordField)
@@ -411,7 +394,7 @@ public class AstToJava {
     return createSource(astResponse.name(), content);
   }
 
-  private static String getEncoder(AstEncoding encoding) {
+  private static String getEncoder(ParameterEncoding encoding) {
     if (encoding.style() == FORM) {
       // use the stateful smartFormEncoder local variable.
       return "smartFormEncoder";

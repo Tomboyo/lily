@@ -5,7 +5,8 @@ public sealed interface Ast
         AstClass,
         AstClassAlias,
         AstOperation,
-        AstParameter,
         AstResponse,
         AstResponseSum,
-        AstTaggedOperations {}
+        AstTaggedOperations {
+  Fqn name();
+}

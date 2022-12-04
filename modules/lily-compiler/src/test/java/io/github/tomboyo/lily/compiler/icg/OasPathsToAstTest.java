@@ -1,6 +1,6 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static io.github.tomboyo.lily.compiler.AstSupport.astReferencePlaceholder;
+import static io.github.tomboyo.lily.compiler.AstSupport.fqnPlaceholder;
 import static io.swagger.v3.oas.models.PathItem.HttpMethod.PUT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -89,11 +89,9 @@ public class OasPathsToAstTest {
     @Test
     void groupsOperationsByTag() {
       var getAOperation =
-          new AstOperation(
-              SimpleName.of("GetA"), astReferencePlaceholder(), "GET", "getA/", List.of());
+          new AstOperation(SimpleName.of("GetA"), fqnPlaceholder(), "GET", "getA/", List.of());
       var getABOperation =
-          new AstOperation(
-              SimpleName.of("GetAB"), astReferencePlaceholder(), "GET", "getAB/", List.of());
+          new AstOperation(SimpleName.of("GetAB"), fqnPlaceholder(), "GET", "getAB/", List.of());
       var actual =
           OasPathsToAst.evaluateTaggedOperations(
                   PackageName.of("p"),
@@ -108,8 +106,11 @@ public class OasPathsToAstTest {
           is(
               Set.of(
                   new AstTaggedOperations(
-                      Fqn.of("p", "TagAOperations"), Set.of(getAOperation, getABOperation)),
-                  new AstTaggedOperations(Fqn.of("p", "TagBOperations"), Set.of(getABOperation)))));
+                      Fqn.newBuilder().packageName("p").typeName("TagAOperations").build(),
+                      Set.of(getAOperation, getABOperation)),
+                  new AstTaggedOperations(
+                      Fqn.newBuilder().packageName("p").typeName("TagBOperations").build(),
+                      Set.of(getABOperation)))));
     }
   }
 }

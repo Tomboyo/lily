@@ -1,6 +1,6 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astBoolean;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;

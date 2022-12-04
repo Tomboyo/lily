@@ -7,8 +7,7 @@ import static java.util.stream.Collectors.toMap;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
-import io.github.tomboyo.lily.compiler.ast.AstField;
-import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
@@ -41,21 +40,27 @@ public class OasComponentsToAst {
    */
   public static Stream<Ast> evaluate(
       PackageName basePackage, SimpleName componentName, Schema component) {
-    var refAndAst = OasSchemaToAst.evaluate(basePackage, componentName, component);
+    var fqnAndAst = OasSchemaToAst.evaluate(basePackage, componentName, component);
 
     if (null == component.getType()) {
       // Create a AstClassAlias of a referent type. There are no AST elements.
       return Stream.concat(
-          Stream.of(new AstClassAlias(Fqn.of(basePackage, componentName), refAndAst.left())),
-          refAndAst.right());
+          Stream.of(
+              new AstClassAlias(
+                  Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
+                  fqnAndAst.left())),
+          fqnAndAst.right());
     }
 
     return switch (component.getType()) {
       case "integer", "number", "string", "boolean" -> Stream.concat(
-          Stream.of(new AstClassAlias(Fqn.of(basePackage, componentName), refAndAst.left())),
-          refAndAst.right());
-      case "array" -> evaluateArray(basePackage, refAndAst, componentName);
-      case "object" -> refAndAst.right();
+          Stream.of(
+              new AstClassAlias(
+                  Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
+                  fqnAndAst.left())),
+          fqnAndAst.right());
+      case "array" -> evaluateArray(basePackage, fqnAndAst, componentName);
+      case "object" -> fqnAndAst.right();
       default -> throw new IllegalArgumentException(
           "Unexpected component type: " + component.getType());
     };
@@ -74,25 +79,25 @@ public class OasComponentsToAst {
    * references which evaluate from this array schema definition.
    */
   private static Stream<Ast> evaluateArray(
-      PackageName basePackage,
-      Pair<AstReference, Stream<Ast>> refAndAst,
-      SimpleName componentName) {
-    var ast = refAndAst.right().collect(toList());
+      PackageName basePackage, Pair<Fqn, Stream<Ast>> fqnAndAst, SimpleName componentName) {
+    var ast = fqnAndAst.right().collect(toList());
     // 1. Create a mapping of FQNs that need to move => their updated package names.
     var pattern = Pattern.compile("^" + basePackage);
     var replacement = basePackage.resolve(componentName.toString()).toString();
-    var fqnToPackage =
+    var fqnMap =
         ast.stream()
             .filter(it -> it instanceof AstClass)
-            .map(it -> ((AstClass) it).name())
+            .map(Ast::name)
             .collect(
                 toMap(
                     identity(),
                     it ->
-                        it.withPackage(
-                            pattern
-                                .matcher(it.packageName().toString())
-                                .replaceFirst(replacement))));
+                        Fqn.newBuilder(it)
+                            .packageName(
+                                pattern
+                                    .matcher(it.packageName().toString())
+                                    .replaceFirst(replacement))
+                            .build()));
 
     // 2. Update each such FQN
     var mappedAst =
@@ -100,7 +105,7 @@ public class OasComponentsToAst {
             .map(
                 it -> {
                   if (it instanceof AstClass astClass) {
-                    return moveClass(astClass, fqnToPackage);
+                    return moveClass(astClass, fqnMap);
                   } else {
                     return it;
                   }
@@ -109,7 +114,8 @@ public class OasComponentsToAst {
     // 3. Create the final AstClassAlias (with updated AstRef!)
     var alias =
         new AstClassAlias(
-            Fqn.of(basePackage, componentName), moveReference(refAndAst.left(), fqnToPackage));
+            Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
+            moveReference(fqnAndAst.left(), fqnMap));
 
     return Stream.concat(Stream.of(alias), mappedAst);
   }
@@ -120,16 +126,16 @@ public class OasComponentsToAst {
         astClass.fields().stream().map(ref -> moveField(ref, nameMap)).collect(toList()));
   }
 
-  private static AstField moveField(AstField field, Map<Fqn, Fqn> nameMap) {
-    return new AstField(
-        moveReference(field.astReference(), nameMap), field.name(), field.jsonName());
+  private static Field moveField(Field field, Map<Fqn, Fqn> nameMap) {
+    return new Field(moveReference(field.astReference(), nameMap), field.name(), field.jsonName());
   }
 
-  private static AstReference moveReference(AstReference ref, Map<Fqn, Fqn> nameMap) {
-    return new AstReference(
-        nameMap.getOrDefault(ref.name(), ref.name()),
-        ref.typeParameters().stream()
-            .map(param -> moveReference(param, nameMap))
-            .collect(toList()));
+  private static Fqn moveReference(Fqn ref, Map<Fqn, Fqn> nameMap) {
+    return Fqn.newBuilder(nameMap.getOrDefault(ref, ref))
+        .typeParameters(
+            ref.typeParameters().stream()
+                .map(param -> moveReference(param, nameMap))
+                .collect(toList()))
+        .build();
   }
 }

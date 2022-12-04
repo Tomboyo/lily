@@ -5,15 +5,13 @@ import static java.util.stream.Collectors.toList;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
-import io.github.tomboyo.lily.compiler.ast.AstField;
-import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -31,20 +29,20 @@ public class OasSchemaToAst {
   }
 
   /**
-   * Evaluate an OAS schema to AST, returning an AstReference to the top-level type generated from
-   * the schema.
+   * Evaluate an OAS schema to AST, returning an Fqn to the top-level type generated from the
+   * schema.
    *
    * @param basePackage The root package under which to generate new types.
    * @param name The name of the schema, which is used to name types evaluated from the schema.
    * @param schema The schema to evaluate to AST.
    * @return A pair describing the root reference and stream of evaluated AST.
    */
-  public static Pair<AstReference, Stream<Ast>> evaluate(
+  public static Pair<Fqn, Stream<Ast>> evaluate(
       PackageName basePackage, SimpleName name, Schema<?> schema) {
     return new OasSchemaToAst(basePackage).evaluateSchema(basePackage, name, schema);
   }
 
-  private Pair<AstReference, Stream<Ast>> evaluateSchema(
+  private Pair<Fqn, Stream<Ast>> evaluateSchema(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
     var type = schema.getType();
     if (type == null) {
@@ -53,73 +51,73 @@ public class OasSchemaToAst {
 
     return switch (type) {
       case "integer", "number", "string", "boolean" -> new Pair<>(
-          toStdLibAstReference(schema.getType(), schema.getFormat()), Stream.of());
+          toStdLibFqn(schema.getType(), schema.getFormat()), Stream.of());
       case "array" -> evaluateArray(currentPackage, name, (ArraySchema) schema);
       case "object" -> evaluateObject(currentPackage, name, schema);
       default -> throw new IllegalArgumentException(("Unexpected type: " + type));
     };
   }
 
-  private AstReference toBasePackageClassReference(String $ref) {
-    return AstReference.ref(
-        Fqn.of(basePackage, SimpleName.of($ref.replaceFirst("^#/components/schemas/", ""))),
-        List.of());
+  private Fqn toBasePackageClassReference(String $ref) {
+    return Fqn.newBuilder()
+        .packageName(basePackage)
+        .typeName($ref.replaceFirst("^#/components/schemas/", ""))
+        .build();
   }
 
-  private AstReference toStdLibAstReference(String type, String format) {
+  private Fqn toStdLibFqn(String type, String format) {
     switch (type) {
       case "integer":
         if (format == null) {
-          return StdlibAstReferences.astBigInteger();
+          return StdlibFqns.astBigInteger();
         }
 
         return switch (format) {
-          case "int64" -> StdlibAstReferences.astLong();
-          case "int32" -> StdlibAstReferences.astInteger();
-          default -> defaultForUnsupportedFormat(type, format, StdlibAstReferences.astBigInteger());
+          case "int64" -> StdlibFqns.astLong();
+          case "int32" -> StdlibFqns.astInteger();
+          default -> defaultForUnsupportedFormat(type, format, StdlibFqns.astBigInteger());
         };
       case "number":
         if (format == null) {
-          return StdlibAstReferences.astBigDecimal();
+          return StdlibFqns.astBigDecimal();
         }
 
         return switch (format) {
-          case "double" -> StdlibAstReferences.astDouble();
-          case "float" -> StdlibAstReferences.astFloat();
-          default -> defaultForUnsupportedFormat(type, format, StdlibAstReferences.astBigDecimal());
+          case "double" -> StdlibFqns.astDouble();
+          case "float" -> StdlibFqns.astFloat();
+          default -> defaultForUnsupportedFormat(type, format, StdlibFqns.astBigDecimal());
         };
       case "string":
         if (format == null) {
-          return StdlibAstReferences.astString();
+          return StdlibFqns.astString();
         }
 
         return switch (format) {
-          case "password" -> StdlibAstReferences.astString();
-          case "byte", "binary" -> StdlibAstReferences.astByteBuffer();
-          case "date" -> StdlibAstReferences.astLocalDate();
-          case "date-time" -> StdlibAstReferences.astOffsetDateTime();
-          default -> defaultForUnsupportedFormat(type, format, StdlibAstReferences.astString());
+          case "password" -> StdlibFqns.astString();
+          case "byte", "binary" -> StdlibFqns.astByteBuffer();
+          case "date" -> StdlibFqns.astLocalDate();
+          case "date-time" -> StdlibFqns.astOffsetDateTime();
+          default -> defaultForUnsupportedFormat(type, format, StdlibFqns.astString());
         };
       case "boolean":
         if (format == null) {
-          return StdlibAstReferences.astBoolean();
+          return StdlibFqns.astBoolean();
         } else {
-          return defaultForUnsupportedFormat(type, format, StdlibAstReferences.astBoolean());
+          return defaultForUnsupportedFormat(type, format, StdlibFqns.astBoolean());
         }
       default:
         throw new IllegalArgumentException("Unexpected type: " + type);
     }
   }
 
-  private AstReference defaultForUnsupportedFormat(
-      String type, String format, AstReference defaultAst) {
+  private Fqn defaultForUnsupportedFormat(String type, String format, Fqn defaultAst) {
     if (format != null) {
       LOGGER.warn("Using default class for unsupported format: type={} format={}", type, format);
     }
     return defaultAst;
   }
 
-  private Pair<AstReference, Stream<Ast>> evaluateArray(
+  private Pair<Fqn, Stream<Ast>> evaluateArray(
       PackageName currentPackage, SimpleName name, ArraySchema arraySchema) {
     if ("object".equals(arraySchema.getItems().getType())) {
       /*
@@ -128,12 +126,12 @@ public class OasSchemaToAst {
        example:
 
        1. Suppose the #/components/Cats component is an array containing [arrays of] objects. If
-       the base package is p, then the resulting AstReference should be:
+       the base package is p, then the resulting Fqn should be:
 
           List<[List<...<]p.CatsItem[>...>]>
 
        2. Suppose the #/components/Bus component is an object with a "wheels" array parameter
-       which contains [arrays of] objects. Then the resulting AstReference should be:
+       which contains [arrays of] objects. Then the resulting Fqn should be:
 
           List<[List<...<]p.bus.WheelsItem[>...>]>
 
@@ -145,16 +143,16 @@ public class OasSchemaToAst {
        type.
       */
       var interior = evaluateSchema(currentPackage, name.resolve("Item"), arraySchema.getItems());
-      return new Pair<>(StdlibAstReferences.astListOf(interior.left()), interior.right());
+      return new Pair<>(StdlibFqns.astListOf(interior.left()), interior.right());
     } else {
       // All types other than Object do not result in new AST, so we do not use the naming strategy
       // used for objects.
       var interior = evaluateSchema(currentPackage, name, arraySchema.getItems());
-      return new Pair<>(StdlibAstReferences.astListOf(interior.left()), interior.right());
+      return new Pair<>(StdlibFqns.astListOf(interior.left()), interior.right());
     }
   }
 
-  private Pair<AstReference, Stream<Ast>> evaluateObject(
+  private Pair<Fqn, Stream<Ast>> evaluateObject(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
     /*
      Generate the AST required to define the fields of this new class. If we define any classes
@@ -178,16 +176,17 @@ public class OasSchemaToAst {
                   var refAndAst =
                       evaluateSchema(fieldPackage, SimpleName.of(jsonName), fieldSchema);
                   return refAndAst.mapLeft(
-                      ref -> new AstField(ref, SimpleName.of(jsonName), jsonName));
+                      ref -> new Field(ref, SimpleName.of(jsonName), jsonName));
                 })
             .toList();
 
     var exteriorClass =
         AstClass.of(
-            Fqn.of(currentPackage, name), fieldAndAst.stream().map(Pair::left).collect(toList()));
+            Fqn.newBuilder().packageName(currentPackage).typeName(name).build(),
+            fieldAndAst.stream().map(Pair::left).collect(toList()));
     var interiorAst = fieldAndAst.stream().flatMap(Pair::right);
     return new Pair<>(
-        AstReference.ref(Fqn.of(currentPackage, name), List.of()),
+        Fqn.newBuilder().packageName(currentPackage).typeName(name).build(),
         Stream.concat(Stream.of(exteriorClass), interiorAst));
   }
 }

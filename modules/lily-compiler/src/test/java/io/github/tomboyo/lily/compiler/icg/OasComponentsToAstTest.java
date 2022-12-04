@@ -1,25 +1,23 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static io.github.tomboyo.lily.compiler.ast.AstReference.ref;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBigDecimal;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBigInteger;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astByteBuffer;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astDouble;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astFloat;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astInteger;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astListOf;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astLocalDate;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astLong;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astOffsetDateTime;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astString;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astBigDecimal;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astBigInteger;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astBoolean;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astDouble;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astFloat;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astInteger;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astListOf;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astLocalDate;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astLong;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astOffsetDateTime;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
-import io.github.tomboyo.lily.compiler.ast.AstField;
-import io.github.tomboyo.lily.compiler.ast.AstReference;
+import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
@@ -65,7 +63,7 @@ public class OasComponentsToAstTest {
   class ScalarComponents {
     @ParameterizedTest
     @MethodSource("io.github.tomboyo.lily.compiler.icg.OasComponentsToAstTest#scalarsSource")
-    void evaluate(String oasType, String oasFormat, AstReference expectedRef) {
+    void evaluate(String oasType, String oasFormat, Fqn expectedRef) {
       var actual =
           OasComponentsToAst.evaluate(
               PackageName.of("p"),
@@ -73,7 +71,9 @@ public class OasComponentsToAstTest {
               new Schema().type(oasType).format(oasFormat));
 
       assertEquals(
-          Set.of(new AstClassAlias(Fqn.of("p", "MyComponent"), expectedRef)),
+          Set.of(
+              new AstClassAlias(
+                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(), expectedRef)),
           actual.collect(Collectors.toSet()));
     }
   }
@@ -90,7 +90,9 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              new AstClassAlias(Fqn.of("p", "MyComponent"), ref(Fqn.of("p", "MyRef"), List.of()))),
+              new AstClassAlias(
+                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
+                  Fqn.newBuilder().packageName("p").typeName("MyRef").build())),
           actual.collect(Collectors.toSet()));
     }
   }
@@ -106,7 +108,10 @@ public class OasComponentsToAstTest {
               new ArraySchema().items(new Schema<>().type("boolean")));
 
       assertEquals(
-          Set.of(new AstClassAlias(Fqn.of("p", "MyComponent"), astListOf(astBoolean()))),
+          Set.of(
+              new AstClassAlias(
+                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
+                  astListOf(astBoolean()))),
           actual.collect(Collectors.toSet()),
           "Array components evaluate to aliases of lists");
     }
@@ -123,18 +128,33 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  Fqn.of("p", "MyComponent"),
-                  ref(
-                      Fqn.of("java.util", "List"),
-                      List.of(ref(Fqn.of("p.mycomponent", "MyComponentItem"), List.of())))),
+                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
+                  Fqn.newBuilder()
+                      .packageName("java.util")
+                      .typeName("List")
+                      .typeParameters(
+                          List.of(
+                              Fqn.newBuilder()
+                                  .packageName("p.mycomponent")
+                                  .typeName("MyComponentItem")
+                                  .build()))
+                      .build()),
               AstClass.of(
-                  Fqn.of("p.mycomponent", "MyComponentItem"),
+                  Fqn.newBuilder().packageName("p.mycomponent").typeName("MyComponentItem").build(),
                   List.of(
-                      new AstField(
-                          ref(Fqn.of("p.mycomponent.mycomponentitem", "MyField"), List.of()),
+                      new Field(
+                          Fqn.newBuilder()
+                              .packageName("p.mycomponent.mycomponentitem")
+                              .typeName("MyField")
+                              .build(),
                           SimpleName.of("myField"),
                           "myField"))),
-              AstClass.of(Fqn.of("p.mycomponent.mycomponentitem", "MyField"), List.of())),
+              AstClass.of(
+                  Fqn.newBuilder()
+                      .packageName("p.mycomponent.mycomponentitem")
+                      .typeName("MyField")
+                      .build(),
+                  List.of())),
           actual.collect(Collectors.toSet()),
           "Inline types within aliases are defined in packages subordinate to the class alias");
     }
@@ -149,11 +169,17 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              AstClass.of(Fqn.of("p.mycomponent", "MyComponentItem"), List.of()),
+              AstClass.of(
+                  Fqn.newBuilder().packageName("p.mycomponent").typeName("MyComponentItem").build(),
+                  List.of()),
               new AstClassAlias(
-                  Fqn.of("p", "MyComponent"),
+                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
                   astListOf(
-                      astListOf(ref(Fqn.of("p.mycomponent", "MyComponentItem"), List.of()))))),
+                      astListOf(
+                          Fqn.newBuilder()
+                              .packageName("p.mycomponent")
+                              .typeName("MyComponentItem")
+                              .build())))),
           actual.collect(Collectors.toSet()),
           "item schemas in nested arrays evaluate to AstClasses nested beneath the alias and not"
               + " deeper");
@@ -170,7 +196,8 @@ public class OasComponentsToAstTest {
       assertEquals(
           Set.of(
               new AstClassAlias(
-                  Fqn.of("p", "MyComponent"), astListOf(ref(Fqn.of("p", "MyRef"), List.of())))),
+                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
+                  astListOf(Fqn.newBuilder().packageName("p").typeName("MyRef").build()))),
           actual.collect(Collectors.toSet()),
           "arrays of refs evaluate to aliases of lists of the referent type");
     }

@@ -1,11 +1,10 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static io.github.tomboyo.lily.compiler.AstSupport.astReferencePlaceholder;
-import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.PATH;
-import static io.github.tomboyo.lily.compiler.ast.AstParameterLocation.QUERY;
-import static io.github.tomboyo.lily.compiler.ast.AstReference.ref;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astBoolean;
-import static io.github.tomboyo.lily.compiler.icg.StdlibAstReferences.astString;
+import static io.github.tomboyo.lily.compiler.AstSupport.fqnPlaceholder;
+import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.PATH;
+import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.QUERY;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astBoolean;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astString;
 import static io.swagger.v3.oas.models.PathItem.HttpMethod.GET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -13,11 +12,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 
-import io.github.tomboyo.lily.compiler.ast.AstEncoding;
-import io.github.tomboyo.lily.compiler.ast.AstParameter;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
+import io.github.tomboyo.lily.compiler.ast.OperationParameter;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
+import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
 import io.github.tomboyo.lily.compiler.icg.OasParameterToAst.ParameterAndAst;
@@ -43,8 +42,7 @@ public class OasOperationToAstTest {
     void evaluatesAllParametersToAst() {
       try (var mock = mockStatic(OasSchemaToAst.class)) {
         mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
-            .thenAnswer(
-                invocation -> new Pair<>(astBoolean(), Stream.of(astReferencePlaceholder())));
+            .thenAnswer(invocation -> new Pair<>(astBoolean(), Stream.of(fqnPlaceholder())));
 
         var actual =
             OasOperationToAst.evaluateOperaton(
@@ -61,8 +59,7 @@ public class OasOperationToAstTest {
                     new Parameter().name("c").in("header").schema(new BooleanSchema()),
                     new Parameter().name("d").in("cookie").schema(new StringSchema())));
 
-        assertThat(
-            "Parameter AST is returned", actual.ast(), is(Set.of(astReferencePlaceholder())));
+        assertThat("Parameter AST is returned", actual.ast(), is(Set.of(fqnPlaceholder())));
 
         // Each parameter is evaluated to AST in turn
         mock.verify(
@@ -153,7 +150,11 @@ public class OasOperationToAstTest {
                 invocation ->
                     new Pair<>(
                         new AstResponseSum(
-                            Fqn.of("com.example.getfoooperation", "GetFooResponse"), Set.of()),
+                            Fqn.newBuilder()
+                                .packageName("com.example.getfoooperation")
+                                .typeName("GetFooResponse")
+                                .build(),
+                            Set.of()),
                         Stream.of()));
 
         OasOperationToAst.evaluateOperaton(
@@ -252,8 +253,8 @@ public class OasOperationToAstTest {
       void referencesNewOperationClass() {
         assertThat(
             "The AstReference points to a generated type named after the operation ID",
-            actual().operation().operationClass(),
-            is(ref(Fqn.of("p", "OperationIdOperation"), List.of())));
+            actual().operation().name(),
+            is(Fqn.newBuilder().packageName("p").typeName("OperationIdOperation").build()));
       }
 
       @Test
@@ -276,13 +277,17 @@ public class OasOperationToAstTest {
           mock.when(() -> OasParameterToAst.evaluateParameter(any(), any()))
               .thenReturn(
                   new ParameterAndAst(
-                      new AstParameter(
-                          SimpleName.of("A"), "a", PATH, AstEncoding.simple(), astBoolean()),
+                      new OperationParameter(
+                          SimpleName.of("A"), "a", PATH, ParameterEncoding.simple(), astBoolean()),
                       Stream.of()))
               .thenReturn(
                   new ParameterAndAst(
-                      new AstParameter(
-                          SimpleName.of("B"), "b", QUERY, AstEncoding.formExplode(), astString()),
+                      new OperationParameter(
+                          SimpleName.of("B"),
+                          "b",
+                          QUERY,
+                          ParameterEncoding.formExplode(),
+                          astString()),
                       Stream.of()));
 
           assertThat(
@@ -290,13 +295,13 @@ public class OasOperationToAstTest {
               actual().operation().parameters(),
               is(
                   List.of(
-                      new AstParameter(
-                          SimpleName.of("A"), "a", PATH, AstEncoding.simple(), astBoolean()),
-                      new AstParameter(
+                      new OperationParameter(
+                          SimpleName.of("A"), "a", PATH, ParameterEncoding.simple(), astBoolean()),
+                      new OperationParameter(
                           SimpleName.of("B"),
                           "b",
                           QUERY,
-                          AstEncoding.formExplode(),
+                          ParameterEncoding.formExplode(),
                           astString()))));
         }
       }

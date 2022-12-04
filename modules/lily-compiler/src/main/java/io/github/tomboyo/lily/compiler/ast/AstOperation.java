@@ -9,8 +9,8 @@ import java.util.List;
  */
 public record AstOperation(
     SimpleName operationName,
-    AstReference operationClass,
+    Fqn name,
     String method,
     String relativePath,
-    List<AstParameter> parameters)
+    List<OperationParameter> parameters)
     implements Ast {}

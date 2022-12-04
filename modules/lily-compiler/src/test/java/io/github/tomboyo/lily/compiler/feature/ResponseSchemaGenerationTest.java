@@ -48,6 +48,15 @@ class ResponseSchemaGenerationTest {
                             properties:
                               foo:
                                 type: string
+                    '500':
+                      content:
+                        application/json:
+                          schema:
+                            $ref: #/components/schemas/Error
+            components:
+              schemas:
+                Error:
+                  type: string
             """);
   }
 
@@ -65,8 +74,8 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-        return (new %s.getfoooperation.GetFoo200("value")) instanceof %s.getfoooperation.GetFooResponse;
-        """
+                  return (new %s.getfoooperation.GetFoo200("value")) instanceof %s.getfoooperation.GetFooResponse;
+                  """
                       .formatted(packageName, packageName))));
     }
 
@@ -78,8 +87,21 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-        return (new %s.getfoooperation.GetFoo404("value")) instanceof %s.getfoooperation.GetFooResponse;
-        """
+                  return (new %s.getfoooperation.GetFoo404("value")) instanceof %s.getfoooperation.GetFooResponse;
+                  """
+                      .formatted(packageName, packageName))));
+    }
+
+    @Test
+    void errorResponse() {
+      assertThat(
+          "The 500 response (from #/components) is a member of the response type",
+          true,
+          is(
+              evaluate(
+                  """
+              return ((Object) new %s.Error("error")) instanceof %s.getfoooperation.GetFooResponse;
+              """
                       .formatted(packageName, packageName))));
     }
   }
