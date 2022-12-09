@@ -1,5 +1,6 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static io.github.tomboyo.lily.compiler.AstSupport.astPlaceholder;
 import static io.github.tomboyo.lily.compiler.AstSupport.fqnPlaceholder;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.PATH;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.QUERY;
@@ -7,12 +8,12 @@ import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astBoolean;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astString;
 import static io.swagger.v3.oas.models.PathItem.HttpMethod.GET;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 
-import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.OperationParameter;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
@@ -27,7 +28,6 @@ import io.swagger.v3.oas.models.media.DateSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
-import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.List;
 import java.util.Set;
@@ -146,38 +146,19 @@ public class OasOperationToAstTest {
     void evaluatesApiResponsesToAst() {
       try (var mock = mockStatic(OasApiResponsesToAst.class)) {
         mock.when(() -> OasApiResponsesToAst.evaluateApiResponses(any(), any(), any()))
-            .thenAnswer(
-                invocation ->
-                    new Pair<>(
-                        new AstResponseSum(
-                            Fqn.newBuilder()
-                                .packageName("com.example.getfoooperation")
-                                .typeName("GetFooResponse")
-                                .build(),
-                            Set.of()),
-                        Stream.of()));
+            .thenAnswer(invocation -> Stream.of(astPlaceholder()));
 
-        OasOperationToAst.evaluateOperaton(
-            PackageName.of("com.example"),
-            "/foo",
-            GET,
-            new Operation()
-                .operationId("getFoo")
-                .responses(
-                    new ApiResponses()
-                        .addApiResponse("200", new ApiResponse())
-                        .addApiResponse("404", new ApiResponse())),
-            List.of());
+        var actual =
+            OasOperationToAst.evaluateOperaton(
+                    PackageName.of("com.example"),
+                    "/foo",
+                    GET,
+                    new Operation().operationId("getFoo").responses(new ApiResponses()),
+                    List.of())
+                .ast();
 
-        mock.verify(
-            () ->
-                OasApiResponsesToAst.evaluateApiResponses(
-                    eq(PackageName.of("com.example.getfoooperation")),
-                    eq(SimpleName.of("GetFoo")),
-                    eq(
-                        new ApiResponses()
-                            .addApiResponse("200", new ApiResponse())
-                            .addApiResponse("404", new ApiResponse()))));
+        assertThat(
+            "Response ast is flattened into the AST stream", actual, hasItems(astPlaceholder()));
       }
     }
 

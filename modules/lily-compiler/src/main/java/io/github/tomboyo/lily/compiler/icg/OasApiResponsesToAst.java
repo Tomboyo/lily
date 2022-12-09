@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 
 public class OasApiResponsesToAst {
 
-  public static Pair<AstResponseSum, Stream<Ast>> evaluateApiResponses(
+  public static Stream<Ast> evaluateApiResponses(
       PackageName basePackage, SimpleName operationId, ApiResponses responses) {
     var responseSumTypeName =
         Fqn.newBuilder().packageName(basePackage).typeName(operationId.resolve("Response")).build();
@@ -56,8 +56,9 @@ public class OasApiResponsesToAst {
             .toList();
     var members = definitions.stream().map(Pair::left).collect(Collectors.toSet());
     var memberAst = definitions.stream().flatMap(Pair::right);
-    return new Pair<>(
-        new AstResponseSum(responseSumTypeName, new LinkedHashSet<>(members)), memberAst);
+    return Stream.concat(
+        Stream.of(new AstResponseSum(responseSumTypeName, new LinkedHashSet<>(members))),
+        memberAst);
   }
 
   private static Optional<Pair<Fqn, Stream<Ast>>> evaluateApiResponse(
