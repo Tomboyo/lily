@@ -375,20 +375,18 @@ public class AstToJava {
     var content =
         writeString(
             """
-        package {{packageName}};
+            package {{packageName}};
 
-        public record {{typeName}}(
-          {{{fields}}}
-        ) implements {{interfaceName}} {}
-        """,
+            public record {{typeName}}(
+              {{{contentTypeName}}} content
+            ) implements {{interfaceName}} {}
+            """,
             "renderAstResponse",
             Map.of(
                 "packageName", astResponse.name().packageName(),
                 "typeName", astResponse.name().typeName(),
-                "fields",
-                    astResponse.fields().stream()
-                        .map(this::recordField)
-                        .collect(Collectors.joining(",\n")),
+                //                "headersTypeName", astResponse.headersName().toFqpString(),
+                "contentTypeName", astResponse.contentName().toFqpString(),
                 "interfaceName", astResponse.sumTypeName()));
 
     return createSource(astResponse.name(), content);

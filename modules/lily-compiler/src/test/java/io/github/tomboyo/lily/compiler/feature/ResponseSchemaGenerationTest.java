@@ -33,6 +33,10 @@ class ResponseSchemaGenerationTest {
                   operationId: GetFoo
                   responses:
                     '200':
+                      headers:
+                        x-foo:
+                          schema:
+                            type: string
                       content:
                         application/json:
                           schema:
@@ -44,18 +48,10 @@ class ResponseSchemaGenerationTest {
                       content:
                         application/json:
                           schema:
-                            type: object
-                            properties:
-                              foo:
-                                type: string
-                    '500':
-                      content:
-                        application/json:
-                          schema:
-                            $ref: #/components/schemas/Error
+                            $ref: '#/components/schemas/NotFound'
             components:
               schemas:
-                Error:
+                NotFound:
                   type: string
             """);
   }
@@ -74,7 +70,7 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                  return (new %s.getfoooperation.GetFoo200("value")) instanceof %s.getfoooperation.GetFooResponse;
+                  return (new %s.getfoooperation.GetFoo200(null, null)) instanceof %s.getfoooperation.GetFooResponse;
                   """
                       .formatted(packageName, packageName))));
     }
@@ -87,22 +83,40 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                  return (new %s.getfoooperation.GetFoo404("value")) instanceof %s.getfoooperation.GetFooResponse;
+                  return (new %s.getfoooperation.GetFoo404(null, null)) instanceof %s.getfoooperation.GetFooResponse;
                   """
                       .formatted(packageName, packageName))));
     }
+  }
 
-    @Test
-    void errorResponse() {
-      assertThat(
-          "The 500 response (from #/components) is a member of the response type",
-          true,
-          is(
-              evaluate(
-                  """
-              return ((Object) new %s.Error("error")) instanceof %s.getfoooperation.GetFooResponse;
-              """
-                      .formatted(packageName, packageName))));
-    }
+  /**
+   * Response instances like GetFoo200 are wrappers for headers and content, both of which are
+   * represented by generated types
+   */
+  @Test
+  void content() {
+    assertThat(
+        "Content is generated for GetFoo200",
+        true,
+        is(
+            evaluate(
+                """
+            var content = new %s.getfoooperation.response.GetFoo200Content("value");
+            var response = new %s.getfoooperation.GetFoo200(content);
+            return response.content() instanceof %s.getfoooperation.response.GetFoo200Content;
+            """
+                    .formatted(packageName, packageName, packageName))));
+
+    assertThat(
+        "But content is not generated for GetFoo404, since it is already defined",
+        true,
+        is(
+            evaluate(
+                """
+            var content = new %s.NotFound("value");
+            var response = new %s.getfoooperation.GetFoo404(content);
+            return response.content() instanceof %s.NotFound;
+            """
+                    .formatted(packageName, packageName, packageName))));
   }
 }

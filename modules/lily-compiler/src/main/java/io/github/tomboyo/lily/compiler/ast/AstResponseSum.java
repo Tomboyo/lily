@@ -1,5 +1,5 @@
 package io.github.tomboyo.lily.compiler.ast;
 
-import java.util.Set;
+import java.util.List;
 
-public record AstResponseSum(Fqn name, Set<Fqn> members) implements Ast {}
+public record AstResponseSum(Fqn name, List<Fqn> members) implements Ast {}

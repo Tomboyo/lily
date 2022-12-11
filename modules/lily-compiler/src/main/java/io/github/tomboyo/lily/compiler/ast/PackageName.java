@@ -31,6 +31,16 @@ public record PackageName(List<String> packageParts) {
     return new PackageName(copy);
   }
 
+  /**
+   * Return the new package created by appending the given simple name as a single path component.
+   * For example, {@code
+   * PackageName.of("com.example").resolve(SimpleName.of("FooBarBaz")).toString()} is {@code
+   * "com.exmaple.foobarbaz"}.
+   */
+  public PackageName resolve(SimpleName simpleName) {
+    return resolve(simpleName.toString());
+  }
+
   /** Return an array of this package's components, such that a.b.c becomes [a, b, c]. */
   public String[] components() {
     return packageParts.toArray(new String[0]);

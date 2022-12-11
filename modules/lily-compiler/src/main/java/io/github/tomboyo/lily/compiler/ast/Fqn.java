@@ -28,6 +28,15 @@ public record Fqn(PackageName packageName, SimpleName typeName, List<Fqn> typePa
         .typeParameters(template.typeParameters);
   }
 
+  public static Builder newBuilder(PackageName packageName, SimpleName typeName) {
+    return newBuilder(packageName.toString(), typeName.toString());
+  }
+
+  /** Get a Fqn builder initialized with the given package and type names. */
+  public static Builder newBuilder(String packageName, String typeName) {
+    return new Builder().packageName(packageName).typeName(typeName);
+  }
+
   /** Equivalent to {@link #toFqString()}. */
   @Override
   public String toString() {

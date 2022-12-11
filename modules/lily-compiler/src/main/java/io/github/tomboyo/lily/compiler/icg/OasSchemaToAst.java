@@ -33,13 +33,29 @@ public class OasSchemaToAst {
    * schema.
    *
    * @param basePackage The root package under which to generate new types.
-   * @param name The name of the schema, which is used to name types evaluated from the schema.
+   * @param name The name of the type to generate.
    * @param schema The schema to evaluate to AST.
    * @return A pair describing the root reference and stream of evaluated AST.
    */
   public static Pair<Fqn, Stream<Ast>> evaluate(
       PackageName basePackage, SimpleName name, Schema<?> schema) {
     return new OasSchemaToAst(basePackage).evaluateSchema(basePackage, name, schema);
+  }
+
+  /**
+   * Evaluate an OAS schema to AST, returning an Fqn to the top-level type generated from the
+   * schema.
+   *
+   * @param basePackage The package containing all "top level" types ever generated.
+   * @param genRoot The package to contain all types generated for this schema or nested packages of
+   *     generated types.
+   * @param name The name of the type to generate.
+   * @param schema The schema to evaluate to AST.
+   * @return A pair describing the root reference and stream of evaluated AST.
+   */
+  public static Pair<Fqn, Stream<Ast>> evaluateInto(
+      PackageName basePackage, PackageName genRoot, SimpleName name, Schema<?> schema) {
+    return new OasSchemaToAst(basePackage).evaluateSchema(genRoot, name, schema);
   }
 
   private Pair<Fqn, Stream<Ast>> evaluateSchema(
