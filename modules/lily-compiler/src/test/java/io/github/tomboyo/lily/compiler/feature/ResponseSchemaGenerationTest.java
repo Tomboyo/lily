@@ -49,6 +49,11 @@ class ResponseSchemaGenerationTest {
                         application/json:
                           schema:
                             $ref: '#/components/schemas/NotFound'
+                    default:
+                      content:
+                        application/json:
+                          schema:
+                            $ref: '#/components/schemas/NotFound'
             components:
               schemas:
                 NotFound:
@@ -70,7 +75,7 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                  return (new %s.getfoooperation.GetFoo200(null, null)) instanceof %s.getfoooperation.GetFooResponse;
+                  return (new %s.getfoooperation.GetFoo200(null)) instanceof %s.getfoooperation.GetFooResponse;
                   """
                       .formatted(packageName, packageName))));
     }
@@ -83,7 +88,21 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                  return (new %s.getfoooperation.GetFoo404(null, null)) instanceof %s.getfoooperation.GetFooResponse;
+                  return (new %s.getfoooperation.GetFoo404(null)) instanceof %s.getfoooperation.GetFooResponse;
+                  """
+                      .formatted(packageName, packageName))));
+    }
+
+    @Test
+    void defaultResponse() {
+      assertThat(
+          "The default response is a member of the response sum type",
+          true,
+          is(
+              evaluate(
+                  """
+                  return (new %s.getfoooperation.GetFooDefault(null))
+                      instanceof %s.getfoooperation.GetFooResponse;
                   """
                       .formatted(packageName, packageName))));
     }
