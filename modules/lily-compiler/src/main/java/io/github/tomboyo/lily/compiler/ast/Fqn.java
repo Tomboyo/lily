@@ -76,6 +76,14 @@ public record Fqn(PackageName packageName, SimpleName typeName, List<Fqn> typePa
         .resolve(typeName().upperCamelCase() + ".java");
   }
 
+  /**
+   * Convert this Fqn into a package. Given {@code com.example.FooBar }, returns the package {@code
+   * com.example.foobar}.
+   */
+  public PackageName toPackage() {
+    return packageName.resolve(typeName);
+  }
+
   public static class Builder {
     private PackageName packageName = PackageName.of("java.lang");
     private SimpleName typeName;

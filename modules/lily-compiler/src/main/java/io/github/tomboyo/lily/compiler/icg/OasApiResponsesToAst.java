@@ -1,15 +1,22 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static java.util.Objects.requireNonNullElse;
+import static java.util.function.Function.identity;
+
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstHeaders;
 import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
+import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
+import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class OasApiResponsesToAst {
@@ -52,30 +59,55 @@ public class OasApiResponsesToAst {
     var contentFqnAndAst =
         OasSchemaToAst.evaluateInto(basePackage, responsePackage, contentName, contentSchema);
 
-    //    var headersFqnAndAst = response.getHeaders().entrySet().stream()
-    //        .map(entry -> {
-    //          var name = entry.getKey();
-    //          var header = entry.getValue();
-    //          return OasSchemaToAst.evaluateInto(
-    //              basePackage,
-    //              responsePackage,
-    //              responseName.resolve(name).resolve("Header"),
-    //              header.getSchema());
-    //        });
-
-    var headersName = Fqn.newBuilder(responsePackage, responseName.resolve("Headers")).build();
-    var headersAst = new AstHeaders(headersName);
+    var astHeadersAndAst =
+        evaluateApiResponseHeaders(basePackage, responsePackage, responseName, response);
 
     var astResponse =
         new AstResponse(
             Fqn.newBuilder(operationPackage, responseName).build(),
-            headersName,
+            astHeadersAndAst.map(Pair::left).map(AstHeaders::name),
             // Use the evaluated Fqn in case the schema was actually e.g. a $ref or a List<Foo>
             contentFqnAndAst.left(),
             sumTypeName);
 
     return new Pair<>(
         astResponse.name(),
-        Stream.concat(Stream.of(astResponse, headersAst), contentFqnAndAst.right()));
+        Stream.of(
+                Stream.of(astResponse),
+                astHeadersAndAst.map(Pair::left).stream(),
+                contentFqnAndAst.right(),
+                astHeadersAndAst.stream().flatMap(Pair::right))
+            .flatMap(identity()));
+  }
+
+  private static Optional<Pair<AstHeaders, Stream<Ast>>> evaluateApiResponseHeaders(
+      PackageName basePackage,
+      PackageName responsePackage,
+      SimpleName responseName,
+      ApiResponse response) {
+    if (response.getHeaders() == null || response.getHeaders().isEmpty()) {
+      return Optional.empty();
+    }
+
+    var headersName = Fqn.newBuilder(responsePackage, responseName.resolve("Headers")).build();
+    var headersFieldsAndAst =
+        requireNonNullElse(response.getHeaders(), Map.<String, Header>of()).entrySet().stream()
+            .map(
+                entry -> {
+                  var name = entry.getKey();
+                  var header = entry.getValue();
+                  return OasSchemaToAst.evaluateInto(
+                          basePackage,
+                          headersName.toPackage(),
+                          SimpleName.of(name).resolve("Header"),
+                          header.getSchema())
+                      .mapLeft(fqn -> new Field(fqn, SimpleName.of(name), name));
+                })
+            .toList();
+
+    var astHeaders =
+        new AstHeaders(headersName, headersFieldsAndAst.stream().map(Pair::left).toList());
+
+    return Optional.of(new Pair<>(astHeaders, headersFieldsAndAst.stream().flatMap(Pair::right)));
   }
 }

@@ -381,15 +381,20 @@ public class AstToJava {
             package {{packageName}};
 
             public record {{typeName}}(
-              {{{contentTypeName}}} content,
-              {{{headersTypeName}}} headers
+              {{{contentTypeName}}} content
+              {{{headers}}}
             ) implements {{interfaceName}} {}
             """,
             "renderAstResponse",
             Map.of(
                 "packageName", astResponse.name().packageName(),
                 "typeName", astResponse.name().typeName(),
-                "headersTypeName", astResponse.headersName().toFqpString(),
+                // TODO: leading , is just a shortcut until I make content optional as well.
+                "headers",
+                    astResponse
+                        .headersName()
+                        .map(fqn -> "," + fqn.toFqpString() + " headers")
+                        .orElse(""),
                 "contentTypeName", astResponse.contentName().toFqpString(),
                 "interfaceName", astResponse.sumTypeName()));
 
@@ -402,12 +407,18 @@ public class AstToJava {
             """
             package {{packageName}};
 
-            public record {{{typeName}}}() {}
+            public record {{{typeName}}}(
+              {{{recordFields}}}
+            ) {}
             """,
             "renderAstHeaders",
             Map.of(
                 "packageName", astHeaders.name().packageName(),
-                "typeName", astHeaders.name().typeName()));
+                "typeName", astHeaders.name().typeName(),
+                "recordFields",
+                    astHeaders.fields().stream()
+                        .map(this::recordField)
+                        .collect(Collectors.joining(","))));
     return createSource(astHeaders.name(), content);
   }
 

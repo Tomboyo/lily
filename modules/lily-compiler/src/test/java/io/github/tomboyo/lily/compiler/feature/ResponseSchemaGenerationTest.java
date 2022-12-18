@@ -36,7 +36,10 @@ class ResponseSchemaGenerationTest {
                       headers:
                         x-foo:
                           schema:
-                            type: string
+                            type: object
+                            properties:
+                              foo:
+                                type: string
                       content:
                         application/json:
                           schema:
@@ -45,9 +48,6 @@ class ResponseSchemaGenerationTest {
                               foo:
                                 type: string
                     '404':
-                      #headers:
-                      #  x-foo:
-                      #    $ref: '#/components/schemas/MyHeader'
                       content:
                         application/json:
                           schema:
@@ -93,7 +93,7 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                  return (new %s.getfoooperation.GetFoo404(null, null)) instanceof %s.getfoooperation.GetFooResponse;
+                  return (new %s.getfoooperation.GetFoo404(null)) instanceof %s.getfoooperation.GetFooResponse;
                   """
                       .formatted(packageName, packageName))));
     }
@@ -106,7 +106,7 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                  return (new %s.getfoooperation.GetFooDefault(null, null))
+                  return (new %s.getfoooperation.GetFooDefault(null))
                       instanceof %s.getfoooperation.GetFooResponse;
                   """
                       .formatted(packageName, packageName))));
@@ -143,7 +143,7 @@ class ResponseSchemaGenerationTest {
               evaluate(
                   """
               var content = new %s.NotFound("value");
-              var response = new %s.getfoooperation.GetFoo404(content, null);
+              var response = new %s.getfoooperation.GetFoo404(content);
               return response.content() instanceof %s.NotFound;
               """
                       .formatted(packageName, packageName, packageName))));
@@ -164,11 +164,26 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                      var headers = new %s.getfoooperation.response.GetFoo200Headers();
+                      var headers = new %s.getfoooperation.response.GetFoo200Headers(null);
                       var response = new %s.getfoooperation.GetFoo200(null, headers);
                       return response.headers() instanceof %s.getfoooperation.response.GetFoo200Headers;
                       """
                       .formatted(packageName, packageName, packageName))));
+    }
+
+    @Test
+    void namedHeaders() {
+      assertThat(
+          "The GetFoo200 headers container exposes named headers",
+          true,
+          is(
+              evaluate(
+                  """
+                var headers = new %s.getfoooperation.response.GetFoo200Headers(
+                  new %s.getfoooperation.response.getfoo200headers.XFooHeader("value"));
+                return headers.xFoo().foo() instanceof String;
+                """
+                      .formatted(packageName, packageName))));
     }
   }
 }
