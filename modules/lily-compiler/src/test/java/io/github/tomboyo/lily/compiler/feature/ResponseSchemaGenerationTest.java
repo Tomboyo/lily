@@ -45,6 +45,9 @@ class ResponseSchemaGenerationTest {
                               foo:
                                 type: string
                     '404':
+                      #headers:
+                      #  x-foo:
+                      #    $ref: '#/components/schemas/MyHeader'
                       content:
                         application/json:
                           schema:
@@ -57,6 +60,8 @@ class ResponseSchemaGenerationTest {
             components:
               schemas:
                 NotFound:
+                  type: string
+                MyHeader:
                   type: string
             """);
   }
@@ -75,7 +80,7 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                  return (new %s.getfoooperation.GetFoo200(null)) instanceof %s.getfoooperation.GetFooResponse;
+                  return (new %s.getfoooperation.GetFoo200(null, null)) instanceof %s.getfoooperation.GetFooResponse;
                   """
                       .formatted(packageName, packageName))));
     }
@@ -88,7 +93,7 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                  return (new %s.getfoooperation.GetFoo404(null)) instanceof %s.getfoooperation.GetFooResponse;
+                  return (new %s.getfoooperation.GetFoo404(null, null)) instanceof %s.getfoooperation.GetFooResponse;
                   """
                       .formatted(packageName, packageName))));
     }
@@ -101,7 +106,7 @@ class ResponseSchemaGenerationTest {
           is(
               evaluate(
                   """
-                  return (new %s.getfoooperation.GetFooDefault(null))
+                  return (new %s.getfoooperation.GetFooDefault(null, null))
                       instanceof %s.getfoooperation.GetFooResponse;
                   """
                       .formatted(packageName, packageName))));
@@ -121,7 +126,7 @@ class ResponseSchemaGenerationTest {
             evaluate(
                 """
             var content = new %s.getfoooperation.response.GetFoo200Content("value");
-            var response = new %s.getfoooperation.GetFoo200(content);
+            var response = new %s.getfoooperation.GetFoo200(content, null);
             return response.content() instanceof %s.getfoooperation.response.GetFoo200Content;
             """
                     .formatted(packageName, packageName, packageName))));
@@ -133,9 +138,39 @@ class ResponseSchemaGenerationTest {
             evaluate(
                 """
             var content = new %s.NotFound("value");
-            var response = new %s.getfoooperation.GetFoo404(content);
+            var response = new %s.getfoooperation.GetFoo404(content, null);
             return response.content() instanceof %s.NotFound;
             """
                     .formatted(packageName, packageName, packageName))));
+  }
+
+  /**
+   * Response instances like GetFoo200 are wrappers for headers and content, both of which are
+   * represented by generated types
+   */
+  @Test
+  void headers() {
+    assertThat(
+        "The response contains headers",
+        true,
+        is(
+            evaluate(
+                """
+            var headers = new %s.getfoooperation.response.GetFoo200Headers();
+            var response = new %s.getfoooperation.GetFoo200(null, headers);
+            return response.headers() instanceof %s.getfoooperation.response.GetFoo200Headers;
+            """
+                    .formatted(packageName, packageName, packageName))));
+
+    //    assertThat(
+    //        true,
+    //        is(evaluate(
+    //            """
+    //            var headers = new %s.getfoooperation.GetFoo404Headers(
+    //              new %s.MyHeader("value"));
+    //            var response = new %s.getfoooperation.GetFoo404(null, headers);
+    //            return response.headers() instanceof %s.GetFoo404Headers;
+    //            """.formatted(packageName, packageName, packageName, packageName)
+    //        )));
   }
 }

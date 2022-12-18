@@ -1,6 +1,7 @@
 package io.github.tomboyo.lily.compiler.icg;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
+import io.github.tomboyo.lily.compiler.ast.AstHeaders;
 import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
@@ -46,21 +47,35 @@ public class OasApiResponsesToAst {
     // gen into com.example.myoperation.response
     var responsePackage = operationPackage.resolve("response");
 
-    var schema = response.getContent().get("application/json").getSchema();
+    var contentSchema = response.getContent().get("application/json").getSchema();
     var contentName = responseName.resolve("Content");
-
     var contentFqnAndAst =
-        OasSchemaToAst.evaluateInto(basePackage, responsePackage, contentName, schema);
+        OasSchemaToAst.evaluateInto(basePackage, responsePackage, contentName, contentSchema);
+
+    //    var headersFqnAndAst = response.getHeaders().entrySet().stream()
+    //        .map(entry -> {
+    //          var name = entry.getKey();
+    //          var header = entry.getValue();
+    //          return OasSchemaToAst.evaluateInto(
+    //              basePackage,
+    //              responsePackage,
+    //              responseName.resolve(name).resolve("Header"),
+    //              header.getSchema());
+    //        });
+
+    var headersName = Fqn.newBuilder(responsePackage, responseName.resolve("Headers")).build();
+    var headersAst = new AstHeaders(headersName);
 
     var astResponse =
         new AstResponse(
             Fqn.newBuilder(operationPackage, responseName).build(),
-            null,
+            headersName,
             // Use the evaluated Fqn in case the schema was actually e.g. a $ref or a List<Foo>
             contentFqnAndAst.left(),
             sumTypeName);
 
     return new Pair<>(
-        astResponse.name(), Stream.concat(Stream.of(astResponse), contentFqnAndAst.right()));
+        astResponse.name(),
+        Stream.concat(Stream.of(astResponse, headersAst), contentFqnAndAst.right()));
   }
 }

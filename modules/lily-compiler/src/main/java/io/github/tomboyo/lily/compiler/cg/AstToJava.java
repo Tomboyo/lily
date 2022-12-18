@@ -12,6 +12,7 @@ import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstApi;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
+import io.github.tomboyo.lily.compiler.ast.AstHeaders;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
@@ -48,6 +49,8 @@ public class AstToJava {
       return self.renderClass(astClass);
     } else if (ast instanceof AstClassAlias astClassAlias) {
       return self.renderAstClassAlias(astClassAlias);
+    } else if (ast instanceof AstHeaders astHeaders) {
+      return self.renderAstHeaders(astHeaders);
     } else if (ast instanceof AstOperation astOperation) {
       return self.renderAstOperation(astOperation);
     } else if (ast instanceof AstResponseSum astResponseSum) {
@@ -378,18 +381,34 @@ public class AstToJava {
             package {{packageName}};
 
             public record {{typeName}}(
-              {{{contentTypeName}}} content
+              {{{contentTypeName}}} content,
+              {{{headersTypeName}}} headers
             ) implements {{interfaceName}} {}
             """,
             "renderAstResponse",
             Map.of(
                 "packageName", astResponse.name().packageName(),
                 "typeName", astResponse.name().typeName(),
-                //                "headersTypeName", astResponse.headersName().toFqpString(),
+                "headersTypeName", astResponse.headersName().toFqpString(),
                 "contentTypeName", astResponse.contentName().toFqpString(),
                 "interfaceName", astResponse.sumTypeName()));
 
     return createSource(astResponse.name(), content);
+  }
+
+  private Source renderAstHeaders(AstHeaders astHeaders) {
+    var content =
+        writeString(
+            """
+            package {{packageName}};
+
+            public record {{{typeName}}}() {}
+            """,
+            "renderAstHeaders",
+            Map.of(
+                "packageName", astHeaders.name().packageName(),
+                "typeName", astHeaders.name().typeName()));
+    return createSource(astHeaders.name(), content);
   }
 
   private static String getEncoder(ParameterEncoding encoding) {

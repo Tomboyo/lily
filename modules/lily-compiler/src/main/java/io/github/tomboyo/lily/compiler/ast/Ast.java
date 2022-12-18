@@ -4,6 +4,7 @@ public sealed interface Ast
     permits AstApi,
         AstClass,
         AstClassAlias,
+        AstHeaders,
         AstOperation,
         AstResponse,
         AstResponseSum,
