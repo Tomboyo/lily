@@ -13,6 +13,7 @@ import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.headers.Header;
+import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.Map;
@@ -54,10 +55,8 @@ public class OasApiResponsesToAst {
     // gen into com.example.myoperation.response
     var responsePackage = operationPackage.resolve("response");
 
-    var contentSchema = response.getContent().get("application/json").getSchema();
-    var contentName = responseName.resolve("Content");
     var contentFqnAndAst =
-        OasSchemaToAst.evaluateInto(basePackage, responsePackage, contentName, contentSchema);
+        evaluateApiResponseContent(basePackage, responsePackage, responseName, response);
 
     var astHeadersAndAst =
         evaluateApiResponseHeaders(basePackage, responsePackage, responseName, response);
@@ -66,8 +65,7 @@ public class OasApiResponsesToAst {
         new AstResponse(
             Fqn.newBuilder(operationPackage, responseName).build(),
             astHeadersAndAst.map(Pair::left).map(AstHeaders::name),
-            // Use the evaluated Fqn in case the schema was actually e.g. a $ref or a List<Foo>
-            contentFqnAndAst.left(),
+            contentFqnAndAst.map(Pair::left),
             sumTypeName);
 
     return new Pair<>(
@@ -75,7 +73,7 @@ public class OasApiResponsesToAst {
         Stream.of(
                 Stream.of(astResponse),
                 astHeadersAndAst.map(Pair::left).stream(),
-                contentFqnAndAst.right(),
+                contentFqnAndAst.map(Pair::right).stream().flatMap(identity()),
                 astHeadersAndAst.stream().flatMap(Pair::right))
             .flatMap(identity()));
   }
@@ -109,5 +107,19 @@ public class OasApiResponsesToAst {
         new AstHeaders(headersName, headersFieldsAndAst.stream().map(Pair::left).toList());
 
     return Optional.of(new Pair<>(astHeaders, headersFieldsAndAst.stream().flatMap(Pair::right)));
+  }
+
+  private static Optional<Pair<Fqn, Stream<Ast>>> evaluateApiResponseContent(
+      PackageName basePackage,
+      PackageName responsePackage,
+      SimpleName responseName,
+      ApiResponse apiResponse) {
+    return Optional.ofNullable(apiResponse.getContent())
+        .map(content -> content.get("application/json"))
+        .map(MediaType::getSchema)
+        .map(
+            schema ->
+                OasSchemaToAst.evaluateInto(
+                    basePackage, responsePackage, responseName.resolve("Content"), schema));
   }
 }

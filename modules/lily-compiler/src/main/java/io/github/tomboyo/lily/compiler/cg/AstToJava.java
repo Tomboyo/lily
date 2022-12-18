@@ -23,7 +23,9 @@ import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class AstToJava {
 
@@ -381,21 +383,20 @@ public class AstToJava {
             package {{packageName}};
 
             public record {{typeName}}(
-              {{{contentTypeName}}} content
-              {{{headers}}}
+              {{{fields}}}
             ) implements {{interfaceName}} {}
             """,
             "renderAstResponse",
             Map.of(
                 "packageName", astResponse.name().packageName(),
                 "typeName", astResponse.name().typeName(),
-                // TODO: leading , is just a shortcut until I make content optional as well.
-                "headers",
-                    astResponse
-                        .headersName()
-                        .map(fqn -> "," + fqn.toFqpString() + " headers")
-                        .orElse(""),
-                "contentTypeName", astResponse.contentName().toFqpString(),
+                "fields",
+                    Stream.of(
+                            astResponse.headersName().map(fqn -> fqn.toFqpString() + " headers"),
+                            astResponse.contentName().map(fqn -> fqn.toFqpString() + " content"))
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .collect(Collectors.joining(",")),
                 "interfaceName", astResponse.sumTypeName()));
 
     return createSource(astResponse.name(), content);
