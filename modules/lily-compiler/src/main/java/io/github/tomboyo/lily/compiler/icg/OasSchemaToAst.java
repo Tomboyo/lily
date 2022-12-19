@@ -58,6 +58,18 @@ public class OasSchemaToAst {
     return new OasSchemaToAst(basePackage).evaluateSchema(genRoot, name, schema);
   }
 
+  /**
+   * Return the FQN of a shared component with the given $ref name. If and when the component is
+   * generated, the Fqn will point to the generated type.
+   *
+   * @param basePackage The package containing all "top level" generated types.
+   * @param ref The name of the shared component, like '#/components/schemas'
+   * @return The Fqn.
+   */
+  public static Fqn fqnForRef(PackageName basePackage, String ref) {
+    return new OasSchemaToAst(basePackage).toBasePackageClassReference(ref);
+  }
+
   private Pair<Fqn, Stream<Ast>> evaluateSchema(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
     var type = schema.getType();

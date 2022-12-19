@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/** Lily generates classes from response schema. */
+/** Lily generates code from response schema. */
 @Nested
 class ResponseSchemaGenerationTest {
 
@@ -183,6 +183,15 @@ class ResponseSchemaGenerationTest {
                           x-foo:
                             schema:
                               type: string
+                      '201':
+                        headers:
+                          x-foo:
+                            schema:
+                              $ref: '#/components/schemas/MyHeader'
+                      '202':
+                        headers:
+                          x-foo:
+                            $ref: '#/components/schemas/MyHeader'
               components:
                 schemas:
                   MyHeader:
@@ -202,6 +211,36 @@ class ResponseSchemaGenerationTest {
                       """
                   .formatted(packageName, packageName)),
           "Generated headers are part of the Response API");
+    }
+
+    @Test
+    void schemaRefHeaders() {
+      assertEquals(
+          "value",
+          evaluate(
+              """
+                  var headers = new %s.getfoooperation.response.GetFoo201Headers(
+                          new %s.MyHeader("value"));
+                  var response = new %s.getfoooperation.GetFoo201(headers);
+                  return response.headers().xFoo().value();
+                  """
+                  .formatted(packageName, packageName, packageName)),
+          "Referenced headers are part of the Response API");
+    }
+
+    @Test
+    void refObjectHeaders() {
+      assertEquals(
+          "value",
+          evaluate(
+              """
+                  var headers = new %s.getfoooperation.response.GetFoo202Headers(
+                          new %s.MyHeader("value"));
+                  var response = new %s.getfoooperation.GetFoo202(headers);
+                  return response.headers().xFoo().value();
+                  """
+                  .formatted(packageName, packageName, packageName)),
+          "Referenced headers are part of the Response API");
     }
   }
 }

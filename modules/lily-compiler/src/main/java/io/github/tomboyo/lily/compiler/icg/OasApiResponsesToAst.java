@@ -1,5 +1,6 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
 
@@ -94,12 +95,18 @@ public class OasApiResponsesToAst {
                 entry -> {
                   var name = entry.getKey();
                   var header = entry.getValue();
-                  return OasSchemaToAst.evaluateInto(
-                          basePackage,
-                          headersName.toPackage(),
-                          SimpleName.of(name).resolve("Header"),
-                          header.getSchema())
-                      .mapLeft(fqn -> new Field(fqn, SimpleName.of(name), name));
+                  if (header.getSchema() != null) {
+                    return OasSchemaToAst.evaluateInto(
+                            basePackage,
+                            headersName.toPackage(),
+                            SimpleName.of(name).resolve("Header"),
+                            header.getSchema())
+                        .mapLeft(fqn -> new Field(fqn, SimpleName.of(name), name));
+                  } else {
+                    var fqn =
+                        OasSchemaToAst.fqnForRef(basePackage, requireNonNull(header.get$ref()));
+                    return new Pair<>(new Field(fqn, SimpleName.of(name), name), Stream.<Ast>of());
+                  }
                 })
             .toList();
 
