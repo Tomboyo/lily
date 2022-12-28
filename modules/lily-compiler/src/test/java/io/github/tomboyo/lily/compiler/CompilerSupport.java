@@ -145,7 +145,10 @@ public class CompilerSupport {
     // Move pointers to the beginning and end of their respective lines if they aren't already there
     // index may be -1 if absent, so we Max to 0.
     from = Math.max(0, source.lastIndexOf('\n', from));
-    to = Math.max(source.length(), source.indexOf('\n', to));
+    var index = source.indexOf('\n', to);
+    if (index != -1) {
+      to = index;
+    }
 
     return source.substring(from, to).trim();
   }
