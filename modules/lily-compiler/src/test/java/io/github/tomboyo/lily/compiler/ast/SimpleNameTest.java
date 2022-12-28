@@ -6,6 +6,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -114,9 +115,9 @@ class SimpleNameTest {
           arguments("CatDOG123", "CatDog123", "catDog123"),
           arguments("catD123", "CatD123", "catD123"),
           arguments("CatD123", "CatD123", "catD123"),
-          arguments("cat123dog", "Cat123dog", "cat123dog"),
-          arguments("Cat123dog", "Cat123dog", "cat123dog"),
-          arguments("CAT123dog", "Cat123dog", "cat123dog"),
+          arguments("cat123dog", "Cat123Dog", "cat123Dog"),
+          arguments("Cat123dog", "Cat123Dog", "cat123Dog"),
+          arguments("CAT123dog", "Cat123Dog", "cat123Dog"),
           arguments("cat123Dog", "Cat123Dog", "cat123Dog"),
           arguments("Cat123Dog", "Cat123Dog", "cat123Dog"),
           arguments("CAT123Dog", "Cat123Dog", "cat123Dog"),
@@ -160,5 +161,10 @@ class SimpleNameTest {
     void testAppend(String input, String upperCase) {
       assertEquals("FooBar" + upperCase, SimpleName.of("foo-bar").resolve(input).upperCamelCase());
     }
+  }
+
+  @Test
+  void resolve() {
+    assertEquals(SimpleName.of("GetFoo200"), SimpleName.of("Get").resolve("Foo").resolve("200"));
   }
 }

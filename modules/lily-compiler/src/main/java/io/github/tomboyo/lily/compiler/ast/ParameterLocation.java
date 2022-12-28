@@ -1,12 +1,12 @@
 package io.github.tomboyo.lily.compiler.ast;
 
-public enum AstParameterLocation {
+public enum ParameterLocation {
   PATH,
   QUERY,
   COOKIE,
   HEADER;
 
-  public static AstParameterLocation fromString(String raw) {
+  public static ParameterLocation fromString(String raw) {
     return switch (raw) {
       case "path" -> PATH;
       case "query" -> QUERY;

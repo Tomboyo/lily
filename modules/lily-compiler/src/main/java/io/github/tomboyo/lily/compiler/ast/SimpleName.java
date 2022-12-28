@@ -5,7 +5,6 @@ import static java.util.Objects.requireNonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -18,15 +17,7 @@ import java.util.stream.Stream;
  * and snake_case. When formatted to a string using {@link #lowerCamelCase()} or {@link
  * #upperCamelCase()}, word boundaries from the raw input are respected.
  */
-public class SimpleName {
-
-  private final String raw;
-  private final List<String> nameParts;
-
-  private SimpleName(String raw, List<String> nameParts) {
-    this.raw = raw;
-    this.nameParts = nameParts;
-  }
+public record SimpleName(List<String> nameParts) {
 
   public static SimpleName of(String name) {
     requireNonNull(name);
@@ -39,7 +30,7 @@ public class SimpleName {
       throw new IllegalArgumentException("Simple name must not start with a digit");
     }
 
-    return new SimpleName(name, splitName(name));
+    return new SimpleName(splitName(name));
   }
 
   public String upperCamelCase() {
@@ -55,22 +46,13 @@ public class SimpleName {
   /**
    * Return a new SimpleName formed by appending one or more 'words' to this name in any supported
    * naming style. For example, {@code SimpleName.of("foo-bar").resolve("BigBang").upperCamelCase()}
-   * is {@code "FooBarBigBang}. Note that any name components resolved in this way do NOT count as
-   * being part of the "raw" name retrieved with {@link #raw()}.
+   * is {@code "FooBarBigBang}..
    */
   public SimpleName resolve(String parts) {
     requireNonNull(parts);
     var copy = new ArrayList<>(nameParts);
     copy.addAll(splitName(parts));
-    return new SimpleName(raw, copy);
-  }
-
-  /**
-   * Get the unmodified string this SimpleName was instantiated with. If any name parts were
-   * appended using {@link #resolve(String)}, they are not included in the return value.
-   */
-  public String raw() {
-    return raw;
+    return new SimpleName(copy);
   }
 
   /**
@@ -82,25 +64,8 @@ public class SimpleName {
     return upperCamelCase();
   }
 
-  /**
-   * True if the other simple name is composed of the same words regardless of case. In particular,
-   * the 'raw' form of the name (see {@link #raw()}) is ignored.
-   */
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    SimpleName simpleName = (SimpleName) o;
-    return nameParts.equals(simpleName.nameParts);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(nameParts);
-  }
-
   private static final Pattern CAMEL_CASE_PATTERN =
-      Pattern.compile("[0-9a-z]+|([A-Z](([A-Z]*(?![a-z]))|[0-9a-z]*))");
+      Pattern.compile("[0-9]+|[a-z]+|([A-Z](([A-Z]*(?![a-z]))|[a-z]*))");
 
   private static List<String> splitName(String name) {
     return streamParts(name).map(String::toLowerCase).collect(Collectors.toList());

@@ -33,7 +33,9 @@ public class OasPathsToAst {
    */
   public static AstApi evaluateApi(
       PackageName basePackage, Set<AstTaggedOperations> taggedOperations) {
-    return new AstApi(Fqn.of(basePackage, SimpleName.of("Api")), taggedOperations);
+    return new AstApi(
+        Fqn.newBuilder().packageName(basePackage).typeName(SimpleName.of("Api")).build(),
+        taggedOperations);
   }
 
   /**
@@ -61,7 +63,10 @@ public class OasPathsToAst {
         .map(
             entry ->
                 new AstTaggedOperations(
-                    Fqn.of(basePackage, SimpleName.of(entry.getKey()).resolve("operations")),
+                    Fqn.newBuilder()
+                        .packageName(basePackage)
+                        .typeName(SimpleName.of(entry.getKey()).resolve("operations"))
+                        .build(),
                     entry.getValue()));
   }
 
