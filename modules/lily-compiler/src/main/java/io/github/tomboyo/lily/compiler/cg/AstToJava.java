@@ -23,9 +23,7 @@ import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class AstToJava {
 
@@ -173,7 +171,7 @@ public class AstToJava {
               {{#tags}}
               {{! Note: Tag types are never parameterized }}
               public {{fqReturnType}} {{methodName}}() {
-                return new {{fqReturnType}}(uri);
+                return new {{fqReturnType}}(this.uri, this.httpClient);
               }
 
               {{/tags}}
@@ -246,15 +244,19 @@ public class AstToJava {
             public class {{className}} {
 
               private final String uri;
+              private final java.net.http.HttpClient httpClient;
 
-              public {{className}}(String uri) {
+              public {{className}}(
+                  String uri,
+                  java.net.http.HttpClient httpClient) {
                 // Assumed non-null and to end with a trailing '/'.
                 this.uri = uri;
+                this.httpClient = httpClient;
               }
 
               {{#operations}}
               public {{{fqReturnType}}} {{methodName}}() {
-                return new {{{fqReturnType}}}(uri);
+                return new {{{fqReturnType}}}(this.uri, this.httpClient);
               }
 
               {{/operations}}
@@ -283,10 +285,14 @@ public class AstToJava {
             package {{packageName}};
             public class {{className}} {
               private final io.github.tomboyo.lily.http.UriTemplate uriTemplate;
+              private final java.net.http.HttpClient httpClient;
 
-              public {{className}}(String uri) {
+              public {{className}}(
+                  String uri,
+                  java.net.http.HttpClient httpClient) {
                 // We assume uri is non-null and ends with a trailing '/'.
                 this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri + "{{{relativePath}}}{{{queryTemplate}}}");
+                this.httpClient = httpClient;
               }
 
               {{#urlParameters}}
@@ -323,6 +329,16 @@ public class AstToJava {
                   .method("{{method}}", java.net.http.HttpRequest.BodyPublishers.noBody())
                   .build();
               }
+
+              /**
+               * Synchronously perform the HTTP request for this operation.
+               */
+              public {{{responseTypeName}}} sendSync() throws java.io.IOException, InterruptedException {
+                var httpResponse = this.httpClient.send(
+                  httpRequest(),
+                  java.net.http.HttpResponse.BodyHandlers.ofInputStream());
+                return {{{responseConstructor}}};
+              }
             }
             """,
             "renderAstOperation",
@@ -351,7 +367,13 @@ public class AstToJava {
                                     "name", parameter.name().lowerCamelCase(),
                                     "apiName", parameter.apiName(),
                                     "encoder", getEncoder(parameter.encoding())))
-                        .collect(toList())));
+                        .collect(toList()),
+                "responseTypeName", ast.responseName().map(Fqn::toFqpString).orElse("Void"),
+                "responseConstructor",
+                    ast.responseName()
+                        .map(Fqn::toFqpString)
+                        .map(name -> name + ".fromHttpResponse(httpResponse)")
+                        .orElse("null")));
 
     return createSource(ast.name(), content);
   }
@@ -362,14 +384,35 @@ public class AstToJava {
             """
         package {{packageName}};
 
-        public sealed interface {{typeName}} permits {{members}} {};
+        public sealed interface {{typeName}} permits {{members}} {
+
+          /** Access the native java.net.http.HttpResponse describing the result of an operation. */
+          public java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse();
+
+          public static {{typeName}} fromHttpResponse(
+              java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse) throws java.io.IOException {
+            return switch(httpResponse.statusCode()) {
+              {{#statusCodeToMember}}
+              case {{statusCode}} -> {{memberName}}.fromHttpResponse(httpResponse);
+              {{/statusCodeToMember}}
+              default -> throw new java.io.IOException("Unexpected http response: " + httpResponse.statusCode());
+            };
+          }
+        };
         """,
             "renderAstResponseSum",
             Map.of(
                 "packageName", astResponseSum.name().packageName(),
                 "typeName", astResponseSum.name().typeName(),
+                "statusCodeToMember",
+                    astResponseSum.statusCodeToMember().entrySet().stream()
+                        .map(
+                            entry ->
+                                Map.of(
+                                    "statusCode", entry.getKey(), "memberName", entry.getValue()))
+                        .collect(toList()),
                 "members",
-                    astResponseSum.members().stream()
+                    astResponseSum.statusCodeToMember().values().stream()
                         .map(Fqn::toFqString)
                         .collect(Collectors.joining(", "))));
 
@@ -383,20 +426,17 @@ public class AstToJava {
             package {{packageName}};
 
             public record {{typeName}}(
-              {{{fields}}}
-            ) implements {{interfaceName}} {}
+                java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse) implements {{interfaceName}} {
+              public static {{typeName}} fromHttpResponse(
+                  java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse) {
+                return new {{typeName}}(httpResponse);
+              }
+            }
             """,
             "renderAstResponse",
             Map.of(
                 "packageName", astResponse.name().packageName(),
                 "typeName", astResponse.name().typeName(),
-                "fields",
-                    Stream.of(
-                            astResponse.headersName().map(fqn -> fqn.toFqpString() + " headers"),
-                            astResponse.contentName().map(fqn -> fqn.toFqpString() + " content"))
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .collect(Collectors.joining(",")),
                 "interfaceName", astResponse.sumTypeName()));
 
     return createSource(astResponse.name(), content);

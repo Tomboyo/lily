@@ -9,6 +9,7 @@ import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
+import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.parameters.Parameter;
@@ -68,7 +69,7 @@ public class OasOperationToAst {
             .map(OasParameterToAst.ParameterAndAst::parameter)
             .collect(Collectors.toList());
 
-    var responseSumRefAndAst =
+    var responseSumAndAst =
         Optional.ofNullable(operation.getResponses())
             .map(
                 responses ->
@@ -81,8 +82,9 @@ public class OasOperationToAst {
             Fqn.newBuilder().packageName(basePackage).typeName(operationName).build(),
             method.name(),
             relativePath,
-            parameters),
-        Stream.concat(responseSumRefAndAst.orElse(Stream.of()), parameterAst)
+            parameters,
+            responseSumAndAst.map(Pair::left)),
+        Stream.concat(responseSumAndAst.stream().flatMap(Pair::right), parameterAst)
             .collect(Collectors.toSet()));
   }
 

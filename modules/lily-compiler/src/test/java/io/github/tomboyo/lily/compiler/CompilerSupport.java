@@ -54,7 +54,7 @@ public class CompilerSupport {
         """
         package %s;
         public class Wrapper {
-          public static Object eval() {
+          public static Object eval() throws Exception {
               %s
           }
         }
