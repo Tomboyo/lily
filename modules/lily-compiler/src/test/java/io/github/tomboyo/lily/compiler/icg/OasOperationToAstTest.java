@@ -146,7 +146,7 @@ public class OasOperationToAstTest {
     void evaluatesApiResponsesToAst() {
       try (var mock = mockStatic(OasApiResponsesToAst.class)) {
         mock.when(() -> OasApiResponsesToAst.evaluateApiResponses(any(), any(), any()))
-            .thenAnswer(invocation -> Stream.of(astPlaceholder()));
+            .thenAnswer(invocation -> new Pair<>(fqnPlaceholder(), Stream.of(astPlaceholder())));
 
         var actual =
             OasOperationToAst.evaluateOperaton(

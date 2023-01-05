@@ -23,6 +23,7 @@ import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AstToJava {
@@ -395,7 +396,7 @@ public class AstToJava {
               {{#statusCodeToMember}}
               case {{statusCode}} -> {{memberName}}.fromHttpResponse(httpResponse);
               {{/statusCodeToMember}}
-              default -> throw new java.io.IOException("Unexpected http response: " + httpResponse.statusCode());
+              default -> {{{defaultMember}}};
             };
           }
         };
@@ -406,11 +407,18 @@ public class AstToJava {
                 "typeName", astResponseSum.name().typeName(),
                 "statusCodeToMember",
                     astResponseSum.statusCodeToMember().entrySet().stream()
+                        .filter(entry -> !entry.getKey().equals("default"))
                         .map(
                             entry ->
                                 Map.of(
                                     "statusCode", entry.getKey(), "memberName", entry.getValue()))
                         .collect(toList()),
+                "defaultMember",
+                    Optional.ofNullable(astResponseSum.statusCodeToMember().get("default"))
+                        .map(name -> name + ".fromHttpResponse(httpResponse)")
+                        .orElse(
+                            "throw new java.io.IOException(\"Unexpected status code \" +"
+                                + " httpResponse.statusCode())"),
                 "members",
                     astResponseSum.statusCodeToMember().values().stream()
                         .map(Fqn::toFqString)
