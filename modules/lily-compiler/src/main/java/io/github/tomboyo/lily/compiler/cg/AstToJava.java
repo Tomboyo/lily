@@ -1,30 +1,20 @@
 package io.github.tomboyo.lily.compiler.cg;
 
-import static io.github.tomboyo.lily.compiler.ast.ParameterEncoding.Style.FORM;
-import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.PATH;
-import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.QUERY;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
-import static java.util.stream.Collectors.toList;
-
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.MustacheFactory;
-import io.github.tomboyo.lily.compiler.ast.Ast;
-import io.github.tomboyo.lily.compiler.ast.AstApi;
-import io.github.tomboyo.lily.compiler.ast.AstClass;
-import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
-import io.github.tomboyo.lily.compiler.ast.AstHeaders;
-import io.github.tomboyo.lily.compiler.ast.AstOperation;
-import io.github.tomboyo.lily.compiler.ast.AstResponse;
-import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
-import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
-import io.github.tomboyo.lily.compiler.ast.Field;
-import io.github.tomboyo.lily.compiler.ast.Fqn;
-import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
+import io.github.tomboyo.lily.compiler.ast.*;
+
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static io.github.tomboyo.lily.compiler.ast.ParameterEncoding.Style.FORM;
+import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.PATH;
+import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.QUERY;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
+import static java.util.stream.Collectors.toList;
 
 public class AstToJava {
 
@@ -369,12 +359,14 @@ public class AstToJava {
                                     "apiName", parameter.apiName(),
                                     "encoder", getEncoder(parameter.encoding())))
                         .collect(toList()),
-                "responseTypeName", ast.responseName().map(Fqn::toFqpString).orElse("Void"),
+                "responseTypeName", ast.responseName()
+                    .map(Fqn::toFqpString)
+                    .orElse("java.net.http.HttpResponse<? extends java.io.InputStream>"),
                 "responseConstructor",
                     ast.responseName()
                         .map(Fqn::toFqpString)
                         .map(name -> name + ".fromHttpResponse(httpResponse)")
-                        .orElse("null")));
+                        .orElse("httpResponse")));
 
     return createSource(ast.name(), content);
   }
