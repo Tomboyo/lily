@@ -13,17 +13,19 @@ import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
+import io.github.tomboyo.lily.compiler.util.Triple;
 import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class OasApiResponsesToAst {
 
-  public static Stream<Ast> evaluateApiResponses(
+  public static Pair<Fqn, Stream<Ast>> evaluateApiResponses(
       PackageName basePackage, SimpleName operationId, ApiResponses responses) {
     var genRoot = basePackage.resolve(operationId.resolve("operation")); // a.b.getfoooperation
     var responseSumName = Fqn.newBuilder(genRoot, operationId.resolve("Response")).build();
@@ -35,16 +37,18 @@ public class OasApiResponsesToAst {
                   var statusCode = entry.getKey();
                   var response = entry.getValue();
                   var astResponseName = operationId.resolve(statusCode);
-                  return evaluateApiResponse(
-                      basePackage, genRoot, astResponseName, responseSumName, response);
+                  var evaluated =
+                      evaluateApiResponse(
+                          basePackage, genRoot, astResponseName, responseSumName, response);
+                  return new Triple<>(statusCode, evaluated.left(), evaluated.right());
                 })
             .toList();
-    var members = memberAsts.stream().map(Pair::left).toList();
-    var ast = memberAsts.stream().flatMap(Pair::right);
+    var members = memberAsts.stream().collect(Collectors.toMap(Triple::first, Triple::second));
+    var ast = memberAsts.stream().flatMap(Triple::third);
 
     var sum = new AstResponseSum(responseSumName, members);
 
-    return Stream.concat(Stream.of(sum), ast);
+    return new Pair<>(responseSumName, Stream.concat(Stream.of(sum), ast));
   }
 
   private static Pair<Fqn, Stream<Ast>> evaluateApiResponse(
@@ -91,21 +95,26 @@ public class OasApiResponsesToAst {
     var headersName = Fqn.newBuilder(responsePackage, responseName.resolve("Headers")).build();
     var headersFieldsAndAst =
         requireNonNullElse(response.getHeaders(), Map.<String, Header>of()).entrySet().stream()
-            .map(
+            .flatMap(
                 entry -> {
                   var name = entry.getKey();
                   var header = entry.getValue();
                   if (header.getSchema() != null) {
-                    return OasSchemaToAst.evaluateInto(
-                            basePackage,
-                            headersName.toPackage(),
-                            SimpleName.of(name).resolve("Header"),
-                            header.getSchema())
-                        .mapLeft(fqn -> new Field(fqn, SimpleName.of(name), name));
-                  } else {
+                    return Stream.of(
+                        OasSchemaToAst.evaluateInto(
+                                basePackage,
+                                headersName.toPackage(),
+                                SimpleName.of(name).resolve("Header"),
+                                header.getSchema())
+                            .mapLeft(fqn -> new Field(fqn, SimpleName.of(name), name)));
+                  } else if (header.get$ref() != null) {
                     var fqn =
                         OasSchemaToAst.fqnForRef(basePackage, requireNonNull(header.get$ref()));
-                    return new Pair<>(new Field(fqn, SimpleName.of(name), name), Stream.<Ast>of());
+                    return Stream.of(
+                        new Pair<>(new Field(fqn, SimpleName.of(name), name), Stream.<Ast>of()));
+                  } else {
+                    // The OAS is malformed.
+                    return Stream.of();
                   }
                 })
             .toList();

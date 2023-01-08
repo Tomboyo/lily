@@ -1,5 +1,9 @@
 package io.github.tomboyo.lily.compiler.ast;
 
-import java.util.List;
+import java.util.Map;
 
-public record AstResponseSum(Fqn name, List<Fqn> members) implements Ast {}
+/**
+ * A sum type over all operation responses. For example, GetFooResponse with members GetFoo200 and
+ * GetFoo404.
+ */
+public record AstResponseSum(Fqn name, Map<String, Fqn> statusCodeToMember) implements Ast {}

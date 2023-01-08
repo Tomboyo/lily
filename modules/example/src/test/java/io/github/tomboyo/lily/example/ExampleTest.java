@@ -6,16 +6,19 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static io.github.tomboyo.lily.http.encoding.Encoders.formExploded;
 import static io.github.tomboyo.lily.http.encoding.Encoders.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.github.tomboyo.lily.http.JacksonBodyHandler;
+import io.github.tomboyo.lily.example.showpetbyidoperation.ShowPetById200;
+import io.github.tomboyo.lily.example.showpetbyidoperation.ShowPetByIdDefault;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
+/* These are examples of how to use the API, formulated as contrived unit tests. These are not actual tests. */
 @WireMockTest
 public class ExampleTest {
 
@@ -33,33 +36,38 @@ public class ExampleTest {
             {"id": 1234, "name": "Reginald"}
             """)));
 
-    /* Use the API to build a well-formed URI to the showPetById operation for resource 1234. At time of writing, the
-     * user must then use the underlying uriTemplate to retrieve the complete URI and send the request manually with
-     * java.net.http.
-     *
-     * Header and cookie parameters are not yet supported. These must be set manually.
-     */
+    /* First, create an API instance, which is safe to share. This will typically be a singleton. */
     var api =
         Api.newBuilder()
             .uri(info.getHttpBaseUrl())
             // .httpClient(httpClient) // optional: inject a customized client.
             .build();
-    var request =
-        api.petsOperations() // All operations with the `pets` tag. (We could also use
-            // .allOperations())
-            .showPetById() // The GET /pets/{petId} operation
-            .petId("1234") // bind "1234" to the {petId} parameter of the OAS operation
-            .httpRequest(); // Access the templated httpRequest.
 
-    /* Finish and send the request manually. Note the use of the generated Pet type. All component and path parameter
-     * schema are generated. Also note the use of the provided lily-http JacksonBodyHandler
+    /* Then, use the fluent API to configure and execute the show-pet-by-id operation. At time of writing, we're able to
+     * fluently specify path and query parameters (not yet header or body parameters).
      */
     var response =
-        api.httpClient()
-            .send(request, JacksonBodyHandler.of(new ObjectMapper(), new TypeReference<Pet>() {}));
+        api.petsOperations() // All operations with the `pets` tag. (see also: allOperations)
+            .showPetById() // The GET /pets/{petId} operation
+            .petId("1234") // bind "1234" to the {petId} parameter of the OAS operation
+            .sendSync(); // execute the request synchronously and get a ShowPetByIdResponse object.
 
-    assertEquals(200, response.statusCode());
-    assertEquals(new Pet(1234L, "Reginald", null), response.body().get());
+    /* The response object is a sealed interface based on what the OAS says the API can return. In this case, the
+     * ShowPetByIdResponse may consist of the 200 and Default variants.
+     */
+    if (response instanceof ShowPetById200 okResponse) {
+      /* For now, we have to manually deserialize response content, but future releases will automate this. */
+      assertEquals(
+          new Pet(1234L, "Reginald", null),
+          new ObjectMapper().readValue(okResponse.httpResponse().body(), Pet.class));
+    } else if (response instanceof ShowPetByIdDefault) {
+      fail("Expected 200.");
+    } else {
+      fail("Expected 200.");
+    }
+
+    /* We can also access the java.net.http.HttpResponse<? extends InputStream> directly from the sealed interface. */
+    assertEquals(200, response.httpResponse().statusCode());
   }
 
   /* This test case demonstrates ways a user can dip below the generated API to directly manipulate HTTP requests. This
@@ -109,11 +117,10 @@ public class ExampleTest {
      */
     var response =
         api.httpClient()
-            .send(
-                HttpRequest.newBuilder().GET().uri(uri).build(),
-                JacksonBodyHandler.of(new ObjectMapper(), new TypeReference<Pet>() {}));
+            .send(HttpRequest.newBuilder().GET().uri(uri).build(), BodyHandlers.ofInputStream());
 
     assertEquals(200, response.statusCode());
-    assertEquals(new Pet(1234L, "Reginald", null), response.body().get());
+    assertEquals(
+        new Pet(1234L, "Reginald", null), new ObjectMapper().readValue(response.body(), Pet.class));
   }
 }
