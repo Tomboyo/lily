@@ -1,20 +1,19 @@
 package io.github.tomboyo.lily.compiler.feature;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
-import java.io.InputStream;
-import java.net.http.HttpResponse;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import java.io.InputStream;
+import java.net.http.HttpResponse;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 @WireMockTest
 class SynchronousRequestTests {
@@ -50,7 +49,7 @@ class SynchronousRequestTests {
                                       type: string
                                     age:
                                       type: integer
-  
+
                   """);
     }
 
