@@ -1,13 +1,12 @@
 package io.github.tomboyo.lily.compiler.cg;
 
-import io.github.tomboyo.lily.compiler.ast.AstClass;
-import io.github.tomboyo.lily.compiler.ast.Field;
-
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
+
+import io.github.tomboyo.lily.compiler.ast.AstClass;
+import io.github.tomboyo.lily.compiler.ast.Field;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class AstClassCodeGen {
   public static Source renderClass(AstClass ast) {

@@ -1,12 +1,15 @@
 package io.github.tomboyo.lily.compiler;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.cg.CodeGen;
 import io.github.tomboyo.lily.compiler.cg.Source;
 import io.github.tomboyo.lily.compiler.icg.AstGenerator;
 import io.github.tomboyo.lily.compiler.oas.OasReader;
 import io.swagger.v3.oas.models.OpenAPI;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -14,8 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static java.nio.file.StandardOpenOption.*;
 
 public class LilyCompiler {
 

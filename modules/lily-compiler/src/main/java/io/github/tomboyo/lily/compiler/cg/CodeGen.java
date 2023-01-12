@@ -1,7 +1,5 @@
 package io.github.tomboyo.lily.compiler.cg;
 
-import io.github.tomboyo.lily.compiler.ast.*;
-
 import static io.github.tomboyo.lily.compiler.cg.AstApiCodeGen.renderAstAPi;
 import static io.github.tomboyo.lily.compiler.cg.AstClassAliasCodeGen.renderAstClassAlias;
 import static io.github.tomboyo.lily.compiler.cg.AstClassCodeGen.renderClass;
@@ -10,6 +8,16 @@ import static io.github.tomboyo.lily.compiler.cg.AstOperationCodeGen.renderAstOp
 import static io.github.tomboyo.lily.compiler.cg.AstResponseCodeGen.renderAstResponse;
 import static io.github.tomboyo.lily.compiler.cg.AstResponseSumCodeGen.renderAstResponseSum;
 import static io.github.tomboyo.lily.compiler.cg.AstTaggedOperationCodeGen.renderAstTaggedOperations;
+
+import io.github.tomboyo.lily.compiler.ast.Ast;
+import io.github.tomboyo.lily.compiler.ast.AstApi;
+import io.github.tomboyo.lily.compiler.ast.AstClass;
+import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
+import io.github.tomboyo.lily.compiler.ast.AstHeaders;
+import io.github.tomboyo.lily.compiler.ast.AstOperation;
+import io.github.tomboyo.lily.compiler.ast.AstResponse;
+import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
+import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 
 /** Generates java source code from AST */
 public class CodeGen {

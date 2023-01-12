@@ -1,10 +1,9 @@
 package io.github.tomboyo.lily.compiler.cg;
 
-import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
-
-import java.util.Map;
-
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
+
+import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
+import java.util.Map;
 
 public class AstClassAliasCodeGen {
   public static Source renderAstClassAlias(AstClassAlias ast) {

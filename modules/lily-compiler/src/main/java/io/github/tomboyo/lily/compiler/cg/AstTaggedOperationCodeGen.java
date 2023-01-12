@@ -1,11 +1,10 @@
 package io.github.tomboyo.lily.compiler.cg;
 
-import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
-
-import java.util.Map;
-
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
 import static java.util.stream.Collectors.toList;
+
+import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
+import java.util.Map;
 
 public class AstTaggedOperationCodeGen {
   public static Source renderAstTaggedOperations(AstTaggedOperations ast) {
