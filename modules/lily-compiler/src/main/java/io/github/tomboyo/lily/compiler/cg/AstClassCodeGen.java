@@ -1,35 +1,36 @@
 package io.github.tomboyo.lily.compiler.cg;
 
-import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
-
-import io.github.tomboyo.lily.compiler.ast.AstHeaders;
+import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.Field;
+
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class AstHeadersCg {
-  public static Source renderAstHeaders(AstHeaders astHeaders) {
+import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
+import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
+
+public class AstClassCodeGen {
+  public static Source renderClass(AstClass ast) {
     var content =
         writeString(
             """
             package {{packageName}};
-
-            public record {{{typeName}}}(
-              {{{recordFields}}}
+            public record {{recordName}}(
+                {{{fields}}}
             ) {}
             """,
-            "renderAstHeaders",
+            "renderClass",
             Map.of(
                 "packageName",
-                astHeaders.name().packageName(),
-                "typeName",
-                astHeaders.name().typeName(),
-                "recordFields",
-                astHeaders.fields().stream()
-                    .map(AstHeadersCg::recordField)
-                    .collect(Collectors.joining(","))));
-    return new Source(astHeaders.name(), content);
+                ast.name().packageName(),
+                "recordName",
+                ast.name().typeName().upperCamelCase(),
+                "fields",
+                ast.fields().stream()
+                    .map(AstClassCodeGen::recordField)
+                    .collect(Collectors.joining(",\n"))));
+
+    return new Source(ast.name(), content);
   }
 
   private static String recordField(Field field) {

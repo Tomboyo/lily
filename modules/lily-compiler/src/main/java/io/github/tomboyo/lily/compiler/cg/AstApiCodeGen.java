@@ -1,12 +1,13 @@
 package io.github.tomboyo.lily.compiler.cg;
 
+import io.github.tomboyo.lily.compiler.ast.AstApi;
+
+import java.util.Map;
+
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
 import static java.util.stream.Collectors.toList;
 
-import io.github.tomboyo.lily.compiler.ast.AstApi;
-import java.util.Map;
-
-public class AstApiToJavaSource {
+public class AstApiCodeGen {
   public static Source renderAstAPi(AstApi ast) {
     var content =
         writeString(

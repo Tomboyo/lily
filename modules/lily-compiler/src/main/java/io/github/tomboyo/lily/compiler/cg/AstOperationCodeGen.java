@@ -1,18 +1,19 @@
 package io.github.tomboyo.lily.compiler.cg;
 
+import io.github.tomboyo.lily.compiler.ast.AstOperation;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
+import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import static io.github.tomboyo.lily.compiler.ast.ParameterEncoding.Style.FORM;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.PATH;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.QUERY;
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
 import static java.util.stream.Collectors.toList;
 
-import io.github.tomboyo.lily.compiler.ast.AstOperation;
-import io.github.tomboyo.lily.compiler.ast.Fqn;
-import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-public class AstOperationToJavaSource {
+public class AstOperationCodeGen {
   public static Source renderAstOperation(AstOperation ast) {
     var content =
         writeString(

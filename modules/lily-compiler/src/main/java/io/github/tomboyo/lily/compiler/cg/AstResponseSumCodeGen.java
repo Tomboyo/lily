@@ -1,15 +1,16 @@
 package io.github.tomboyo.lily.compiler.cg;
 
-import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
-import static java.util.stream.Collectors.toList;
-
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class AstResponseSumToJavaSource {
+import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
+import static java.util.stream.Collectors.toList;
+
+public class AstResponseSumCodeGen {
   public static Source renderAstResponseSum(AstResponseSum astResponseSum) {
     var content =
         writeString(
