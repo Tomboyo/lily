@@ -16,18 +16,21 @@ public class AstTaggedOperationCodeGen {
 
               private final String uri;
               private final java.net.http.HttpClient httpClient;
+              private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
               public {{className}}(
                   String uri,
-                  java.net.http.HttpClient httpClient) {
+                  java.net.http.HttpClient httpClient,
+                  com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
                 // Assumed non-null and to end with a trailing '/'.
                 this.uri = uri;
                 this.httpClient = httpClient;
+                this.objectMapper = objectMapper;
               }
 
               {{#operations}}
               public {{{fqReturnType}}} {{methodName}}() {
-                return new {{{fqReturnType}}}(this.uri, this.httpClient);
+                return new {{{fqReturnType}}}(this.uri, this.httpClient, this.objectMapper);
               }
 
               {{/operations}}

@@ -21,13 +21,16 @@ public class AstOperationCodeGen {
             public class {{className}} {
               private final io.github.tomboyo.lily.http.UriTemplate uriTemplate;
               private final java.net.http.HttpClient httpClient;
+              private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
               public {{className}}(
                   String uri,
-                  java.net.http.HttpClient httpClient) {
+                  java.net.http.HttpClient httpClient,
+                  com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
                 // We assume uri is non-null and ends with a trailing '/'.
                 this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri + "{{{relativePath}}}{{{queryTemplate}}}");
                 this.httpClient = httpClient;
+                this.objectMapper = objectMapper;
               }
 
               {{#urlParameters}}
@@ -113,7 +116,7 @@ public class AstOperationCodeGen {
                 "responseConstructor",
                 ast.responseName()
                     .map(Fqn::toFqpString)
-                    .map(name -> name + ".fromHttpResponse(httpResponse)")
+                    .map(name -> name + ".fromHttpResponse(httpResponse, objectMapper)")
                     .orElse("httpResponse")));
 
     return new Source(ast.name(), content);

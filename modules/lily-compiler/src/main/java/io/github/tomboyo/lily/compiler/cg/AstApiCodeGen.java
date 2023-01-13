@@ -16,8 +16,12 @@ public class AstApiCodeGen {
 
               private final String uri;
               private final java.net.http.HttpClient httpClient;
+              private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-              private {{className}}(String uri, java.net.http.HttpClient httpClient) {
+              private {{className}}(
+                  String uri,
+                  java.net.http.HttpClient httpClient,
+                  com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
                 java.util.Objects.requireNonNull(uri);
                 java.util.Objects.requireNonNull(httpClient);
 
@@ -28,6 +32,7 @@ public class AstApiCodeGen {
                 }
 
                 this.httpClient = httpClient;
+                this.objectMapper = objectMapper;
               }
 
               public static {{className}}Builder newBuilder() {
@@ -37,7 +42,7 @@ public class AstApiCodeGen {
               {{#tags}}
               {{! Note: Tag types are never parameterized }}
               public {{fqReturnType}} {{methodName}}() {
-                return new {{fqReturnType}}(this.uri, this.httpClient);
+                return new {{fqReturnType}}(this.uri, this.httpClient, this.objectMapper);
               }
 
               {{/tags}}
@@ -54,9 +59,11 @@ public class AstApiCodeGen {
               public static class {{className}}Builder {
                 private String uri;
                 private java.net.http.HttpClient httpClient;
+                private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
                 private {{className}}Builder() {
                   httpClient = java.net.http.HttpClient.newBuilder().build();
+                  objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
                 }
 
                 /**
@@ -68,7 +75,7 @@ public class AstApiCodeGen {
                 public {{className}}Builder uri(String uri) { this.uri = uri; return this; }
 
                 /**
-                 * Configure the builder with a particular client.
+                 * Set the client used to send requests for any operation in this API.
                  *
                  * <p/> By default, clients are equal to {@code HttpClient.newBuilder().build()}.
                  *
@@ -80,8 +87,18 @@ public class AstApiCodeGen {
                   return this;
                 }
 
+                /**
+                 * Set the object mapper used to deserialize responses for all operations in this
+                 * API. By default, {@code new ObjectMapper()} is used.
+                 */
+                public {{className}}Builder objectMapper(
+                    com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+                  this.objectMapper = objectMapper;
+                  return this;
+                }
+
                 public {{className}} build() {
-                  return new {{className}}(uri, httpClient);
+                  return new {{className}}(this.uri, this.httpClient, this.objectMapper);
                 }
               }
             }

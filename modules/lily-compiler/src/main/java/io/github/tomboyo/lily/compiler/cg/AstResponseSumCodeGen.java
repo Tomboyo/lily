@@ -22,10 +22,12 @@ public class AstResponseSumCodeGen {
           public java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse();
 
           public static {{typeName}} fromHttpResponse(
-              java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse) throws java.io.IOException {
+              java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse,
+              com.fasterxml.jackson.databind.ObjectMapper objectMapper)
+                  throws java.io.IOException {
             return switch(httpResponse.statusCode()) {
               {{#statusCodeToMember}}
-              case {{statusCode}} -> {{memberName}}.fromHttpResponse(httpResponse);
+              case {{statusCode}} -> {{memberName}}.fromHttpResponse(httpResponse, objectMapper);
               {{/statusCodeToMember}}
               default -> {{{defaultMember}}};
             };
@@ -47,7 +49,7 @@ public class AstResponseSumCodeGen {
                     .collect(toList()),
                 "defaultMember",
                 Optional.ofNullable(astResponseSum.statusCodeToMember().get("default"))
-                    .map(name -> name + ".fromHttpResponse(httpResponse)")
+                    .map(name -> name + ".fromHttpResponse(httpResponse, objectMapper)")
                     .orElse(
                         "throw new java.io.IOException(\"Unexpected status code \" +"
                             + " httpResponse.statusCode())"),

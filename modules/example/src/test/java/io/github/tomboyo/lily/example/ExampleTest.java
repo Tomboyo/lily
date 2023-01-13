@@ -56,10 +56,7 @@ public class ExampleTest {
      * ShowPetByIdResponse may consist of the 200 and Default variants.
      */
     if (response instanceof ShowPetById200 okResponse) {
-      /* For now, we have to manually deserialize response content, but future releases will automate this. */
-      assertEquals(
-          new Pet(1234L, "Reginald", null),
-          new ObjectMapper().readValue(okResponse.httpResponse().body(), Pet.class));
+      assertEquals(new Pet(1234L, "Reginald", null), okResponse.body());
     } else if (response instanceof ShowPetByIdDefault) {
       fail("Expected 200.");
     } else {
