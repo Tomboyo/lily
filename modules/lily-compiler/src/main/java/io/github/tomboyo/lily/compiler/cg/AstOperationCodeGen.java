@@ -1,16 +1,16 @@
 package io.github.tomboyo.lily.compiler.cg;
 
+import io.github.tomboyo.lily.compiler.ast.AstOperation;
+import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import static io.github.tomboyo.lily.compiler.ast.ParameterEncoding.Style.FORM;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.PATH;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.QUERY;
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
 import static java.util.stream.Collectors.toList;
-
-import io.github.tomboyo.lily.compiler.ast.AstOperation;
-import io.github.tomboyo.lily.compiler.ast.Fqn;
-import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class AstOperationCodeGen {
   public static Source renderAstOperation(AstOperation ast) {
@@ -75,7 +75,7 @@ public class AstOperationCodeGen {
                 var httpResponse = this.httpClient.send(
                   httpRequest(),
                   java.net.http.HttpResponse.BodyHandlers.ofInputStream());
-                return {{{responseConstructor}}};
+                return {{{responseTypeName}}}.fromHttpResponse(httpResponse, objectMapper);
               }
             }
             """,
@@ -109,15 +109,7 @@ public class AstOperationCodeGen {
                                 "apiName", parameter.apiName(),
                                 "encoder", getEncoder(parameter.encoding())))
                     .collect(toList()),
-                "responseTypeName",
-                ast.responseName()
-                    .map(Fqn::toFqpString)
-                    .orElse("java.net.http.HttpResponse<? extends java.io.InputStream>"),
-                "responseConstructor",
-                ast.responseName()
-                    .map(Fqn::toFqpString)
-                    .map(name -> name + ".fromHttpResponse(httpResponse, objectMapper)")
-                    .orElse("httpResponse")));
+                "responseTypeName", ast.responseName().toFqpString()));
 
     return new Source(ast.name(), content);
   }

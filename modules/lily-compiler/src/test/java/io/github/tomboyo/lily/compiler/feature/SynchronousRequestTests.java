@@ -1,5 +1,16 @@
 package io.github.tomboyo.lily.compiler.feature;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.net.http.HttpResponse;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.noContent;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
@@ -9,17 +20,6 @@ import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.net.http.HttpResponse;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 
 @WireMockTest
 class SynchronousRequestTests {
@@ -222,63 +222,9 @@ class SynchronousRequestTests {
   }
 
   @Nested
-  class WhenResponsesAreMissing {
-    private static String packageName;
-
-    @BeforeAll
-    static void beforeAll() throws Exception {
-      packageName =
-          compileOas(
-              """
-                  openapi: 3.0.2
-                  paths:
-                    /pets:
-                      get:
-                        operationId: listPets
-                        tags:
-                          - pet
-                        responses:
-                  """);
-    }
-
-    @BeforeEach
-    void beforeEach() {
-      stubFor(
-          get("/pets")
-              .willReturn(
-                  ok("""
-            { "name": "Fido", "age": 5 }
-            """)
-                      .withHeader("x-my-header", "value")));
-    }
-
-    @Test
-    void sendSync(WireMockRuntimeInfo info) {
-      var actual =
-          evaluate(
-              """
-          return %s.Api.newBuilder()
-              .uri("%s")
-              .build()
-              .petOperations()
-              .listPets()
-              .sendSync();
-          """
-                  .formatted(packageName, info.getHttpBaseUrl()),
-              HttpResponse.class);
-
-      // When no responses are defined, sendSync returns an httpResponse
-      // directly
-      assertEquals(200, actual.statusCode());
-      assertEquals("value", actual.headers().firstValue("x-my-header").orElseThrow());
-      assertTrue(actual.body() instanceof InputStream);
-    }
-  }
-
-  @Nested
   class WhenUnexpectedResponse {
     @Test
-    void usesDefaultIfDefined(WireMockRuntimeInfo info) throws Exception {
+    void usesProvidedDefault(WireMockRuntimeInfo info) throws Exception {
       var packageName =
           compileOas(
               """
@@ -309,11 +255,11 @@ class SynchronousRequestTests {
       assertTrue(
           Class.forName(packageName + ".listpetsoperation.ListPetsDefault")
               .isAssignableFrom(actual.getClass()),
-          "When defined, the default response holds unexpected responses");
+          "If the OAS defines a default, it is used to hold unexpected responses");
     }
 
     @Test
-    void usesDefaultEvenIfNoDefaultDefined(WireMockRuntimeInfo info) throws Exception {
+    void usesDefault(WireMockRuntimeInfo info) throws Exception {
       var packageName =
           compileOas(
               """
@@ -325,8 +271,6 @@ class SynchronousRequestTests {
                         tags:
                           - pet
                         responses:
-                          '204':
-                            description: 'no content'
                   """);
 
       var actual =
@@ -342,10 +286,8 @@ class SynchronousRequestTests {
                   .formatted(packageName, info.getHttpBaseUrl()));
 
       assertTrue(
-          Class.forName(packageName + ".listpetsoperation.ListPetsDefault")
-              .isAssignableFrom(actual.getClass()),
-          "Even when a default is not explicitly defined, Lily generates one and uses it to hold"
-              + " unexpected responses.");
+          Class.forName(packageName + ".listpetsoperation.ListPetsDefault").isInstance(actual),
+          "If the OAS does not define a default, one is generated anyway and used to hold unexpected responses");
     }
   }
 }
