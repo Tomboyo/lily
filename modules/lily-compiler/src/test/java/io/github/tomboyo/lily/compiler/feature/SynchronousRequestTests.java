@@ -1,6 +1,7 @@
 package io.github.tomboyo.lily.compiler.feature;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.noContent;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
@@ -24,7 +25,7 @@ import org.junit.jupiter.api.Test;
 class SynchronousRequestTests {
 
   @Nested
-  class WhenResponsesAreDefined {
+  class WhenResponseHasContent {
     private static String packageName;
 
     @BeforeAll
@@ -130,7 +131,7 @@ class SynchronousRequestTests {
     }
 
     @Test
-    void sendSyncDeserializationIsLazy(WireMockRuntimeInfo info) throws Exception {
+    void sendSyncDeserializationIsLazy(WireMockRuntimeInfo info) {
       stubFor(
           get("/pets")
               .willReturn(
@@ -162,6 +163,61 @@ class SynchronousRequestTests {
               the content.
               """);
       assertTrue(e.getCause() instanceof IOException);
+    }
+  }
+
+  @Nested
+  class WhenResponseHasNoContent {
+    private static String packageName;
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+      packageName =
+          compileOas(
+              """
+                  openapi: 3.0.2
+                  paths:
+                    /pets:
+                      get:
+                        operationId: listPets
+                        tags:
+                          - pet
+                        responses:
+                          '204':
+                            description: 'no content'
+                  """);
+    }
+
+    @Test
+    void sendSyncExposesHttpResponse(WireMockRuntimeInfo info) {
+      stubFor(get("/pets").willReturn(noContent().withHeader("x-my-header", "value")));
+
+      var actual =
+          evaluate(
+              """
+          return %s.Api.newBuilder()
+              .uri("%s")
+              .build()
+              .petOperations()
+              .listPets()
+              .sendSync()
+              .httpResponse();
+          """
+                  .formatted(packageName, info.getHttpBaseUrl()),
+              HttpResponse.class);
+
+      // When responses are defined, the native http response is exposed by the
+      // generated response type
+      assertEquals(204, actual.statusCode());
+      assertEquals("value", actual.headers().firstValue("x-my-header").orElseThrow());
+    }
+
+    @Test
+    void sendSyncHasNoBodyGetter() {
+      assertThrows(
+          NoSuchMethodException.class,
+          () -> Class.forName(packageName + ".listpetsoperation.ListPets204").getMethod("body"),
+          "ListPets201 should not have a body() method because the API returns no content");
     }
   }
 
@@ -216,6 +272,80 @@ class SynchronousRequestTests {
       assertEquals(200, actual.statusCode());
       assertEquals("value", actual.headers().firstValue("x-my-header").orElseThrow());
       assertTrue(actual.body() instanceof InputStream);
+    }
+  }
+
+  @Nested
+  class WhenUnexpectedResponse {
+    @Test
+    void usesDefaultIfDefined(WireMockRuntimeInfo info) throws Exception {
+      var packageName =
+          compileOas(
+              """
+                  openapi: 3.0.2
+                  paths:
+                    /pets:
+                      get:
+                        operationId: listPets
+                        tags:
+                          - pet
+                        responses:
+                          'default':
+                            description: 'default response'
+                  """);
+
+      var actual =
+          evaluate(
+              """
+          return %s.Api.newBuilder()
+              .uri("%s")
+              .build()
+              .petOperations()
+              .listPets()
+              .sendSync();
+          """
+                  .formatted(packageName, info.getHttpBaseUrl()));
+
+      assertTrue(
+          Class.forName(packageName + ".listpetsoperation.ListPetsDefault")
+              .isAssignableFrom(actual.getClass()),
+          "When defined, the default response holds unexpected responses");
+    }
+
+    @Test
+    void usesDefaultEvenIfNoDefaultDefined(WireMockRuntimeInfo info) throws Exception {
+      var packageName =
+          compileOas(
+              """
+                  openapi: 3.0.2
+                  paths:
+                    /pets:
+                      get:
+                        operationId: listPets
+                        tags:
+                          - pet
+                        responses:
+                          '204':
+                            description: 'no content'
+                  """);
+
+      var actual =
+          evaluate(
+              """
+          return %s.Api.newBuilder()
+              .uri("%s")
+              .build()
+              .petOperations()
+              .listPets()
+              .sendSync();
+          """
+                  .formatted(packageName, info.getHttpBaseUrl()));
+
+      assertTrue(
+          Class.forName(packageName + ".listpetsoperation.ListPetsDefault")
+              .isAssignableFrom(actual.getClass()),
+          "Even when a default is not explicitly defined, Lily generates one and uses it to hold"
+              + " unexpected responses.");
     }
   }
 }
