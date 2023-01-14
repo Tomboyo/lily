@@ -1,5 +1,9 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static java.util.Objects.requireNonNullElse;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
@@ -9,17 +13,12 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponses;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.Objects.requireNonNullElse;
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
 
 public class OasOperationToAst {
 

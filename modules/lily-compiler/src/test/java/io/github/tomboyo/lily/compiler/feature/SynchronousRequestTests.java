@@ -1,16 +1,5 @@
 package io.github.tomboyo.lily.compiler.feature;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.net.http.HttpResponse;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.noContent;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
@@ -20,6 +9,16 @@ import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.net.http.HttpResponse;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 @WireMockTest
 class SynchronousRequestTests {
@@ -287,7 +286,8 @@ class SynchronousRequestTests {
 
       assertTrue(
           Class.forName(packageName + ".listpetsoperation.ListPetsDefault").isInstance(actual),
-          "If the OAS does not define a default, one is generated anyway and used to hold unexpected responses");
+          "If the OAS does not define a default, one is generated anyway and used to hold"
+              + " unexpected responses");
     }
   }
 }

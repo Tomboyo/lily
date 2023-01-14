@@ -1,5 +1,14 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static io.github.tomboyo.lily.compiler.AstSupport.fqnPlaceholder;
+import static io.swagger.v3.oas.models.PathItem.HttpMethod.PUT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
@@ -9,21 +18,11 @@ import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.parameters.Parameter;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static io.github.tomboyo.lily.compiler.AstSupport.fqnPlaceholder;
-import static io.swagger.v3.oas.models.PathItem.HttpMethod.PUT;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 public class OasPathsToAstTest {
 
