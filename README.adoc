@@ -15,7 +15,7 @@ To generate sources from an OAS document in your maven project, and the followin
         <plugin>
             <groupId>io.github.tomboyo.lily</groupId>
             <artifactId>lily-compiler-maven-plugin</artifactId>
-            <version>0.1.4</version>
+            <version>0.1.6</version>
             <configuration>
                 <!-- Any URI to an OAS document, be it https:// or file://. -->
                 <uri>https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/petstore.yaml</uri>
@@ -56,7 +56,7 @@ To generate sources from an OAS document in your maven project, and the followin
     <dependency>
         <groupId>io.github.tomboyo.lily</groupId>
         <artifactId>lily-http</artifactId>
-        <version>0.1.4</version>
+        <version>0.1.6</version>
     </dependency>
     <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
@@ -110,4 +110,4 @@ Lily is composed of four modules in the `modules` directory:
 
 - `lily-compiler` is responsible for reading an OAS document, translating it to an intermediary AST (abstract syntax tree), rendering the AST as source code, and finally saving source code to disc.
 
-- `lily-http` defines classes to help use the java.net.http API. For example, this contains the JacksonBodyPublisher and JacksonBodyHandler for sending and receiving Json-serialized content. This is a dependency of generated source code and may also be used directly by users to work around Lily or OAS shortcomings.
+- `lily-http` defines classes to help create and receive HTTP requests, including RFC6570 encoders, deser implementations, and the UriTemplate. This is a dependency of generated source code and may also be used directly by users to work around Lily or OAS shortcomings.
