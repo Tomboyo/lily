@@ -77,7 +77,7 @@ public class AstApiCodeGen {
                 /**
                  * Set the client used to send requests for any operation in this API.
                  *
-                 * <p/> By default, clients are equal to {@code HttpClient.newBuilder().build()}.
+                 * <p> By default, clients are equal to {@code HttpClient.newBuilder().build()}.
                  *
                  * @param httpClient a particular client to use for requests.
                  * @return This builder for chaining.

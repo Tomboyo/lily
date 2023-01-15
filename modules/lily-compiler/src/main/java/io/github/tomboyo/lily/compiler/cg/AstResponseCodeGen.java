@@ -45,7 +45,7 @@ public class AstResponseCodeGen {
                * is deserialized lazily; if this method is never called, the body is never
                * deserialized.
                *
-               * @returns The deserialized response body.
+               * @return The deserialized response body.
                * @throws java.io.IOException If the response body cannot be deserialized for any
                *         reason.
                */
