@@ -216,7 +216,7 @@ class SynchronousRequestTests {
       assertThrows(
           NoSuchMethodException.class,
           () -> Class.forName(packageName + ".listpetsoperation.ListPets204").getMethod("body"),
-          "ListPets201 should not have a body() method because the API returns no content");
+          "ListPets204 should not have a body() method because the API returns no content");
     }
   }
 

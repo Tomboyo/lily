@@ -32,11 +32,23 @@ public class AstResponseCodeGen {
                 return new {{typeName}}(httpResponse, objectMapper);
               }
 
+              /**
+               * Get the native HTTP response from the request.
+               */
               public java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse() {
                 return this.httpResponse;
               }
 
               {{#contentTypeName}}
+              /**
+               * Return the deserialized representation of the response body if possible. The body
+               * is deserialized lazily; if this method is never called, the body is never
+               * deserialized.
+               *
+               * @returns The deserialized response body.
+               * @throws java.io.IOException If the response body cannot be deserialized for any
+               *         reason.
+               */
               public {{{contentTypeName}}} body() throws java.io.IOException {
                 return objectMapper.readValue(httpResponse.body(), {{{contentTypeName}}}.class);
               }
