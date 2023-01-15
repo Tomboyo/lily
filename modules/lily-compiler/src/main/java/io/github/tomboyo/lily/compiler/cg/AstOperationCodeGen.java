@@ -7,7 +7,6 @@ import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
 import static java.util.stream.Collectors.toList;
 
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
-import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,13 +20,16 @@ public class AstOperationCodeGen {
             public class {{className}} {
               private final io.github.tomboyo.lily.http.UriTemplate uriTemplate;
               private final java.net.http.HttpClient httpClient;
+              private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
               public {{className}}(
                   String uri,
-                  java.net.http.HttpClient httpClient) {
+                  java.net.http.HttpClient httpClient,
+                  com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
                 // We assume uri is non-null and ends with a trailing '/'.
                 this.uriTemplate = io.github.tomboyo.lily.http.UriTemplate.of(uri + "{{{relativePath}}}{{{queryTemplate}}}");
                 this.httpClient = httpClient;
+                this.objectMapper = objectMapper;
               }
 
               {{#urlParameters}}
@@ -72,7 +74,7 @@ public class AstOperationCodeGen {
                 var httpResponse = this.httpClient.send(
                   httpRequest(),
                   java.net.http.HttpResponse.BodyHandlers.ofInputStream());
-                return {{{responseConstructor}}};
+                return {{{responseTypeName}}}.fromHttpResponse(httpResponse, objectMapper);
               }
             }
             """,
@@ -107,14 +109,7 @@ public class AstOperationCodeGen {
                                 "encoder", getEncoder(parameter.encoding())))
                     .collect(toList()),
                 "responseTypeName",
-                ast.responseName()
-                    .map(Fqn::toFqpString)
-                    .orElse("java.net.http.HttpResponse<? extends java.io.InputStream>"),
-                "responseConstructor",
-                ast.responseName()
-                    .map(Fqn::toFqpString)
-                    .map(name -> name + ".fromHttpResponse(httpResponse)")
-                    .orElse("httpResponse")));
+                ast.responseName().toFqpString()));
 
     return new Source(ast.name(), content);
   }

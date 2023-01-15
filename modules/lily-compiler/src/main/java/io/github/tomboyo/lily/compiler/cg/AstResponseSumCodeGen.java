@@ -1,12 +1,12 @@
 package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AstResponseSumCodeGen {
@@ -22,10 +22,12 @@ public class AstResponseSumCodeGen {
           public java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse();
 
           public static {{typeName}} fromHttpResponse(
-              java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse) throws java.io.IOException {
+              java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse,
+              com.fasterxml.jackson.databind.ObjectMapper objectMapper)
+                  throws java.io.IOException {
             return switch(httpResponse.statusCode()) {
               {{#statusCodeToMember}}
-              case {{statusCode}} -> {{memberName}}.fromHttpResponse(httpResponse);
+              case {{statusCode}} -> {{memberName}}.fromHttpResponse(httpResponse, objectMapper);
               {{/statusCodeToMember}}
               default -> {{{defaultMember}}};
             };
@@ -46,11 +48,8 @@ public class AstResponseSumCodeGen {
                             Map.of("statusCode", entry.getKey(), "memberName", entry.getValue()))
                     .collect(toList()),
                 "defaultMember",
-                Optional.ofNullable(astResponseSum.statusCodeToMember().get("default"))
-                    .map(name -> name + ".fromHttpResponse(httpResponse)")
-                    .orElse(
-                        "throw new java.io.IOException(\"Unexpected status code \" +"
-                            + " httpResponse.statusCode())"),
+                requireNonNull(astResponseSum.statusCodeToMember().get("default"))
+                    + ".fromHttpResponse(httpResponse, objectMapper)",
                 "members",
                 astResponseSum.statusCodeToMember().values().stream()
                     .map(Fqn::toFqString)

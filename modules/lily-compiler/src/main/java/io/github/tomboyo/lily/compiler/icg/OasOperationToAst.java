@@ -9,14 +9,13 @@ import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
-import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -70,10 +69,10 @@ public class OasOperationToAst {
             .collect(Collectors.toList());
 
     var responseSumAndAst =
-        Optional.ofNullable(operation.getResponses())
-            .map(
-                responses ->
-                    OasApiResponsesToAst.evaluateApiResponses(basePackage, operationId, responses));
+        OasApiResponsesToAst.evaluateApiResponses(
+            basePackage,
+            operationId,
+            requireNonNullElse(operation.getResponses(), new ApiResponses()));
 
     return new TagsOperationAndAst(
         getOperationTags(operation),
@@ -83,9 +82,8 @@ public class OasOperationToAst {
             method.name(),
             relativePath,
             parameters,
-            responseSumAndAst.map(Pair::left)),
-        Stream.concat(responseSumAndAst.stream().flatMap(Pair::right), parameterAst)
-            .collect(Collectors.toSet()));
+            responseSumAndAst.left()),
+        Stream.concat(responseSumAndAst.right(), parameterAst).collect(Collectors.toSet()));
   }
 
   /** Merge owned parameters with inherited parameters. Owned parameters take precedence. */

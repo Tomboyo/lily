@@ -10,6 +10,7 @@ import static io.swagger.v3.oas.models.PathItem.HttpMethod.GET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
@@ -59,7 +60,7 @@ public class OasOperationToAstTest {
                     new Parameter().name("c").in("header").schema(new BooleanSchema()),
                     new Parameter().name("d").in("cookie").schema(new StringSchema())));
 
-        assertThat("Parameter AST is returned", actual.ast(), is(Set.of(fqnPlaceholder())));
+        assertTrue(actual.ast().contains(fqnPlaceholder()));
 
         // Each parameter is evaluated to AST in turn
         mock.verify(

@@ -30,6 +30,11 @@ public class OasApiResponsesToAst {
     var genRoot = basePackage.resolve(operationId.resolve("operation")); // a.b.getfoooperation
     var responseSumName = Fqn.newBuilder(genRoot, operationId.resolve("Response")).build();
 
+    // Lily needs something to hold unexpected responses.
+    if (responses.getDefault() == null) {
+      responses.setDefault(new ApiResponse());
+    }
+
     var memberAsts =
         responses.entrySet().stream()
             .map(
