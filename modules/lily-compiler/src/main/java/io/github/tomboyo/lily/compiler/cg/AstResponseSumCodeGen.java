@@ -1,12 +1,12 @@
 package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AstResponseSumCodeGen {
@@ -48,11 +48,8 @@ public class AstResponseSumCodeGen {
                             Map.of("statusCode", entry.getKey(), "memberName", entry.getValue()))
                     .collect(toList()),
                 "defaultMember",
-                Optional.ofNullable(astResponseSum.statusCodeToMember().get("default"))
-                    .map(name -> name + ".fromHttpResponse(httpResponse, objectMapper)")
-                    .orElse(
-                        "throw new java.io.IOException(\"Unexpected status code \" +"
-                            + " httpResponse.statusCode())"),
+                requireNonNull(astResponseSum.statusCodeToMember().get("default"))
+                    + ".fromHttpResponse(httpResponse, objectMapper)",
                 "members",
                 astResponseSum.statusCodeToMember().values().stream()
                     .map(Fqn::toFqString)
