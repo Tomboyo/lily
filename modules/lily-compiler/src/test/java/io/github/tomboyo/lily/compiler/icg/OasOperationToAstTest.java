@@ -31,7 +31,6 @@ import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -160,51 +159,6 @@ public class OasOperationToAstTest {
 
         assertThat(
             "Response ast is flattened into the AST stream", actual, hasItems(astPlaceholder()));
-      }
-    }
-
-    @Nested
-    class Tags {
-      @Test
-      void whenOasOperationHasTags() {
-        try (var mock = mockStatic(OasSchemaToAst.class)) {
-          mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
-              .thenAnswer(invocation -> new Pair<>(astBoolean(), Stream.of()));
-
-          var actual =
-              OasOperationToAst.evaluateOperaton(
-                  PackageName.of("p"),
-                  "/relative/path/",
-                  GET,
-                  new Operation().operationId("operationId").tags(List.of("tagA", "tagB")),
-                  List.of());
-
-          assertThat(
-              "The result contains all OAS tags and the 'all' tag",
-              actual.tags(),
-              is(Set.of("tagA", "tagB", "all")));
-        }
-      }
-
-      @Test
-      void whenOasOperationHasNoTags() {
-        try (var mock = mockStatic(OasSchemaToAst.class)) {
-          mock.when(() -> OasSchemaToAst.evaluate(any(), any(), any()))
-              .thenAnswer(invocation -> new Pair<>(astBoolean(), Stream.of()));
-
-          var actual =
-              OasOperationToAst.evaluateOperaton(
-                  PackageName.of("p"),
-                  "/relative/path/",
-                  GET,
-                  new Operation().operationId("operationId").tags(List.of()), // empty!
-                  List.of());
-
-          assertThat(
-              "The result contains the default 'other' tag and the 'all' tag",
-              actual.tags(),
-              is(Set.of("other", "all")));
-        }
       }
     }
 

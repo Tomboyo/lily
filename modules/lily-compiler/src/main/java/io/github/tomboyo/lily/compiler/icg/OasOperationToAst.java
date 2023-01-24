@@ -75,7 +75,7 @@ public class OasOperationToAst {
             requireNonNullElse(operation.getResponses(), new ApiResponses()));
 
     return new TagsOperationAndAst(
-        getOperationTags(operation),
+        new HashSet<>(requireNonNullElse(operation.getTags(), List.of())),
         new AstOperation(
             SimpleName.of(operation.getOperationId()),
             Fqn.newBuilder().packageName(basePackage).typeName(operationName).build(),
@@ -94,15 +94,6 @@ public class OasOperationToAst {
             toMap(
                 param -> new ParameterId(param.getName(), param.getIn()), identity(), (a, b) -> b))
         .values();
-  }
-
-  private static Set<String> getOperationTags(Operation operation) {
-    var set = new HashSet<>(requireNonNullElse(operation.getTags(), List.of()));
-    if (set.isEmpty()) {
-      set.add("other");
-    }
-    set.add("all");
-    return set;
   }
 
   /** Holds the tags, AstOperation, and other Ast from evaluating an OAS Operation. */

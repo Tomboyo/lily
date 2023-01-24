@@ -5,7 +5,6 @@ import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSou
 import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isA;
 
 import java.net.URI;
 import org.junit.jupiter.api.AfterAll;
@@ -19,79 +18,6 @@ public class FluentApiTest {
   @AfterAll
   static void afterAll() throws Exception {
     deleteGeneratedSources();
-  }
-
-  /** All operations are organized by their OpenAPI tags. */
-  @Nested
-  class OrganizesOperationsByTag {
-
-    private static String packageName;
-
-    @BeforeAll
-    static void beforeAll() throws Exception {
-      packageName =
-          compileOas(
-              """
-              openapi: 3.0.2
-              paths:
-                /pets/:
-                  get:
-                    operationId: getPet
-                    tags:
-                      - dogs
-                      - cats
-                  post:
-                    operationId: postPet
-              """);
-    }
-
-    @Test
-    void hasOperationsApiForDogsTag() throws Exception {
-      assertThat(
-          "The getPet operation is addressable via the dogs tag, DogsOperations",
-          evaluate(
-              """
-              return %s.Api.newBuilder()
-                .uri("https://example.com/")
-                .build()
-                .dogsOperations()
-                .getPet();
-              """
-                  .formatted(packageName)),
-          isA(Class.forName(packageName + ".GetPetOperation")));
-    }
-
-    @Test
-    void hasOperationsApiForCatsTag() throws Exception {
-      assertThat(
-          "The getPet operation is addressable via the cats tag, CatsOperations",
-          evaluate(
-              """
-              return %s.Api.newBuilder()
-                .uri("https://example.com/")
-                .build()
-                .catsOperations()
-                .getPet();
-              """
-                  .formatted(packageName)),
-          isA(Class.forName(packageName + ".GetPetOperation")));
-    }
-
-    @Test
-    void hasOperationsApiForUntaggedOperations() throws Exception {
-      assertThat(
-          "The postPet operation is addressable via the other tag, OtherOperations, by default",
-          evaluate(
-              """
-              return %s.Api.newBuilder()
-                .uri("https://example.com/")
-                .build()
-                .otherOperations()
-                .postPet();
-              """
-                  .formatted(packageName)),
-          isA(Class.forName(packageName + ".PostPetOperation")));
-    }
   }
 
   /**
@@ -130,7 +56,7 @@ public class FluentApiTest {
               return %s.Api.newBuilder()
                 .uri("https://example.com/")
                 .build()
-                .allOperations()
+                .everyOperation()
                 .getPetById()
                 .uriTemplate()
                 .bind("id", "some-uuid-here")
@@ -173,7 +99,7 @@ public class FluentApiTest {
               return %s.Api.newBuilder()
                 .uri("https://example.com/")
                 .build()
-                .allOperations()
+                .everyOperation()
                 .getPetById()
                 .id("1234")
                 .uriTemplate()
@@ -231,7 +157,7 @@ public class FluentApiTest {
               return %s.Api.newBuilder()
                 .uri("https://example.com/")
                 .build()
-                .allOperations()
+                .everyOperation()
                 .listPets()
                 .limit(5)
                 .include(java.util.List.of("name", "age"))

@@ -1,6 +1,7 @@
 package io.github.tomboyo.lily.compiler.icg;
 
 import static java.util.Objects.requireNonNullElse;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
@@ -55,19 +56,34 @@ public class OasPathsToAst {
 
   private Stream<AstTaggedOperations> evaluateTaggedOperations(
       Collection<TagsOperationAndAst> results) {
-    return results.stream()
-        .flatMap(result -> result.tags().stream().map(tag -> new Pair<>(tag, result.operation())))
-        .collect(groupingBy(Pair::left, mapping(Pair::right, toSet())))
-        .entrySet()
-        .stream()
-        .map(
-            entry ->
-                new AstTaggedOperations(
-                    Fqn.newBuilder()
-                        .packageName(basePackage)
-                        .typeName(SimpleName.of(entry.getKey()).resolve("operations"))
-                        .build(),
-                    entry.getValue()));
+    var everyOperation =
+        new AstTaggedOperations(
+            Fqn.newBuilder().packageName(basePackage).typeName("EveryOperation").build(),
+            results.stream().map(TagsOperationAndAst::operation).collect(toSet()));
+    var everyUntaggedOperation =
+        new AstTaggedOperations(
+            Fqn.newBuilder().packageName(basePackage).typeName("EveryUntaggedOperation").build(),
+            results.stream()
+                .filter(x -> x.tags().isEmpty())
+                .map(TagsOperationAndAst::operation)
+                .collect(toSet()));
+    var taggedOperations =
+        results.stream()
+            .flatMap(
+                result -> result.tags().stream().map(tag -> new Pair<>(tag, result.operation())))
+            .collect(groupingBy(Pair::left, mapping(Pair::right, toSet())))
+            .entrySet()
+            .stream()
+            .map(
+                entry ->
+                    new AstTaggedOperations(
+                        Fqn.newBuilder()
+                            .packageName(basePackage)
+                            .typeName(SimpleName.of(entry.getKey()).resolve("operations"))
+                            .build(),
+                        entry.getValue()));
+    return Stream.of(Stream.of(everyOperation), Stream.of(everyUntaggedOperation), taggedOperations)
+        .flatMap(identity());
   }
 
   private Stream<TagsOperationAndAst> evaluatePathItem(String relativePath, PathItem pathItem) {
