@@ -6,7 +6,9 @@ import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -73,7 +75,7 @@ public class OperationGroupsTest {
             """
                     .formatted(packageName))
             .getClass(),
-        "The getPet operation is grouped under catOperations() because it also has the dog tag");
+        "The getPet operation is grouped under catOperations() because it also has the cat tag");
     assertEquals(
         postPetOperation,
         evaluate(
@@ -119,14 +121,9 @@ public class OperationGroupsTest {
                 Class.class)
             .getDeclaredMethods();
 
-    assertTrue(
-        Arrays.stream(methods).anyMatch(m -> m.getName().equals("getPet")),
-        "All operations are part of the everyOperation() group");
-    assertTrue(
-        Arrays.stream(methods).anyMatch(m -> m.getName().equals("postPet")),
-        "All operations are part of the everyOperation() group");
-    assertTrue(
-        Arrays.stream(methods).anyMatch(m -> m.getName().equals("putPet")),
+    assertEquals(
+        List.of("getPet", "postPet", "putPet"),
+        Arrays.stream(methods).map(Method::getName).toList(),
         "All operations are part of the everyOperation() group");
   }
 
