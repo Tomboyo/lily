@@ -47,7 +47,7 @@ public class ExampleTest {
      * fluently specify path and query parameters (not yet header or body parameters).
      */
     var response =
-        api.petsOperations() // All operations with the `pets` tag. (see also: allOperations)
+        api.petsOperations() // All operations with the `pets` tag. (see also: everyOperation)
             .showPetById() // The GET /pets/{petId} operation
             .petId("1234") // bind "1234" to the {petId} parameter of the OAS operation
             .sendSync(); // execute the request synchronously and get a ShowPetByIdResponse object.
@@ -83,15 +83,11 @@ public class ExampleTest {
     /*
      * All operations (GET /foo, POST /foo, etc) documented by the OAS are captured by the generated API, named
      * according to their OAS operation IDs.
-     *
-     * All operations are organized by their tags, if any, like: `petsOperations()` (for the 'pets' tag),
-     * `otherOperations()` (for operations without a tag), and `allOperations()` (every operation is addressable from
-     * here, even if already addressable from another tag).
      */
     var api = Api.newBuilder().uri(info.getHttpBaseUrl()).build();
     var operation =
         api
-            // All operations with the `pets` tag. (We could also use .allOperations())
+            // All operations with the `pets` tag. (We could also use .everyOperation())
             .petsOperations()
             .showPetById(); // the GET /pets/{petId} operation
 

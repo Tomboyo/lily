@@ -48,7 +48,7 @@ public class HttpRequestBuildersTest {
             return %s.Api.newBuilder()
               .uri("https://example.com/")
               .build()
-              .allOperations()
+              .everyOperation()
               .postFoo()
               .id("1234")
               .color("red")

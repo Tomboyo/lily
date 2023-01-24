@@ -135,12 +135,12 @@ public class OperationGroupsTest {
     var methods =
         evaluate(
                 """
-        return %s.Api.newBuilder()
-            .uri("https://example.com/")
-            .build()
-            .everyUntaggedOperation()
-            .getClass();
-        """
+            return %s.Api.newBuilder()
+                .uri("https://example.com/")
+                .build()
+                .everyUntaggedOperation()
+                .getClass();
+            """
                     .formatted(packageName),
                 Class.class)
             .getDeclaredMethods();
