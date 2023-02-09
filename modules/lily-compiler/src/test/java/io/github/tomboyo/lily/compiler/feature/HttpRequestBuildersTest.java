@@ -50,8 +50,8 @@ public class HttpRequestBuildersTest {
               .build()
               .everyOperation()
               .postFoo()
-              .id("1234")
-              .color("red")
+              .setId("1234")
+              .setColor("red")
               .httpRequest();
             """
                 .formatted(packageName),

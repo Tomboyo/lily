@@ -49,7 +49,7 @@ public class ExampleTest {
     var response =
         api.petsOperations() // All operations with the `pets` tag. (see also: everyOperation)
             .showPetById() // The GET /pets/{petId} operation
-            .petId("1234") // bind "1234" to the {petId} parameter of the OAS operation
+            .setPetId("1234") // bind "1234" to the {petId} parameter of the OAS operation
             .sendSync(); // execute the request synchronously and get a ShowPetByIdResponse object.
 
     /* The response object is a sealed interface based on what the OAS says the API can return. In this case, the
