@@ -101,7 +101,7 @@ public class FluentApiTest {
                 .build()
                 .everyOperation()
                 .getPetById()
-                .id("1234")
+                .setId("1234")
                 .uriTemplate()
                 .toURI();
               """
@@ -159,8 +159,8 @@ public class FluentApiTest {
                 .build()
                 .everyOperation()
                 .listPets()
-                .limit(5)
-                .include(java.util.List.of("name", "age"))
+                .setLimit(5)
+                .setInclude(java.util.List.of("name", "age"))
                 .uriTemplate()
                 .toURI();
               """

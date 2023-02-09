@@ -104,7 +104,7 @@ public class AstOperationCodeGen {
                         parameter ->
                             Map.of(
                                 "fqpt", parameter.typeName().toFqpString(),
-                                "name", parameter.name().lowerCamelCase(),
+                                "name", "set" + parameter.name().upperCamelCase(),
                                 "apiName", parameter.apiName(),
                                 "encoder", getEncoder(parameter.encoding())))
                     .collect(toList()),
