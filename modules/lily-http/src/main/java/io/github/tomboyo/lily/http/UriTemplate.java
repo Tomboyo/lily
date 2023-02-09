@@ -4,12 +4,12 @@ import static java.util.Objects.requireNonNullElse;
 
 import io.github.tomboyo.lily.http.encoding.Encoder;
 import io.github.tomboyo.lily.http.encoding.Encoders;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
 /**
- * A utility that creates URIs from template strings and parameter bindings.
+ * A utility that creates strings from templates and parameter bindings, where all bindings are URL-
+ * encoded.
  *
  * <pre>{@code
  * UriTemplate
@@ -17,7 +17,6 @@ import java.util.regex.Pattern;
  *   .bind("myParam", "some;value")
  *   .bind("query", Map.of("key", "value?"), Encoders.form(EXPLODE))
  *   .bind("continuation", List.of("a", "b"), Encoders.formContinuation(EXPLODE))
- *   .toURI()
  *   .toString();
  *   // => https://example.com/some;value/?key=value%3F&continuation=a&continuation=b
  * }</pre>
@@ -26,7 +25,7 @@ import java.util.regex.Pattern;
  */
 public class UriTemplate {
 
-  private String template;
+  private final String template;
   private final HashMap<String, String> bindings;
 
   private UriTemplate(String template, HashMap<String, String> bindings) {
@@ -40,32 +39,8 @@ public class UriTemplate {
    * @param template The template string.
    * @return A UriTemplate for the given template strings.
    */
-  // Note: we do not support a `String first, String... rest` API because some scenarios are
-  // ambiguous; consider `of("http://example.com/", "{pathParameter}", "{queryParameter}")`.
   public static UriTemplate of(String template) {
     return new UriTemplate(template, new HashMap<>());
-  }
-
-  /**
-   * Replace this UriTemplate's template string with the given string.
-   *
-   * @param template The new template string.
-   * @return This instance for chaining.
-   */
-  public UriTemplate withTemplate(String template) {
-    this.template = template;
-    return this;
-  }
-
-  /**
-   * Append the given template string to the end of this instance's template string.
-   *
-   * @param more The string to append to the current template.
-   * @return This instance for chaining.
-   */
-  public UriTemplate appendTemplate(String more) {
-    this.template += more;
-    return this;
   }
 
   /**
@@ -101,34 +76,22 @@ public class UriTemplate {
   }
 
   /**
-   * Remove the value, if any, bound to the template parameter with the given name.
-   *
-   * @param parameter The name of the template parameter.
-   * @return This instance for chaining.
-   */
-  public UriTemplate unbind(String parameter) {
-    bindings.put(parameter, null);
-    return this;
-  }
-
-  /**
-   * Create the finished URI from the template and bound parameters.
+   * Create teh interpolated string from the template and bound parameters.
    *
    * <p>Empty parameters are encoded as empty strings.
    *
-   * @return The finished URI.
+   * @return The interpolated string.
    */
-  public URI toURI() {
+  @Override
+  public String toString() {
     var pattern = Pattern.compile("\\{([^{}]+)}"); // "{parameterName}"
-    var uri =
-        pattern
-            .matcher(template)
-            .replaceAll(
-                (matchResult -> {
-                  var name = template.substring(matchResult.start() + 1, matchResult.end() - 1);
-                  var value = bindings.get(name);
-                  return requireNonNullElse(value, "");
-                }));
-    return URI.create(uri);
+    return pattern
+        .matcher(template)
+        .replaceAll(
+            (matchResult -> {
+              var name = template.substring(matchResult.start() + 1, matchResult.end() - 1);
+              var value = bindings.get(name);
+              return requireNonNullElse(value, "");
+            }));
   }
 }

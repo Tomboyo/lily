@@ -10,7 +10,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class HttpRequestBuildersTest {
+public class HttpRequestMethodTest {
 
   private static String packageName;
   private static HttpRequest actual;
@@ -27,21 +27,16 @@ public class HttpRequestBuildersTest {
             """
                 openapi: 3.0.2
                 paths:
-                  /foo/{id}:
+                  /foo:
+                    get:
+                      operationId: get-foo
                     post:
-                      operationId: postFoo
-                      parameters:
-                        - name: id
-                          in: path
-                          required: true
-                          schema:
-                            type: string
-                        - name: color
-                          in: query
-                          schema:
-                            type: string
+                      operationId: post-foo
                 """);
+  }
 
+  @Test
+  void postFoo() {
     actual =
         evaluate(
             """
@@ -50,21 +45,29 @@ public class HttpRequestBuildersTest {
               .build()
               .everyOperation()
               .postFoo()
-              .setId("1234")
-              .setColor("red")
               .httpRequest();
             """
                 .formatted(packageName),
             HttpRequest.class);
-  }
 
-  @Test
-  void templatesUriWithPathAndQueryParameters() {
-    assertEquals("https://example.com/foo/1234?color=red", actual.uri().toString());
-  }
-
-  @Test
-  void templatesHttpMethod() {
     assertEquals("POST", actual.method());
+  }
+
+  @Test
+  void getFoo() {
+    actual =
+        evaluate(
+            """
+        return %s.Api.newBuilder()
+          .uri("https://example.com/")
+          .build()
+          .everyOperation()
+          .getFoo()
+          .httpRequest();
+        """
+                .formatted(packageName),
+            HttpRequest.class);
+
+    assertEquals("GET", actual.method());
   }
 }

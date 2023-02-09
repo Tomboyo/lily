@@ -3,12 +3,13 @@ package io.github.tomboyo.lily.compiler.feature;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -122,8 +123,8 @@ public class OperationGroupsTest {
             .getDeclaredMethods();
 
     assertEquals(
-        List.of("getPet", "postPet", "putPet"),
-        Arrays.stream(methods).map(Method::getName).toList(),
+        Set.of("getPet", "postPet", "putPet"),
+        Arrays.stream(methods).map(Method::getName).collect(toSet()),
         "All operations are part of the everyOperation() group");
   }
 

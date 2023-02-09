@@ -3,8 +3,6 @@ package io.github.tomboyo.lily.example;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static io.github.tomboyo.lily.http.encoding.Encoders.formExploded;
-import static io.github.tomboyo.lily.http.encoding.Encoders.simple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -13,9 +11,9 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.tomboyo.lily.example.showpetbyidoperation.ShowPetById200;
 import io.github.tomboyo.lily.example.showpetbyidoperation.ShowPetByIdDefault;
+import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /* These are examples of how to use the API, formulated as contrived unit tests. These are not actual tests. */
@@ -47,10 +45,14 @@ public class ExampleTest {
      * fluently specify path and query parameters (not yet header or body parameters).
      */
     var response =
-        api.petsOperations() // All operations with the `pets` tag. (see also: everyOperation)
-            .showPetById() // The GET /pets/{petId} operation
-            .setPetId("1234") // bind "1234" to the {petId} parameter of the OAS operation
-            .sendSync(); // execute the request synchronously and get a ShowPetByIdResponse object.
+        // All operations with the `pets` tag. (see also: everyOperation)
+        api.petsOperations()
+            // The GET /pets/{petId} operation
+            .showPetById()
+            // bind "1234" to the {petId} path parameter of the OAS operation.
+            .path(path -> path.petId("1234"))
+            // execute the request synchronously and get a ShowPetByIdResponse object.
+            .sendSync();
 
     /* The response object is a sealed interface based on what the OAS says the API can return. In this case, the
      * ShowPetByIdResponse may consist of the 200 and Default variants.
@@ -80,37 +82,31 @@ public class ExampleTest {
             {"id": 1234, "name": "Reginald"}
             """)));
 
-    /*
-     * All operations (GET /foo, POST /foo, etc) documented by the OAS are captured by the generated API, named
-     * according to their OAS operation IDs.
-     */
     var api = Api.newBuilder().uri(info.getHttpBaseUrl()).build();
     var operation =
         api
             // All operations with the `pets` tag. (We could also use .everyOperation())
             .petsOperations()
-            .showPetById(); // the GET /pets/{petId} operation
+            // the GET /pets/{petId} operation
+            .showPetById()
+            .path(path -> path.petId("1234"));
 
-    var uri =
-        operation
-            // Access the underlying uri template to finish the request manually
-            .uriTemplate()
-            // Bind "1234" to the petId path parameter. The Encoders class implements several common
-            // formats. We can override bindings set by the operation.
-            .bind("petId", 1234, simple())
-            // The operation doesn't have any query parameter templates, so we'll add one and bind a
-            // value to it.
-            .appendTemplate("{queryParameters}")
-            .bind("queryParameters", Map.of("foo", "foo", "bar", "bar"), formExploded())
-            .toURI();
+    // Using the native API, create a new http request. It will use our templated request for
+    // default values, but we can override any aspect of the request we need to.
+    var request =
+        HttpRequest.newBuilder(operation.httpRequest(), (k, v) -> true)
+            // We can use baseUri(), pathString(), and queryString() from the operation to override
+            // templated URIs. This can be useful when the OpenAPI specification does not document
+            // all
+            // the query parameters of a request, for example.
+            .uri(URI.create(operation.baseUri() + operation.pathString() + "?foo=foo&bar=bar"))
+            .build();
 
     /*
      * Finish and send the request manually. Note the use of the generated Pet type. All components schemas and
      * parameter schemas are generated. Also note the use of the provided lily-http JacksonBodyHandler.
      */
-    var response =
-        api.httpClient()
-            .send(HttpRequest.newBuilder().GET().uri(uri).build(), BodyHandlers.ofInputStream());
+    var response = api.httpClient().send(request, BodyHandlers.ofInputStream());
 
     assertEquals(200, response.statusCode());
     assertEquals(
