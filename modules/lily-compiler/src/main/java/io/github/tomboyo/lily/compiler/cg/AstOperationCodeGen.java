@@ -96,8 +96,16 @@ public class AstOperationCodeGen {
                * Synchronously perform the HTTP request for this operation.
                */
               public {{{responseTypeName}}} sendSync() throws java.io.IOException, InterruptedException {
+                return sendSync(httpRequest());
+              }
+
+              /**
+               *
+               */
+              public {{{responseTypeName}}} sendSync(java.net.http.HttpRequest request)
+                  throws java.io.IOException, InterruptedException {
                 var httpResponse = this.httpClient.send(
-                  httpRequest(),
+                  request,
                   java.net.http.HttpResponse.BodyHandlers.ofInputStream());
                 return {{{responseTypeName}}}.fromHttpResponse(httpResponse, objectMapper);
               }

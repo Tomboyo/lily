@@ -6,14 +6,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.tomboyo.lily.example.showpetbyidoperation.ShowPetById200;
 import io.github.tomboyo.lily.example.showpetbyidoperation.ShowPetByIdDefault;
 import java.net.URI;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse.BodyHandlers;
 import org.junit.jupiter.api.Test;
 
 /* These are examples of how to use the API, formulated as contrived unit tests. These are not actual tests. */
@@ -83,33 +81,32 @@ public class ExampleTest {
             """)));
 
     var api = Api.newBuilder().uri(info.getHttpBaseUrl()).build();
-    var operation =
-        api
-            // All operations with the `pets` tag. (We could also use .everyOperation())
-            .petsOperations()
-            // the GET /pets/{petId} operation
-            .showPetById()
-            .path(path -> path.petId("1234"));
 
-    // Using the native API, create a new http request. It will use our templated request for
-    // default values, but we can override any aspect of the request we need to.
+    /* Customize a request with any parameters documented by the OpenAPI specification. In this
+     * example we'll assume query parameters are missing from the OpenAPI specification and can't
+     * be configured via the generated API.
+     */
+    var operation = api.petsOperations().showPetById().path(path -> path.petId("1234"));
+
+    /* Using the native API, create a new http request. It will use our templated request for
+     * default values, but we can override any part of the request, like the query string.
+     */
     var request =
         HttpRequest.newBuilder(operation.httpRequest(), (k, v) -> true)
             // We can use baseUri(), pathString(), and queryString() from the operation to override
-            // templated URIs. This can be useful when the OpenAPI specification does not document
-            // all
-            // the query parameters of a request, for example.
+            // templated URIs. This lets us work around incomplete specifications until they are
+            // fixed.
             .uri(URI.create(operation.baseUri() + operation.pathString() + "?foo=foo&bar=bar"))
             .build();
 
-    /*
-     * Finish and send the request manually. Note the use of the generated Pet type. All components schemas and
-     * parameter schemas are generated. Also note the use of the provided lily-http JacksonBodyHandler.
+    /* Dispatch the customized request, taking advantage of the same sendSync behavior we normally
+     * would.
      */
-    var response = api.httpClient().send(request, BodyHandlers.ofInputStream());
-
-    assertEquals(200, response.statusCode());
-    assertEquals(
-        new Pet(1234L, "Reginald", null), new ObjectMapper().readValue(response.body(), Pet.class));
+    var response = operation.sendSync(request);
+    if (response instanceof ShowPetById200 ok) {
+      assertEquals(new Pet(1234L, "Reginald", null), ok.body());
+    } else {
+      fail("Expected a 200 response");
+    }
   }
 }
