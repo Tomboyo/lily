@@ -50,7 +50,7 @@ public class ParametersTest {
   }
 
   @Nested
-  class PathStrings {
+  class PathParameters {
     private static String packageName;
 
     @BeforeAll
