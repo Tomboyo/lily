@@ -46,7 +46,7 @@ public class ParametersTest {
 
   @AfterAll
   static void afterAll() throws Exception {
-        deleteGeneratedSources();
+    deleteGeneratedSources();
   }
 
   @Nested
