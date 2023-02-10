@@ -16,12 +16,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.http.HttpResponse;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @WireMockTest
 class SynchronousRequestTests {
+
+  @AfterAll
+  static void afterAll() throws Exception {
+    //    deleteGeneratedSources();
+  }
 
   @Nested
   class WhenResponseHasContent {
@@ -289,5 +295,53 @@ class SynchronousRequestTests {
           "If the OAS does not define a default, one is generated anyway and used to hold"
               + " unexpected responses");
     }
+  }
+
+  /*
+   * After a user customizes an HTTP request, they can still use the operation's sendSync method to
+   * dispatch the request and deserialize the response into a Response object.
+   */
+  @Test
+  void customizedRequest(WireMockRuntimeInfo info) throws Exception {
+    var packageName =
+        compileOas(
+            """
+            openapi: 3.0.2
+            paths:
+              /pets:
+                get:
+                  operationId: listPets
+                  responses:
+                    '200':
+                      content:
+                        'application/json':
+                          schema:
+                            type: string
+            """);
+
+    stubFor(get("/pets").willReturn(ok("\"expected\"")));
+
+    var actual =
+        evaluate(
+            """
+        var operation = %s.Api.newBuilder()
+          .uri("%s")
+          .build()
+          .everyOperation()
+          .listPets();
+        var response = operation.sendSync(
+            operation.httpRequest());
+        if (response instanceof %s.listpetsoperation.ListPets200 ok) {
+          return ok.body();
+        }
+        throw new RuntimeException("Expected 200 OK response");
+        """
+                .formatted(packageName, info.getHttpBaseUrl(), packageName),
+            String.class);
+
+    assertEquals(
+        "expected",
+        actual,
+        "The user may customize an http request and send it with the operation's sendSync method");
   }
 }
