@@ -54,10 +54,16 @@ public class AstOperationCodeGen {
                 return this;
               }
 
+              /** Get the base URI of the service (like {@code "https://example.com/"}). It always
+                * ends with a trailing slash.
+                */
               public String baseUri() {
                 return this.baseUri;
               }
 
+              /** Get this operation's relative path interpolated with any bound parameters. The
+                * path is always relative, so it does not start with a "/".
+                */
               public String pathString() {
                 {{#pathSmartFormEncoder}}
                 var smartFormEncoder = io.github.tomboyo.lily.http.encoding.Encoders.smartFormExploded();
@@ -69,6 +75,7 @@ public class AstOperationCodeGen {
                   .toString();
               }
 
+              /** Get the query string for this operation and any bound parameters. */
               public String queryString() {
                 {{#querySmartFormEncoder}}
                 var smartFormEncoder = io.github.tomboyo.lily.http.encoding.Encoders.smartFormExploded();
@@ -100,7 +107,12 @@ public class AstOperationCodeGen {
               }
 
               /**
-               *
+               * Synchronously perform the HTTP request for a custom HttpRequest. You will typically
+               * only use this API when the underlying OpenAPI specification is missing parameters
+               * or other necessary components. Use the {@link #httpRequest()} method to get a
+               * template HTTP request from this operation, customize it with
+               * {@link java.net.http.HttpRequest#newBuilder(java.net.http.HttpRequest, java.util.function.BiPredicate)},
+               * then use this method to dispatch it.
                */
               public {{{responseTypeName}}} sendSync(java.net.http.HttpRequest request)
                   throws java.io.IOException, InterruptedException {
