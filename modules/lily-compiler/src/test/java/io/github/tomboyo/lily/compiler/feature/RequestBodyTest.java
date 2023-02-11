@@ -18,11 +18,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(LilyExtension.class)
 @ExtendWith(WireMockExtension.class)
 public class RequestBodyTest {
 
   @Nested
+  @ExtendWith(LilyExtension.class)
   class RequestBodyComponentSchema {
     @BeforeAll
     static void beforeAll(LilyTestSupport support) {
@@ -108,6 +108,7 @@ public class RequestBodyTest {
   }
 
   @Nested
+  @ExtendWith(LilyExtension.class)
   class InLineRequestBodySchema {
     @BeforeAll
     static void beforeAll(LilyTestSupport support) {
