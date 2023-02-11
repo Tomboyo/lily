@@ -31,7 +31,7 @@ public class AstOperationCodeGen {
               {{#bodyFqpt}}
               private {{{bodyFqpt}}} body;
               {{/bodyFqpt}}
-              
+
               public {{className}}(
                   String baseUri,
                   java.net.http.HttpClient httpClient,
@@ -58,7 +58,7 @@ public class AstOperationCodeGen {
                 this.query = query.apply(this.query);
                 return this;
               }
-              
+
               {{#bodyFqpt}}
               /** Configure the request body. */
               public {{className}} body({{{bodyFqpt}}} body) {
@@ -66,7 +66,7 @@ public class AstOperationCodeGen {
                 return this;
               }
               {{/bodyFqpt}}
-              
+
 
               /** Get the base URI of the service (like {@code "https://example.com/"}). It always
                 * ends with a trailing slash.
@@ -179,49 +179,53 @@ public class AstOperationCodeGen {
                 entry("packageName", ast.name().packageName()),
                 entry("className", ast.name().typeName()),
                 entry("pathTemplate", withoutLeadingSlash(ast.relativePath())),
-                entry("queryTemplate",
-                ast.parameters().stream()
-                    .filter(parameter -> parameter.location() == QUERY)
-                    .map(parameter -> "{" + parameter.apiName() + "}")
-                    .collect(Collectors.joining(""))),
-                entry("method",
-                ast.method()),
-                entry("pathSmartFormEncoder",
-                ast.parameters().stream()
-                    .anyMatch(
-                        parameter ->
-                            parameter.location() == PATH && parameter.encoding().style() == FORM)),
-                entry("querySmartFormEncoder",
-                ast.parameters().stream()
-                    .anyMatch(
-                        parameter ->
-                            parameter.location() == QUERY && parameter.encoding().style() == FORM)),
-                entry("pathParameters",
-                ast.parameters().stream()
-                    .filter(parameter -> parameter.location() == PATH)
-                    .map(
-                        parameter ->
-                            Map.of(
-                                "fqpt", parameter.typeName().toFqpString(),
-                                "name", parameter.name().lowerCamelCase(),
-                                "apiName", parameter.apiName(),
-                                "encoder", getEncoder(parameter.encoding())))
-                    .collect(toList())),
-                entry("queryParameters",
-                ast.parameters().stream()
-                    .filter(parameter -> parameter.location() == QUERY)
-                    .map(
-                        parameter ->
-                            Map.of(
-                                "fqpt", parameter.typeName().toFqpString(),
-                                "name", parameter.name().lowerCamelCase(),
-                                "apiName", parameter.apiName(),
-                                "encoder", getEncoder(parameter.encoding())))
-                    .collect(toList())),
-                entry("responseTypeName",
-                ast.responseName().toFqpString()),
-                entry("bodyFqpt",
-                ast.requestBody().<Object>map(Fqn::toFqpString).orElse(false))));
+                entry(
+                    "queryTemplate",
+                    ast.parameters().stream()
+                        .filter(parameter -> parameter.location() == QUERY)
+                        .map(parameter -> "{" + parameter.apiName() + "}")
+                        .collect(Collectors.joining(""))),
+                entry("method", ast.method()),
+                entry(
+                    "pathSmartFormEncoder",
+                    ast.parameters().stream()
+                        .anyMatch(
+                            parameter ->
+                                parameter.location() == PATH
+                                    && parameter.encoding().style() == FORM)),
+                entry(
+                    "querySmartFormEncoder",
+                    ast.parameters().stream()
+                        .anyMatch(
+                            parameter ->
+                                parameter.location() == QUERY
+                                    && parameter.encoding().style() == FORM)),
+                entry(
+                    "pathParameters",
+                    ast.parameters().stream()
+                        .filter(parameter -> parameter.location() == PATH)
+                        .map(
+                            parameter ->
+                                Map.of(
+                                    "fqpt", parameter.typeName().toFqpString(),
+                                    "name", parameter.name().lowerCamelCase(),
+                                    "apiName", parameter.apiName(),
+                                    "encoder", getEncoder(parameter.encoding())))
+                        .collect(toList())),
+                entry(
+                    "queryParameters",
+                    ast.parameters().stream()
+                        .filter(parameter -> parameter.location() == QUERY)
+                        .map(
+                            parameter ->
+                                Map.of(
+                                    "fqpt", parameter.typeName().toFqpString(),
+                                    "name", parameter.name().lowerCamelCase(),
+                                    "apiName", parameter.apiName(),
+                                    "encoder", getEncoder(parameter.encoding())))
+                        .collect(toList())),
+                entry("responseTypeName", ast.responseName().toFqpString()),
+                entry("bodyFqpt", ast.requestBody().<Object>map(Fqn::toFqpString).orElse(false))));
 
     return new Source(ast.name(), content);
   }

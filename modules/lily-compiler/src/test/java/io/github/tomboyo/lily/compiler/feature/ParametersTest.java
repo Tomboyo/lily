@@ -2,10 +2,7 @@ package io.github.tomboyo.lily.compiler.feature;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.ok;
-import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
@@ -15,11 +12,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.net.URI;
-
-import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import java.net.URI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -264,9 +259,10 @@ public class ParametersTest {
           """
               .formatted(packageName, info.getHttpBaseUrl(), packageName));
 
-      verify(putRequestedFor(urlEqualTo("/pets"))
-          .withHeader("content-type", equalTo("application/json"))
-          .withRequestBody(equalToJson("{\"name\":\"Fido\",\"age\":12}")));
+      verify(
+          putRequestedFor(urlEqualTo("/pets"))
+              .withHeader("content-type", equalTo("application/json"))
+              .withRequestBody(equalToJson("{\"name\":\"Fido\",\"age\":12}")));
     }
   }
 }

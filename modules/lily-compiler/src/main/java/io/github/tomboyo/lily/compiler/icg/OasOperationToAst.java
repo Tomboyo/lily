@@ -4,7 +4,6 @@ import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
@@ -91,28 +90,22 @@ public class OasOperationToAst {
             parameters,
             bodyAndAst.left(),
             responseSumAndAst.left()),
-        Stream.of(
-            responseSumAndAst.right(),
-            bodyAndAst.right(),
-            parameterAst)
-            .flatMap(identity()).collect(Collectors.toSet()));
+        Stream.of(responseSumAndAst.right(), bodyAndAst.right(), parameterAst)
+            .flatMap(identity())
+            .collect(Collectors.toSet()));
   }
 
   private Pair<Optional<Fqn>, Stream<Ast>> evaluateRequestBody(
-      Operation operation,
-      PackageName genRoot,
-      SimpleName operationId
-      ) {
+      Operation operation, PackageName genRoot, SimpleName operationId) {
 
     return Optional.ofNullable(operation.getRequestBody())
         .map(RequestBody::getContent)
         .map(content -> content.get("application/json"))
         .map(MediaType::getSchema)
-        .map(schema -> OasSchemaToAst.evaluateInto(
-            basePackage,
-            genRoot,
-            operationId.resolve("Body"),
-            schema))
+        .map(
+            schema ->
+                OasSchemaToAst.evaluateInto(
+                    basePackage, genRoot, operationId.resolve("Body"), schema))
         .map(pair -> new Pair<>(Optional.of(pair.left()), pair.right()))
         .orElse(new Pair<>(Optional.empty(), Stream.empty()));
   }
