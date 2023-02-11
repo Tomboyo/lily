@@ -4,9 +4,11 @@ import static io.github.tomboyo.lily.compiler.ast.ParameterEncoding.Style.FORM;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.PATH;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.QUERY;
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
+import static java.util.Map.entry;
 import static java.util.stream.Collectors.toList;
 
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,7 +28,10 @@ public class AstOperationCodeGen {
 
               private Query query;
               private Path path;
-
+              {{#bodyFqpt}}
+              private {{{bodyFqpt}}} body;
+              {{/bodyFqpt}}
+              
               public {{className}}(
                   String baseUri,
                   java.net.http.HttpClient httpClient,
@@ -53,6 +58,15 @@ public class AstOperationCodeGen {
                 this.query = query.apply(this.query);
                 return this;
               }
+              
+              {{#bodyFqpt}}
+              /** Configure the request body. */
+              public {{className}} body({{{bodyFqpt}}} body) {
+                this.body = body;
+                return this;
+              }
+              {{/bodyFqpt}}
+              
 
               /** Get the base URI of the service (like {@code "https://example.com/"}). It always
                 * ends with a trailing slash.
@@ -92,10 +106,23 @@ public class AstOperationCodeGen {
                * {@link java.net.http.HttpRequest#newBuilder(java.net.http.HttpRequest, java.util.function.BiPredicate)}} static
                * function.
                */
-              public java.net.http.HttpRequest httpRequest() {
+              public java.net.http.HttpRequest httpRequest() {{#bodyFqpt}}throws com.fasterxml.jackson.core.JsonProcessingException{{/bodyFqpt}} {
                 return java.net.http.HttpRequest.newBuilder()
                   .uri(java.net.URI.create(this.baseUri + pathString() + queryString()))
-                  .method("{{method}}", java.net.http.HttpRequest.BodyPublishers.noBody())
+                  .method(
+                      "{{method}}",
+                      {{#bodyFqpt}}
+                      this.body == null
+                          ? java.net.http.HttpRequest.BodyPublishers.noBody()
+                          : java.net.http.HttpRequest.BodyPublishers.ofByteArray(
+                              this.objectMapper.writeValueAsBytes(this.body))
+                      {{/bodyFqpt}}
+                      {{^bodyFqpt}}
+                      java.net.http.HttpRequest.BodyPublishers.noBody()
+                      {{/bodyFqpt}})
+                   {{#bodyFqpt}}
+                   .header("content-type", "application/json")
+                   {{/bodyFqpt}}
                   .build();
               }
 
@@ -148,31 +175,28 @@ public class AstOperationCodeGen {
             }
             """,
             "renderAstOperation",
-            Map.of(
-                "packageName",
-                ast.name().packageName(),
-                "className",
-                ast.name().typeName(),
-                "pathTemplate",
-                withoutLeadingSlash(ast.relativePath()),
-                "queryTemplate",
+            Map.ofEntries(
+                entry("packageName", ast.name().packageName()),
+                entry("className", ast.name().typeName()),
+                entry("pathTemplate", withoutLeadingSlash(ast.relativePath())),
+                entry("queryTemplate",
                 ast.parameters().stream()
                     .filter(parameter -> parameter.location() == QUERY)
                     .map(parameter -> "{" + parameter.apiName() + "}")
-                    .collect(Collectors.joining("")),
-                "method",
-                ast.method(),
-                "pathSmartFormEncoder",
+                    .collect(Collectors.joining(""))),
+                entry("method",
+                ast.method()),
+                entry("pathSmartFormEncoder",
                 ast.parameters().stream()
                     .anyMatch(
                         parameter ->
-                            parameter.location() == PATH && parameter.encoding().style() == FORM),
-                "querySmartFormEncoder",
+                            parameter.location() == PATH && parameter.encoding().style() == FORM)),
+                entry("querySmartFormEncoder",
                 ast.parameters().stream()
                     .anyMatch(
                         parameter ->
-                            parameter.location() == QUERY && parameter.encoding().style() == FORM),
-                "pathParameters",
+                            parameter.location() == QUERY && parameter.encoding().style() == FORM)),
+                entry("pathParameters",
                 ast.parameters().stream()
                     .filter(parameter -> parameter.location() == PATH)
                     .map(
@@ -182,8 +206,8 @@ public class AstOperationCodeGen {
                                 "name", parameter.name().lowerCamelCase(),
                                 "apiName", parameter.apiName(),
                                 "encoder", getEncoder(parameter.encoding())))
-                    .collect(toList()),
-                "queryParameters",
+                    .collect(toList())),
+                entry("queryParameters",
                 ast.parameters().stream()
                     .filter(parameter -> parameter.location() == QUERY)
                     .map(
@@ -193,9 +217,11 @@ public class AstOperationCodeGen {
                                 "name", parameter.name().lowerCamelCase(),
                                 "apiName", parameter.apiName(),
                                 "encoder", getEncoder(parameter.encoding())))
-                    .collect(toList()),
-                "responseTypeName",
-                ast.responseName().toFqpString()));
+                    .collect(toList())),
+                entry("responseTypeName",
+                ast.responseName().toFqpString()),
+                entry("bodyFqpt",
+                ast.requestBody().<Object>map(Fqn::toFqpString).orElse(false))));
 
     return new Source(ast.name(), content);
   }
