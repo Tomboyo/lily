@@ -1,23 +1,22 @@
 package io.github.tomboyo.lily.compiler.feature;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import io.github.tomboyo.lily.compiler.LilyExtension;
-import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse.BodyHandlers;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import io.github.tomboyo.lily.compiler.LilyExtension;
+import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(LilyExtension.class)
 @ExtendWith(WireMockExtension.class)
@@ -64,7 +63,8 @@ public class RequestBodyTest {
             .body(new {{package}}.Pet("Fido", 12))
             .sendSync();
           """,
-          "uri", info.getHttpBaseUrl());
+          "uri",
+          info.getHttpBaseUrl());
 
       /* When a $ref requestBody schema is specified, Lily generates a corresponding "anonymous"
        * body in the base package and an operation with a #body(...) method. When sendSync is
@@ -79,8 +79,9 @@ public class RequestBodyTest {
 
     @Test
     void httpRequest(LilyTestSupport support, WireMockRuntimeInfo info) throws Exception {
-      var request = support.evaluate(
-          """
+      var request =
+          support.evaluate(
+              """
           return {{package}}.Api.newBuilder()
             .uri("{{uri}}")
             .build()
@@ -89,8 +90,9 @@ public class RequestBodyTest {
             .body(new {{package}}.Pet("Fido", 12))
             .httpRequest();
           """,
-          HttpRequest.class,
-          "uri", info.getHttpBaseUrl());
+              HttpRequest.class,
+              "uri",
+              info.getHttpBaseUrl());
 
       HttpClient.newHttpClient().send(request, BodyHandlers.discarding());
 
@@ -142,7 +144,8 @@ public class RequestBodyTest {
           .body(new {{package}}.createpetoperation.CreatePetBody("Fido", 12))
           .sendSync();
         """,
-          "url", info.getHttpBaseUrl());
+          "url",
+          info.getHttpBaseUrl());
 
       /* When an in-line requestBody schema is specified, Lily generates a corresponding "anonymous"
        * body (named after the operation) and an operation with a #body(...) method. When sendSync
@@ -156,8 +159,9 @@ public class RequestBodyTest {
 
     @Test
     void httpRequest(LilyTestSupport support, WireMockRuntimeInfo info) throws Exception {
-      var request = support.evaluate(
-          """
+      var request =
+          support.evaluate(
+              """
           return {{package}}.Api.newBuilder()
             .uri("{{url}}")
             .build()
@@ -166,8 +170,9 @@ public class RequestBodyTest {
             .body(new {{package}}.createpetoperation.CreatePetBody("Fido", 12))
             .httpRequest();
           """,
-          HttpRequest.class,
-          "url", info.getHttpBaseUrl());
+              HttpRequest.class,
+              "url",
+              info.getHttpBaseUrl());
 
       HttpClient.newHttpClient().send(request, BodyHandlers.discarding());
 

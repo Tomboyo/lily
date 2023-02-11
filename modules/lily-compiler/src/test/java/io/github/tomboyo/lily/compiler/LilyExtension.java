@@ -1,21 +1,17 @@
 package io.github.tomboyo.lily.compiler;
 
+import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSourcesInPackage;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.extension.AfterAllCallback;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
-import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
-import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSourcesInPackage;
 
 /** Provides per-class lifecycle code generation support. */
 public class LilyExtension implements AfterAllCallback, ParameterResolver, Extension {
@@ -29,15 +25,15 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver, Exten
 
   @Override
   public boolean supportsParameter(
-      ParameterContext parameterContext,
-      ExtensionContext extensionContext) throws ParameterResolutionException {
+      ParameterContext parameterContext, ExtensionContext extensionContext)
+      throws ParameterResolutionException {
     return parameterContext.getParameter().getAnnotatedType().getType() == LilyTestSupport.class;
   }
 
   @Override
   public Object resolveParameter(
-      ParameterContext parameterContext,
-      ExtensionContext extensionContext) throws ParameterResolutionException {
+      ParameterContext parameterContext, ExtensionContext extensionContext)
+      throws ParameterResolutionException {
     return instances.computeIfAbsent(
         parameterContext.getDeclaringExecutable().getDeclaringClass(),
         key -> new LilyTestSupport());

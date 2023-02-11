@@ -79,12 +79,9 @@ public class CompilerSupport {
   }
 
   public static void deleteGeneratedSourcesInPackage(String packageName) throws IOException {
-    var directory = Arrays.stream(packageName.split("\\."))
-        .reduce(
-            GENERATED_SOURCES,
-            Path::resolve,
-            Path::resolve
-        );
+    var directory =
+        Arrays.stream(packageName.split("\\."))
+            .reduce(GENERATED_SOURCES, Path::resolve, Path::resolve);
     deleteAllInDirectoryRecursively(directory);
   }
 
