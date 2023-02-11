@@ -1,6 +1,7 @@
 package io.github.tomboyo.lily.compiler.ast;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * An operation, such as "createNewBlogPost" corresponding to an OAS operation.
@@ -13,5 +14,6 @@ public record AstOperation(
     String method,
     String relativePath,
     List<OperationParameter> parameters,
+    Optional<Fqn> requestBody,
     Fqn responseName)
     implements Ast {}
