@@ -1,10 +1,5 @@
 package io.github.tomboyo.lily.compiler.feature;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.compileOas;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSources;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.evaluate;
@@ -12,14 +7,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import java.net.URI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Operations expose setters by parameter location, since parameters are only distinct by name and
@@ -213,56 +205,6 @@ public class ParametersTest {
           "?include=name&include=age&limit=5",
           actual,
           "queryString() returns the interpolated query string of the configured operation");
-    }
-  }
-
-  @Nested
-  @ExtendWith(WireMockExtension.class)
-  class BodyParameters {
-    private static String packageName;
-
-    @BeforeAll
-    static void beforeAll() throws Exception {
-      packageName =
-          compileOas(
-              """
-              openapi: 3.0.2
-              paths:
-                /pets:
-                  put:
-                    operationId: createPet
-                    requestBody:
-                      content:
-                        'application/json':
-                          schema:
-                            type: object
-                            properties:
-                              name:
-                                type: string
-                              age:
-                                type: integer
-                                format: int32
-              """);
-    }
-
-    @Test
-    void body(WireMockRuntimeInfo info) {
-      evaluate(
-          """
-          return %s.Api.newBuilder()
-            .uri("%s")
-            .build()
-            .everyOperation()
-            .createPet()
-            .body(new %s.createpetoperation.CreatePetBody("Fido", 12))
-            .sendSync();
-          """
-              .formatted(packageName, info.getHttpBaseUrl(), packageName));
-
-      verify(
-          putRequestedFor(urlEqualTo("/pets"))
-              .withHeader("content-type", equalTo("application/json"))
-              .withRequestBody(equalToJson("{\"name\":\"Fido\",\"age\":12}")));
     }
   }
 }

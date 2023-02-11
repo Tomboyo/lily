@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -77,6 +78,16 @@ public class CompilerSupport {
     return "gen.p" + PACKAGE_SERIAL.incrementAndGet();
   }
 
+  public static void deleteGeneratedSourcesInPackage(String packageName) throws IOException {
+    var directory = Arrays.stream(packageName.split("\\."))
+        .reduce(
+            GENERATED_SOURCES,
+            Path::resolve,
+            Path::resolve
+        );
+    deleteAllInDirectoryRecursively(directory);
+  }
+
   /** Delete all generated test sources and their compiled classes */
   public static void deleteGeneratedSources() throws IOException {
     deleteAllInDirectoryRecursively(GENERATED_SOURCES);
@@ -96,6 +107,8 @@ public class CompilerSupport {
         }
       }
     }
+
+    Files.delete(dir);
   }
 
   private static void compileJavaSources(Path classesDir, Collection<Path> sourcePaths) {
