@@ -7,6 +7,72 @@ It is intended to be an alternative to https://github.com/OpenAPITools/openapi-g
 
 Please be aware that Lily is in the early stages of development and may not be suitable for production use-cases. Use Lily at your own risk.
 
+=== Java API
+
+Generated source code looks like this:
+
+[source,java]
+----
+List<Pet> exampleHappyPath() {
+  var api = Api.newBuilder()
+      .uri("https://example.com/")
+      .build();
+
+  try {
+    var response = api.petsOperations()
+        .listPets()
+        .query(query -> query.limit(50))
+        .sendSync();
+
+    return switch (response) {
+      case ListPets200 ok -> ok.body().value();
+      case ListPetsDefault other -> throw new RuntimeException(other.body().message());
+    };
+  } catch (IOException | InterruptedException e) {
+    // The java.net.http layer encountered an exception.
+    throw new RuntimeException("Unable to complete Pets API request", e);
+  }
+}
+----
+
+Here are some of the Lily features we just saw:
+
+* If an operation has the 'pets' tag, then we can access it via the `petsOperations()` _operation group_. Every operation is also part of the `everyOperation()` group, and operations without tags are also members of the `everyUntaggedOperation()` group. These groups are intended to help us explore the API using IDE type-ahead/auto-complete hints.
+
+* Responses form a sealed interface. If we have the pattern-matching for switch expressions feature enabled, we can create an exhaustive switch expression to handle all possible responses, including undocumented and unexpected ones. Otherwise, we can use pattern-matching in an if-else ladder, or even access the status code via `response.httpResponse().statusCode()` (the native java.net.http API).
+
+In the real world, OpenAPI specifications have errors in them that could prevent a generated API from successfully making requests. Rather than wait for service owners to update their specifications or try to fix them in a local copy ourselves, we can use Lily's API to do as much as possible, then dip down into the underlying java.net.http API for full customization and control:
+
+[source,java]
+----
+var operation = api.petsOperations()
+        .listPets()
+        .query(query -> query.limit(50));
+var request = HttpRequest.newBuilder(operation.httpRequest(), (k, v) -> true)
+        .header("x-some-undocumented-header", "foo;bar;baz")
+        .build();
+
+// If the API has correctly documented responses, lily will help us deserialize
+// the response and we can handle it like before.
+var response = operation.sendSync(request);
+
+// Otherwise, we can use the httpClient to get an HttpRequest of an InputStream
+// and deserialize it however we see fit, including not at all.
+var response = api.httpClient().send(request, BodyHandlers.ofInputStream());
+----
+
+Here's what we just saw:
+
+* We can use the operation to customize an HttpRequest, then use the java.net.http API to copy-and-modify that request. We can use Lily for everything that is documented by the OpenAPI specification correctly, but then arbitrarily modify the request with the native API. This lets us accommodate nearly any specification error, and even flaws in Lily (such as, say, a lack of support for headers as of version 0.2.1).
+
+* We can then ask the operation to send the customized request, which will return a response that lazily deserializes the response body to the documented type. If we know the documented type is wrong, we can instead send the request with the native API and deserialize the InputStream however necessary, or not at all.
+
+In other words, Lily is designed to facilitate HTTP interactions whenever possible, but fall back gracefully to the native java.net.http API in the presence of specification errors. Notably, all of these workarounds are _forwards-compatible_: Once the service owners update their OpenAPI specification to correct whatever errors were present, all of our code continues working. We can go back and update the code to use the generated API at our own pace.
+
+=== Maven Dependency
+
+Find the current version in the releases section (https://github.com/Tomboyo/lily/releases/latest[here]).
+
 To generate sources from an OAS document in your maven project, and the following maven build plugin and dependencies:
 
 ```xml
@@ -15,7 +81,7 @@ To generate sources from an OAS document in your maven project, and the followin
         <plugin>
             <groupId>io.github.tomboyo.lily</groupId>
             <artifactId>lily-compiler-maven-plugin</artifactId>
-            <version>0.1.6</version>
+            <version>${lilyVersion}</version>
             <configuration>
                 <!-- Any URI to an OAS document, be it https:// or file://. -->
                 <uri>https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/petstore.yaml</uri>
@@ -56,7 +122,7 @@ To generate sources from an OAS document in your maven project, and the followin
     <dependency>
         <groupId>io.github.tomboyo.lily</groupId>
         <artifactId>lily-http</artifactId>
-        <version>0.1.6</version>
+        <version>${lilyVersion}</version>
     </dependency>
     <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
@@ -75,17 +141,15 @@ The generated source code relies on jackson and the lily-http library at runtime
 
 These configurations can be stand-alone or embedded in a larger project.
 
-For examples of how to use the generated API and what features are supported, please refer to the `modules/example/src/test/java` directory, which contains some basic examples of what the API is capable of.
-
 == Goals
 
 . Generate java source code directly from an OAS document within a java build pipeline (e.g. integrated with Maven or Gradle).
 . Support OAS v3.
-. Target Java 17.
+. Target Java 17+, with special attention paid to upcoming language features.
 . Help end-users work around incorrect or incomplete schema specifications so that they can make progress while awaiting upstream fixes.
 . Expose a high-level API to guide the user through API interactions.
 . Ensure that whenever possible, generated source code is compatible with user code between API specification revisions. In other words: "If I update to the latest API specification, and there are not breaking changes to the API, then Lily's generated source code doesn't break my application."
-. Support _all_ OpenAPI features, including unusual things like matrix-style requests.
+. Support all OpenAPI features, including unusual things like matrix-style requests.
 
 == Non-Goals
 
