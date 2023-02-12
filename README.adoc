@@ -1,5 +1,7 @@
 = Lily OAS-To-Java Compiler
 
+image:https://img.shields.io/maven-metadata/v/https/repo1.maven.org/maven2/io/github/tomboyo/lily/lily/maven-metadata.xml.svg[title="latest release version badge" link="https://mvnrepository.com/artifact/io.github.tomboyo.lily"]
+
 Lily is a compiler that consumes OpenAPI (Swagger) specifications and produces Java source code.
 It is intended to be an alternative to https://github.com/OpenAPITools/openapi-generator[OpenAPI Generator], which at time of writing is the only option, and substantially more complete than Lily.
 
@@ -63,7 +65,7 @@ var response = api.httpClient().send(request, BodyHandlers.ofInputStream());
 
 Here's what we just saw:
 
-* We can use the operation to customize an HttpRequest, then use the java.net.http API to copy-and-modify that request. We can use Lily for everything that is documented by the OpenAPI specification correctly, but then arbitrarily modify the request with the native API. This lets us accommodate nearly any specification error, and even flaws in Lily (such as, say, a lack of support for headers as of version 0.2.1).
+* We can use the operation to customize an HttpRequest, then use the java.net.http API to copy-and-modify that request. We can use Lily for everything that is documented by the OpenAPI specification correctly, but then arbitrarily modify the request with the native API. This lets us accommodate nearly any specification error, and even flaws in Lily.
 
 * We can then ask the operation to send the customized request, which will return a response that lazily deserializes the response body to the documented type. If we know the documented type is wrong, we can instead send the request with the native API and deserialize the InputStream however necessary, or not at all.
 
@@ -71,7 +73,7 @@ In other words, Lily is designed to facilitate HTTP interactions whenever possib
 
 === Maven Dependency
 
-Find the current version in the releases section (https://github.com/Tomboyo/lily/releases/latest[here]).
+image:https://img.shields.io/maven-metadata/v/https/repo1.maven.org/maven2/io/github/tomboyo/lily/lily/maven-metadata.xml.svg[title="latest release version badge" link="https://mvnrepository.com/artifact/io.github.tomboyo.lily"]
 
 To generate sources from an OAS document in your maven project, and the following maven build plugin and dependencies:
 
