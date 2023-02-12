@@ -1,6 +1,5 @@
 package io.github.tomboyo.lily.compiler;
 
-import static io.github.tomboyo.lily.compiler.CompilerSupport.deleteGeneratedSourcesInPackage;
 import static io.github.tomboyo.lily.compiler.CompilerSupport.uniquePackageName;
 
 import java.io.IOException;
@@ -21,7 +20,7 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
 
   @Override
   public void afterAll(ExtensionContext extensionContext) {
-    instance.deleteGeneratedSources();
+    instance.clearPackageFiles();
   }
 
   @Override
@@ -106,9 +105,9 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
       return CompilerSupport.evaluate(packageName, returnType, source);
     }
 
-    private void deleteGeneratedSources() {
+    private void clearPackageFiles() {
       try {
-        deleteGeneratedSourcesInPackage(packageName);
+        CompilerSupport.clearPackageFiles(packageName);
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }

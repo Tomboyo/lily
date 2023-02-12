@@ -18,10 +18,11 @@ import java.util.stream.Stream;
 
 public class OasParameterToAst {
 
-  public static ParameterAndAst evaluateParameter(PackageName packageName, Parameter parameter) {
+  public static ParameterAndAst evaluateParameter(
+      PackageName basePackage, PackageName genRoot, Parameter parameter) {
     var parameterRefAndAst =
-        OasSchemaToAst.evaluate(
-            packageName, SimpleName.of(parameter.getName()), parameter.getSchema());
+        OasSchemaToAst.evaluateInto(
+            basePackage, genRoot, SimpleName.of(parameter.getName()), parameter.getSchema());
 
     var location = ParameterLocation.fromString(parameter.getIn());
 

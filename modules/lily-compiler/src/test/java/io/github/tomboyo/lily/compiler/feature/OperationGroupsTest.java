@@ -124,7 +124,10 @@ public class OperationGroupsTest {
 
     assertEquals(
         Set.of("getPet", "postPet", "putPet"),
-        Arrays.stream(methods).map(Method::getName).collect(toSet()),
+        Arrays.stream(methods)
+            .filter(it -> !it.isSynthetic())
+            .map(Method::getName)
+            .collect(toSet()),
         "All operations are part of the everyOperation() group");
   }
 
