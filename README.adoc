@@ -9,6 +9,8 @@ It is intended to be an alternative to https://github.com/OpenAPITools/openapi-g
 
 Please be aware that Lily is in the early stages of development and may not be suitable for production use-cases. Use Lily at your own risk.
 
+That said, beta testing is the best way to link:CONTRIBUTING.adoc[contribute] to this project.
+
 === Java API
 
 Generated source code looks like this:
