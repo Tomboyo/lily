@@ -1,6 +1,8 @@
 package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.ast.ParameterEncoding.Style.FORM;
+import static io.github.tomboyo.lily.compiler.ast.ParameterEncoding.Style.SIMPLE;
+import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.HEADER;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.PATH;
 import static io.github.tomboyo.lily.compiler.ast.ParameterLocation.QUERY;
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
@@ -14,6 +16,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AstOperationCodeGen {
+
+  private static String ENCODERS = "io.github.tomboyo.lily.http.encoding.Encoders";
+
   public static Source renderAstOperation(AstOperation ast) {
     var content =
         writeString(
@@ -28,6 +33,7 @@ public class AstOperationCodeGen {
 
               private Query query;
               private Path path;
+              private Headers headers;
               {{#bodyFqpt}}
               private {{{bodyFqpt}}} body;
               {{/bodyFqpt}}
@@ -43,8 +49,9 @@ public class AstOperationCodeGen {
                 this.httpClient = httpClient;
                 this.objectMapper = objectMapper;
 
-                path = new Path();
-                query = new Query();
+                this.path = new Path();
+                this.query = new Query();
+                this.headers = new Headers();
               }
 
               /** Configure path parameters for this operation, if any. */
@@ -56,6 +63,12 @@ public class AstOperationCodeGen {
               /** Configure query parameters for this operation, if any. */
               public {{className}} query(java.util.function.Function<Query, Query> query) {
                 this.query = query.apply(this.query);
+                return this;
+              }
+
+              /** Configure headers for this operation, if any. */
+              public {{className}} headers(java.util.function.Function<Headers, Headers> headers) {
+                this.headers = headers.apply(this.headers);
                 return this;
               }
 
@@ -123,6 +136,9 @@ public class AstOperationCodeGen {
                    {{#bodyFqpt}}
                    .header("content-type", "application/json")
                    {{/bodyFqpt}}
+                   {{#headers}}
+                   .header("{{apiName}}", {{{encoder}}}.encode("{{apiName}}", this.headers.{{name}}))
+                   {{/headers}}
                   .build();
               }
 
@@ -172,6 +188,18 @@ public class AstOperationCodeGen {
                 }
                 {{/queryParameters}}
               }
+
+              public static class Headers {
+                private Headers() {}
+
+                {{#headers}}
+                private {{{fqpt}}} {{name}};
+                public Headers {{name}}({{{fqpt}}} {{name}}) {
+                  this.{{name}} = {{name}};
+                  return this;
+                }
+                {{/headers}}
+              }
             }
             """,
             "renderAstOperation",
@@ -210,7 +238,7 @@ public class AstOperationCodeGen {
                                     "fqpt", parameter.typeName().toFqpString(),
                                     "name", parameter.name().lowerCamelCase(),
                                     "apiName", parameter.apiName(),
-                                    "encoder", getEncoder(parameter.encoding())))
+                                    "encoder", getEncoderForUri(parameter.encoding())))
                         .collect(toList())),
                 entry(
                     "queryParameters",
@@ -222,10 +250,22 @@ public class AstOperationCodeGen {
                                     "fqpt", parameter.typeName().toFqpString(),
                                     "name", parameter.name().lowerCamelCase(),
                                     "apiName", parameter.apiName(),
-                                    "encoder", getEncoder(parameter.encoding())))
+                                    "encoder", getEncoderForUri(parameter.encoding())))
                         .collect(toList())),
                 entry("responseTypeName", ast.responseName().toFqpString()),
-                entry("bodyFqpt", ast.requestBody().<Object>map(Fqn::toFqpString).orElse(false))));
+                entry("bodyFqpt", ast.requestBody().<Object>map(Fqn::toFqpString).orElse(false)),
+                entry(
+                    "headers",
+                    ast.parameters().stream()
+                        .filter(parameter -> parameter.location() == HEADER)
+                        .map(
+                            parameter ->
+                                Map.of(
+                                    "fqpt", parameter.typeName().toFqpString(),
+                                    "name", parameter.name().lowerCamelCase(),
+                                    "apiName", parameter.apiName(),
+                                    "encoder", getEncoderForHeaders(parameter.encoding())))
+                        .toList())));
 
     return new Source(ast.name(), content);
   }
@@ -238,16 +278,28 @@ public class AstOperationCodeGen {
     }
   }
 
-  private static String getEncoder(ParameterEncoding encoding) {
-    if (encoding.style() == FORM) {
+  private static String getEncoderForUri(ParameterEncoding encoding) {
+    if (encoding.style() == FORM && encoding.explode()) {
       // use the stateful smartFormEncoder local variable.
       return "smartFormEncoder";
     }
 
-    if (encoding.explode()) {
-      return "io.github.tomboyo.lily.http.encoding.Encoders.simpleExplode()";
-    } else {
-      return "io.github.tomboyo.lily.http.encoding.Encoders.simple()";
+    if (encoding.style() == SIMPLE && !encoding.explode()) {
+      return ENCODERS + ".simple()";
     }
+
+    throw new RuntimeException("Unsupported encoding: " + encoding);
+  }
+
+  private static String getEncoderForHeaders(ParameterEncoding encoding) {
+    if (encoding.style() == FORM && encoding.explode()) {
+      return ENCODERS + ".formExploded()";
+    }
+
+    if (encoding.style() == SIMPLE && !encoding.explode()) {
+      return ENCODERS + ".simple()";
+    }
+
+    throw new RuntimeException("Unsupported encoding: " + encoding);
   }
 }
