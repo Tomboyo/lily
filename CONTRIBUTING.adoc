@@ -1,0 +1,24 @@
+= Contributing
+
+Thanks for your interest in this project!
+
+== Be A Beta Tester
+
+The best way for you to contribute is to test the generator: Take a real OpenAPI specification that you work with in any project you maintain, then generate a client for it with Lily. Try to make all the same requests you normally need and see if they all work. More than likely, you will encounter shortcomings with the generated API. When that happens, open an Issue with the following:
+
+. What did you need Lily to do?
+. What did it actually do?
+. Were you able to work around the issue or shortcoming, and if so, how?
+. Provide a stack trace, if any.
+. Provide the OpenAPI specification, or a redacted version, or a similar and minimal reproducer if possible.
+
+There are many feature we know we don't support yet. Don't worry about accidentally telling us something we already know -- this is still useful, as it helps us prioritize which features to implement.
+
+== As For PRs...
+
+If you're interested in contributing a feature, please open an Issue with the following:
+
+. What feature would you like to implement, and
+. What will the generated API look like with that implementation? Write some java code out to demonstrate.
+
+This will give us opportunity to discuss whether the feature is a desirable addition to the project, and whether the proposed solution has any hidden flaws. This will also give us an opportunity to discuess current best-practices in the project (what code to imitate, and what code not to imitate).
