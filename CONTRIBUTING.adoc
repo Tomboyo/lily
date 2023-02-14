@@ -14,11 +14,15 @@ The best way for you to contribute is to test the generator: Take a real OpenAPI
 
 There are many feature we know we don't support yet. Don't worry about accidentally telling us something we already know -- this is still useful, as it helps us prioritize which features to implement.
 
-== As For PRs...
+== Submit Code
 
-If you're interested in contributing a feature, please open an Issue with the following:
+If you're interesting in contributing code to the project, great! We keep a minimal backlog in our [github project](https://github.com/users/Tomboyo/projects/1) that you can browse to see what work we're looking at in the immediate future. If the backlog is currently empty, please feel free to reach out over email (TomASimmons@gmail.com; that's Tom A Simmons) or by opening an Issue. We definitely have things to do, and we can work together to figure out what is best to get started on.
+
+If you have a sepcific feature in mind, feel free to open an issue describing:
 
 . What feature would you like to implement, and
 . What will the generated API look like with that implementation? Write some java code out to demonstrate.
 
-This will give us opportunity to discuss whether the feature is a desirable addition to the project, and whether the proposed solution has any hidden flaws. This will also give us an opportunity to discuess current best-practices in the project (what code to imitate, and what code not to imitate).
+We'll review whether the feature is a good fit for Lily and how best to design the API. We'll also review current best-practices in the ever-evolving codebase (that is, we'll discuss what parts of Lily should be imitated, and what parts should not be imitated).
+
+Thanks again!
