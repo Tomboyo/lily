@@ -27,7 +27,6 @@ public class AstGenerator {
   }
 
   private Stream<Ast> evaluate(OpenAPI openAPI) {
-    var result = evaluateComponents(openAPI);
     return Stream.of(evaluateComponents(openAPI), evaluatePaths(openAPI)).flatMap(identity());
   }
 
