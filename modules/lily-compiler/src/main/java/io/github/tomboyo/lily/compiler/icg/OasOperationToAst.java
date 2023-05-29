@@ -67,6 +67,7 @@ public class OasOperationToAst {
                 parameter ->
                     OasParameterToAst.evaluateParameter(
                         basePackage, subordinatePackageName, parameter))
+            .flatMap(Optional::stream)
             .toList();
     var parameterAst = parametersAndAst.stream().flatMap(OasParameterToAst.ParameterAndAst::ast);
     var parameters =

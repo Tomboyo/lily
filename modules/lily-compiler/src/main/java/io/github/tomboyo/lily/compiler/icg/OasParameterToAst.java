@@ -14,11 +14,27 @@ import io.github.tomboyo.lily.compiler.ast.ParameterLocation;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.Parameter.StyleEnum;
+import java.util.Optional;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OasParameterToAst {
 
-  public static ParameterAndAst evaluateParameter(
+  private static final Logger LOGGER = LoggerFactory.getLogger(OasParameterToAst.class);
+
+  public static Optional<ParameterAndAst> evaluateParameter(
+      PackageName basePackage, PackageName genRoot, Parameter parameter) {
+    // A parameter may be a schema object or a reference object.
+    if (parameter.getSchema() != null) {
+      return Optional.of(evaluateSchema(basePackage, genRoot, parameter));
+    } else {
+      LOGGER.warn("Skipping parameter in {}: not yet supported.", genRoot);
+      return Optional.empty();
+    }
+  }
+
+  private static ParameterAndAst evaluateSchema(
       PackageName basePackage, PackageName genRoot, Parameter parameter) {
     var parameterRefAndAst =
         OasSchemaToAst.evaluateInto(
