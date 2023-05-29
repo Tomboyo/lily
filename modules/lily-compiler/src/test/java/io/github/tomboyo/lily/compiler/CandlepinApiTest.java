@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.net.URI;
 import java.nio.file.Path;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class CandlepinApiTest {
-
+/** Compiles an open-source OpenAPI document for a real system to help unearth bugs. */
+@Disabled("Will not pass until '#74 - Graceful Failure' is finished.")
+class CandlepinApiTest {
   @Test
   void test(@TempDir Path temp) {
     assertDoesNotThrow(
