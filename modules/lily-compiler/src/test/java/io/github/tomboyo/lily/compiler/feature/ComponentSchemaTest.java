@@ -12,6 +12,36 @@ public class ComponentSchemaTest {
 
   @Nested
   @ExtendWith(LilyExtension.class)
+  class WhenObjectSchema {
+    @BeforeAll
+    static void beforeAll(LilyTestSupport support) {
+      support.compileOas(
+          """
+    openapi: 3.0.2
+    components:
+      schemas:
+        MySchema:
+          type: object
+          properties:
+            foo:
+              type: integer
+              format: int32
+    """);
+    }
+
+    @Test
+    void test(LilyTestSupport support) {
+      Assertions.assertDoesNotThrow(
+          () ->
+              support.evaluate(
+                  """
+            return new {{package}}.MySchema(1);
+            """));
+    }
+  }
+
+  @Nested
+  @ExtendWith(LilyExtension.class)
   class WhenObjectSchemaWithoutType {
     @BeforeAll
     static void beforeAll(LilyTestSupport support) {
