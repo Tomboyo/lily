@@ -74,7 +74,15 @@ public class OasSchemaToAst {
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
     var type = schema.getType();
     if (type == null) {
-      return new Pair<>(toBasePackageClassReference(requireNonNull(schema.get$ref())), Stream.of());
+      var properties = schema.getProperties();
+      if (properties == null) {
+        return new Pair<>(
+            toBasePackageClassReference(requireNonNull(schema.get$ref())), Stream.of());
+      }
+
+      // If no discriminator, $ref, or type is specified, then it's *probably* an object if it has
+      // properties.
+      return evaluateObject(currentPackage, name, schema);
     }
 
     return switch (type) {
