@@ -17,16 +17,16 @@ public class ComponentSchemaTest {
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
-    openapi: 3.0.2
-    components:
-      schemas:
-        MySchema:
-          type: object
-          properties:
-            foo:
-              type: integer
-              format: int32
-    """);
+          openapi: 3.0.2
+          components:
+            schemas:
+              MySchema:
+                type: object
+                properties:
+                  foo:
+                    type: integer
+                    format: int32
+          """);
     }
 
     @Test
