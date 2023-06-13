@@ -71,4 +71,61 @@ public class ComponentSchemaTest {
          """);
     }
   }
+
+  @Nested
+  @ExtendWith(LilyExtension.class)
+  class WhenComposedSchema {
+    @BeforeAll
+    static void beforeAll(LilyTestSupport support) {
+      support.compileOas(
+          """
+          openapi: 3.0.2
+          components:
+            schemas:
+              MyAllOfSchema:
+                allOf:
+                  - type: object
+                    properties:
+                      foo:
+                        type: string
+              MyAnyOfSchema:
+                anyOf:
+                  - type: object
+                    properties:
+                      foo:
+                        type: string
+              MyOneOfSchema:
+                oneOf:
+                  - type: object
+                    properties:
+                      foo:
+                        type: string
+              MyNotSchema:
+                not:
+                  type: object
+                  properties:
+                    foo:
+                      type: string
+              """);
+    }
+
+    @Test
+    void test(LilyTestSupport support) {
+      Assertions.assertDoesNotThrow(
+          () ->
+              support.evaluate(
+                  """
+                  new {{package}}.MyAllOfSchema();
+                  new {{package}}.MyAnyOfSchema();
+                  new {{package}}.MyOneOfSchema();
+                  new {{package}}.MyNotSchema();
+
+                  return null;
+                  """),
+          """
+                   If an object schema specification contains compositional keywords allOf, anyOf, oneOf, or not fields, Lily does not support
+                   these fields, but should generate a class so that the code compiles.
+                """);
+    }
+  }
 }

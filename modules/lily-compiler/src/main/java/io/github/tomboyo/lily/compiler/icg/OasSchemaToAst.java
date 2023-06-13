@@ -11,7 +11,9 @@ import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
+import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -72,6 +74,20 @@ public class OasSchemaToAst {
 
   private Pair<Fqn, Stream<Ast>> evaluateSchema(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
+    // - log that we couldn't generate the thing
+    // - documentation on the stub class
+    // - generate empty stub class so that references to the FQN from other classes still work
+
+    if (schema instanceof ComposedSchema || schema.getNot() != null) {
+      var fqn = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
+      LOGGER.warn(
+          "Generating empty class {} because compositional keywords *allOf, anyOf, oneOf, and not*"
+              + " are not yet supported",
+          fqn);
+
+      return new Pair<>(fqn, Stream.of(AstClass.of(fqn, List.of())));
+    }
+
     var type = schema.getType();
     if (type == null) {
       var properties = schema.getProperties();
