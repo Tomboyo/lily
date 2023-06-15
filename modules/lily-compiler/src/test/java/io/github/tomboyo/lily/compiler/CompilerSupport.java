@@ -8,10 +8,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.tools.DiagnosticCollector;
@@ -29,6 +31,13 @@ public class CompilerSupport {
     return "gen" + SERIAL.incrementAndGet();
   }
 
+  public static Map<String, Path> compileOas(String rootPackageName, URI uri)
+      throws OasParseException {
+    var generatedSourcePaths = LilyCompiler.compile(uri, GENERATED_SOURCES, rootPackageName, true);
+    compileJavaSources(TEST_CLASSES, generatedSourcePaths.values());
+    return generatedSourcePaths;
+  }
+
   /**
    * Generate and compile source code from the given OAS document string.
    *
@@ -36,9 +45,11 @@ public class CompilerSupport {
    * @param oas The OpenAPI specification document contents as a string.
    * @throws OasParseException If this fails for any reason.
    */
-  public static void compileOas(String rootPackageName, String oas) throws OasParseException {
+  public static Map<String, Path> compileOas(String rootPackageName, String oas)
+      throws OasParseException {
     var generatedSourcePaths = LilyCompiler.compile(oas, GENERATED_SOURCES, rootPackageName, true);
-    compileJavaSources(TEST_CLASSES, generatedSourcePaths);
+    compileJavaSources(TEST_CLASSES, generatedSourcePaths.values());
+    return generatedSourcePaths;
   }
 
   @Deprecated(forRemoval = true)

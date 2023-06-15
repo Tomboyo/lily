@@ -85,7 +85,14 @@ public class OasSchemaToAst {
               + " are not yet supported",
           fqn);
 
-      return new Pair<>(fqn, Stream.of(AstClass.of(fqn, List.of())));
+      return new Pair<>(
+          fqn,
+          Stream.of(
+              AstClass.of(
+                  fqn,
+                  List.of(),
+                  "Generated empty class because compositional keywords *allOf, anyOf, oneOf, and"
+                      + " not* are not yet supported")));
     }
 
     var type = schema.getType();

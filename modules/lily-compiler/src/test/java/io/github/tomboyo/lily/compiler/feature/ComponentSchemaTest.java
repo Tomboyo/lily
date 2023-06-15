@@ -110,7 +110,7 @@ public class ComponentSchemaTest {
     }
 
     @Test
-    void test(LilyTestSupport support) {
+    void testThatClassesExist(LilyTestSupport support) {
       Assertions.assertDoesNotThrow(
           () ->
               support.evaluate(
@@ -126,6 +126,16 @@ public class ComponentSchemaTest {
                    If an object schema specification contains compositional keywords allOf, anyOf, oneOf, or not fields, Lily does not support
                    these fields, but should generate a class so that the code compiles.
                 """);
+    }
+
+    @Test
+    void testThatJavadocContainsWarning(LilyTestSupport support) {
+      var string = support.getFileStringForClass("{{package}}.MyAllOfSchema");
+      var containsString =
+          string.contains(
+              "Generated empty class because compositional keywords *allOf, anyOf, oneOf, and not*"
+                  + " are not yet supported");
+      Assertions.assertTrue(containsString, "Lily warns users when it generated empty classes.");
     }
   }
 }

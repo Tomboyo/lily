@@ -12,6 +12,7 @@ import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.util.Pair;
+import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -42,14 +43,22 @@ public class OasComponentsToAst {
       PackageName basePackage, SimpleName componentName, Schema component) {
     var fqnAndAst = OasSchemaToAst.evaluate(basePackage, componentName, component);
 
-    if (null == component.getType()) {
+    if (component.get$ref() != null) {
       // Create a AstClassAlias of a referent type. There are no AST elements.
       return Stream.concat(
           Stream.of(
               new AstClassAlias(
                   Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
                   fqnAndAst.left())),
-          fqnAndAst.right());
+          Stream.of());
+    }
+
+    if (component instanceof ComposedSchema || component.getNot() != null) {
+      return fqnAndAst.right();
+    }
+
+    if (component.getType() == null && component.getProperties() != null) {
+      return fqnAndAst.right();
     }
 
     return switch (component.getType()) {

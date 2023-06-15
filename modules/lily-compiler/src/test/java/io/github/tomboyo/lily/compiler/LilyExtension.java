@@ -4,6 +4,10 @@ import static io.github.tomboyo.lily.compiler.CompilerSupport.uniquePackageName;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -39,7 +43,18 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
 
   public static class LilyTestSupport {
     private final String packageName = uniquePackageName();
+    private Map<String, Path> generatedSourcePaths;
     private boolean hasGeneratedCode = false;
+
+    public void compileOas(URI uri) {
+      assertHasNotAlreadyGeneratedCode();
+
+      try {
+        generatedSourcePaths = CompilerSupport.compileOas(packageName, uri);
+      } catch (OasParseException e) {
+        throw new RuntimeException(e);
+      }
+    }
 
     /**
      * Generates and compiles java sources for the given OpenAPI specification.
@@ -48,6 +63,16 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
      * @see CompilerSupport#compileOas(String, String)
      */
     public void compileOas(String specification) {
+      assertHasNotAlreadyGeneratedCode();
+
+      try {
+        generatedSourcePaths = CompilerSupport.compileOas(packageName, specification);
+      } catch (OasParseException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    private void assertHasNotAlreadyGeneratedCode() {
       if (hasGeneratedCode) {
         throw new IllegalStateException(
             """
@@ -62,12 +87,6 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
             """);
       }
       hasGeneratedCode = true;
-
-      try {
-        CompilerSupport.compileOas(packageName, specification);
-      } catch (OasParseException e) {
-        throw new RuntimeException(e);
-      }
     }
 
     /** See {@link #evaluate(String, Class, String...)}. */
@@ -103,6 +122,16 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
       }
 
       return CompilerSupport.evaluate(packageName, returnType, source);
+    }
+
+    public String getFileStringForClass(String classname) {
+      classname = classname.replace("{{package}}", packageName);
+      var path = generatedSourcePaths.get(classname);
+      try {
+        return Files.readString(path);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
     }
 
     private void clearPackageFiles() {

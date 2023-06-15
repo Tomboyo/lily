@@ -12,6 +12,6 @@ public class AstSupport {
   }
 
   public static Ast astPlaceholder() {
-    return new AstClass(fqnPlaceholder(), new LinkedHashSet<>());
+    return new AstClass(fqnPlaceholder(), new LinkedHashSet<>(), "");
   }
 }
