@@ -39,7 +39,7 @@ public class AstResponseCodeGen {
                 return this.httpResponse;
               }
 
-              {{#contentTypeName}}
+              {{#bodyReturnTypeName}}
               /**
                * Return the deserialized representation of the response body if possible. The body
                * is deserialized lazily; if this method is never called, the body is never
@@ -49,19 +49,34 @@ public class AstResponseCodeGen {
                * @throws java.io.IOException If the response body cannot be deserialized for any
                *         reason.
                */
-              public {{{contentTypeName}}} body() throws java.io.IOException {
-                return objectMapper.readValue(httpResponse.body(), {{{contentTypeName}}}.class);
+              public {{{bodyReturnTypeName}}} body() throws java.io.IOException {
+                {{! List<Foo>.class is not valid java, so we use an Array type intermediary. }}
+                {{#bodyListReturnTypeName}}
+                  return java.util.Arrays.asList(objectMapper.readValue(httpResponse.body(), {{{bodyListReturnTypeName}}}[].class));
+                {{/bodyListReturnTypeName}}
+                {{^bodyListReturnTypeName}}
+                  return objectMapper.readValue(httpResponse.body(), {{{bodyReturnTypeName}}}.class);
+                {{/bodyListReturnTypeName}}
               }
-              {{/contentTypeName}}
+              {{/bodyReturnTypeName}}
             }
             """,
             "renderAstResponse",
             Map.of(
-                "packageName", astResponse.name().packageName(),
-                "typeName", astResponse.name().typeName(),
-                "interfaceName", astResponse.sumTypeName(),
-                "contentTypeName",
-                    astResponse.contentName().<Object>map(Fqn::toFqpString).orElse(false)));
+                "packageName",
+                astResponse.name().packageName(),
+                "typeName",
+                astResponse.name().typeName(),
+                "interfaceName",
+                astResponse.sumTypeName(),
+                "bodyReturnTypeName",
+                astResponse.contentName().<Object>map(Fqn::toFqpString).orElse(false),
+                "bodyListReturnTypeName",
+                astResponse
+                    .contentName()
+                    .flatMap(Fqn::listType)
+                    .<Object>map(Fqn::toFqpString)
+                    .orElse(false)));
 
     return new Source(astResponse.name(), content);
   }
