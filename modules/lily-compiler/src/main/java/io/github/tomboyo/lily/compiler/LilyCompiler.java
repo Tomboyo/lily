@@ -9,13 +9,14 @@ import io.github.tomboyo.lily.compiler.cg.CodeGen;
 import io.github.tomboyo.lily.compiler.cg.Source;
 import io.github.tomboyo.lily.compiler.icg.AstGenerator;
 import io.github.tomboyo.lily.compiler.oas.OasReader;
+import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.OpenAPI;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class LilyCompiler {
@@ -30,7 +31,7 @@ public class LilyCompiler {
    * @return The set of Path objects for each generated file.
    * @throws OasParseException If reading the document fails for any reason.
    */
-  public static Set<Path> compile(
+  public static Map<String, Path> compile(
       URI oasUri, Path outputDir, String basePackage, boolean allowWarnings)
       throws OasParseException {
     var openAPI = OasReader.fromUri(oasUri, allowWarnings);
@@ -47,18 +48,18 @@ public class LilyCompiler {
    * @return The set of Path objects for each generated file.
    * @throws OasParseException If reading the document fails for any reason.
    */
-  public static Set<Path> compile(
+  public static Map<String, Path> compile(
       String oasContent, Path outputDir, String basePackage, boolean allowWarnings)
       throws OasParseException {
     var openAPI = OasReader.fromString(oasContent, allowWarnings);
     return compile(openAPI, outputDir, basePackage);
   }
 
-  private static Set<Path> compile(OpenAPI openAPI, Path outputDir, String basePackage) {
+  private static Map<String, Path> compile(OpenAPI openAPI, Path outputDir, String basePackage) {
     return AstGenerator.evaluate(PackageName.of(basePackage), openAPI)
         .map(CodeGen::renderAst)
-        .map(source -> persistSource(outputDir, source))
-        .collect(Collectors.toSet());
+        .map(source -> new Pair<>(source.fqn(), persistSource(outputDir, source)))
+        .collect(Collectors.toMap(Pair::left, Pair::right));
   }
 
   private static Path persistSource(Path outputDirectory, Source rendering) {
