@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
 import java.net.URI;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /** Compiles an open-source OpenAPI document for a real system to help unearth bugs. */
-@Disabled("Will not pass until '#74 - Graceful Failure' is finished.")
 @ExtendWith(LilyExtension.class)
 class CandlepinApiTest {
   @Test

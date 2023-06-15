@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -82,6 +83,19 @@ public record Fqn(PackageName packageName, SimpleName typeName, List<Fqn> typePa
    */
   public PackageName toPackage() {
     return packageName.resolve(typeName);
+  }
+
+  /**
+   * If this FQN describes a List, return an Optional of the List element's FQN, or else an empty
+   * optional.
+   */
+  public Optional<Fqn> listType() {
+    if (packageName.toString().equalsIgnoreCase("java.util")
+        && typeName.toString().equalsIgnoreCase("List")) {
+      return Optional.of(typeParameters.get(0));
+    } else {
+      return Optional.empty();
+    }
   }
 
   public static class Builder {
