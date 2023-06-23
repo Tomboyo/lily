@@ -1,5 +1,4 @@
 = Lily OAS-To-Java Compiler
-
 image:https://img.shields.io/maven-metadata/v/https/repo1.maven.org/maven2/io/github/tomboyo/lily/lily/maven-metadata.xml.svg[title="latest release version badge" link="https://mvnrepository.com/artifact/io.github.tomboyo.lily"]
 
 Lily is a compiler that consumes OpenAPI (Swagger) specifications and produces Java source code.
@@ -11,33 +10,159 @@ Please be aware that Lily is in the early stages of development and may not be s
 
 That said, beta testing is the best way to link:CONTRIBUTING.adoc[contribute] to this project.
 
-=== Java API
+=== Examples: From Open API Specification to Java Code
 
-Generated source code looks like this:
+Suppose we want to generate a Java client from the https://github.com/OAI/OpenAPI-Specification/blob/main/examples/v3.0/petstore.yaml[Petstore API], as opposed to writing it by hand. We can configure our project with the Lily maven compiler plugin and it will do so for us.
+
+First, we'll add the Lily compiler maven plugin to our project and configure it to generate sources from the specification.
+
+[source,xml]
+----
+<build>
+    <plugins>
+        <plugin>
+            <groupId>io.github.tomboyo.lily</groupId>
+            <artifactId>lily-compiler-maven-plugin</artifactId>
+            <version>${lilyVersion}</version>
+            <configuration>
+                <!-- Any URI to an OAS document, be it https:// or file://. -->
+                <uri>https://raw.githubusercontent.com/OAI/OpenAPI-Specification/9dff244e5708fbe16e768738f4f17cf3fddf4066/examples/v3.0/petstore.yaml</uri>
+
+                <!-- Uncomment to customize the default generated sources directory. -->
+                <!-- <outputDir>target/generated-sources</outputDir> -->
+
+                <basePackage>com.exmaple.my.api</basePackage>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>compile-client</goal>
+                    </goals>
+                    <phase>generate-sources</phase>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----
+
+Next, we add the the dependencies that the generated client needs to our project:
+[source,xml]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson</groupId>
+            <artifactId>jackson-bom</artifactId>
+            <version>2.13.0</version>
+            <scope>import</scope>
+            <type>pom</type>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>io.github.tomboyo.lily</groupId>
+        <artifactId>lily-http</artifactId>
+        <version>${lilyVersion}</version>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+</dependencies>
+----
+
+Next, we run `mvn compile` which will generate the API from the specification, and then we write the following function that uses the generated API to query the Petstore `listPets` operation.
 
 [source,java]
 ----
-List<Pet> exampleHappyPath() {
-  var api = Api.newBuilder()
-      .uri("https://example.com/")
-      .build();
+public List<Pet> exampleOfListPetsApi() {
+    var api = Api.newBuilder()
+        .uri("https://petstore.example.com/")
+        .build();
 
-  try {
-    var response = api.petsOperations()
-        .listPets()
-        .query(query -> query.limit(50))
-        .sendSync();
-
-    return switch (response) {
-      case ListPets200 ok -> ok.body().value();
-      case ListPetsDefault other -> throw new RuntimeException(other.body().message());
-    };
-  } catch (IOException | InterruptedException e) {
-    // The java.net.http layer encountered an exception.
-    throw new RuntimeException("Unable to complete Pets API request", e);
-  }
+    try {
+        var response = api.petsOperations()
+            .listPets()
+            .query(query -> query.limit(100))
+            .sendSync();
+        
+        return switch (response) {
+            case ListPets200 ok -> ok.body().value();
+            case ListPetsDefault other -> throw new RuntimeException(other.body().message());
+        };
+    } catch (InterruptedException e) { 
+        throw e;
+    } catch (IOException e) {
+        // The java.net.http layer encountered an exception.
+        throw new UncheckedIOException("Unable to complete Pets API request", e);
+    }
 }
 ----
+
+
+
+[source,yaml]
+----
+openapi: "3.0.0"
+paths:
+  /pets:
+    get:
+      operationId: listPets <1>
+      tags:
+        - pets
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            format: int32
+      responses:
+        '200':
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/Pets"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+----
+<1> heyasdasd
 
 Here are some of the Lily features we just saw:
 
@@ -72,78 +197,6 @@ Here's what we just saw:
 * We can then ask the operation to send the customized request, which will return a response that lazily deserializes the response body to the documented type. If we know the documented type is wrong, we can instead send the request with the native API and deserialize the InputStream however necessary, or not at all.
 
 In other words, Lily is designed to facilitate HTTP interactions whenever possible, but fall back gracefully to the native java.net.http API in the presence of specification errors. Notably, all of these workarounds are _forwards-compatible_: Once the service owners update their OpenAPI specification to correct whatever errors were present, all of our code continues working. We can go back and update the code to use the generated API at our own pace.
-
-=== Maven Dependency
-
-image:https://img.shields.io/maven-metadata/v/https/repo1.maven.org/maven2/io/github/tomboyo/lily/lily/maven-metadata.xml.svg[title="latest release version badge" link="https://mvnrepository.com/artifact/io.github.tomboyo.lily"]
-
-To generate sources from an OAS document in your maven project, and the following maven build plugin and dependencies:
-
-```xml
-<build>
-    <plugins>
-        <plugin>
-            <groupId>io.github.tomboyo.lily</groupId>
-            <artifactId>lily-compiler-maven-plugin</artifactId>
-            <version>${lilyVersion}</version>
-            <configuration>
-                <!-- Any URI to an OAS document, be it https:// or file://. -->
-                <uri>https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/petstore.yaml</uri>
-
-                <!-- Uncomment to customize the default generated sources directory. -->
-                <!-- <outputDir>target/generated-sources</outputDir> -->
-
-                <basePackage>com.exmaple.my.api</basePackage>
-            </configuration>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>compile-client</goal>
-                    </goals>
-                    <phase>generate-sources</phase>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
-
- <dependencyManagement>
-    <dependencies>
-        <!-- BEGIN generated code dependency management -->
-        <dependency>
-            <groupId>com.fasterxml.jackson</groupId>
-            <artifactId>jackson-bom</artifactId>
-            <version>2.13.0</version>
-            <scope>import</scope>
-            <type>pom</type>
-        </dependency>
-        <!-- END generated code dependency management -->
-    </dependencies>
-</dependencyManagement>
-
-<dependencies>
-     <!-- BEGIN Generated code dependencies -->
-    <dependency>
-        <groupId>io.github.tomboyo.lily</groupId>
-        <artifactId>lily-http</artifactId>
-        <version>${lilyVersion}</version>
-    </dependency>
-    <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-        <!-- ZonedDatetime support -->
-        <groupId>com.fasterxml.jackson.datatype</groupId>
-        <artifactId>jackson-datatype-jsr310</artifactId>
-    </dependency>
-    <!-- END Generated code dependencies -->
-</dependencies>
-```
-
-The generated source code relies on jackson and the lily-http library at runtime, which is why these dependencies are necessary.
-
-These configurations can be stand-alone or embedded in a larger project.
 
 == Goals
 
