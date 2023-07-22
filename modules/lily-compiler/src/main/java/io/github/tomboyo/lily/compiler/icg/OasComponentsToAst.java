@@ -47,7 +47,7 @@ public class OasComponentsToAst {
       // Create a AstClassAlias of a referent type. There are no AST elements.
       return Stream.concat(
           Stream.of(
-              new AstClassAlias(
+              AstClassAlias.aliasOf(
                   Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
                   fqnAndAst.left())),
           Stream.of());
@@ -64,7 +64,7 @@ public class OasComponentsToAst {
     return switch (component.getType()) {
       case "integer", "number", "string", "boolean" -> Stream.concat(
           Stream.of(
-              new AstClassAlias(
+              AstClassAlias.aliasOf(
                   Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
                   fqnAndAst.left())),
           fqnAndAst.right());
@@ -122,7 +122,7 @@ public class OasComponentsToAst {
 
     // 3. Create the final AstClassAlias (with updated AstRef!)
     var alias =
-        new AstClassAlias(
+        AstClassAlias.aliasOf(
             Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
             moveReference(fqnAndAst.left(), fqnMap));
 

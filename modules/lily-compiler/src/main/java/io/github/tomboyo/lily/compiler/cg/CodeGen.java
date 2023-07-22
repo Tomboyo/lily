@@ -4,6 +4,7 @@ import static io.github.tomboyo.lily.compiler.cg.AstApiCodeGen.renderAstAPi;
 import static io.github.tomboyo.lily.compiler.cg.AstClassAliasCodeGen.renderAstClassAlias;
 import static io.github.tomboyo.lily.compiler.cg.AstClassCodeGen.renderClass;
 import static io.github.tomboyo.lily.compiler.cg.AstHeadersCodeGen.renderAstHeaders;
+import static io.github.tomboyo.lily.compiler.cg.AstInterfaceCodeGen.renderInterface;
 import static io.github.tomboyo.lily.compiler.cg.AstOperationCodeGen.renderAstOperation;
 import static io.github.tomboyo.lily.compiler.cg.AstResponseCodeGen.renderAstResponse;
 import static io.github.tomboyo.lily.compiler.cg.AstResponseSumCodeGen.renderAstResponseSum;
@@ -14,6 +15,7 @@ import io.github.tomboyo.lily.compiler.ast.AstApi;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstHeaders;
+import io.github.tomboyo.lily.compiler.ast.AstInterface;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
@@ -30,6 +32,8 @@ public class CodeGen {
       return renderAstClassAlias(astClassAlias);
     } else if (ast instanceof AstHeaders astHeaders) {
       return renderAstHeaders(astHeaders);
+    } else if (ast instanceof AstInterface astInterface) {
+      return renderInterface(astInterface);
     } else if (ast instanceof AstOperation astOperation) {
       return renderAstOperation(astOperation);
     } else if (ast instanceof AstResponseSum astResponseSum) {

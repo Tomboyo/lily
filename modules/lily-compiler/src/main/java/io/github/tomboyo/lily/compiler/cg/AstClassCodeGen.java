@@ -5,6 +5,8 @@ import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
 
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.Field;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
+
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -21,7 +23,7 @@ public class AstClassCodeGen {
              */
             public record {{recordName}}(
                 {{{fields}}}
-            ) {}
+            ) {{implementsClause}} {}
             """,
             "renderClass",
             Map.of(
@@ -34,7 +36,9 @@ public class AstClassCodeGen {
                     .map(AstClassCodeGen::recordField)
                     .collect(Collectors.joining(",\n")),
                 "docstring",
-                ast.docstring()));
+                ast.docstring(),
+                "implementsClause",
+                implementsClause(ast)));
 
     return new Source(ast.name(), content);
   }
@@ -69,5 +73,11 @@ public class AstClassCodeGen {
           "recordField",
           scope);
     }
+  }
+
+  private static String implementsClause(AstClass astClass) {
+    return "implements " + astClass.interfaces().stream()
+        .map(Fqn::toFqpString)
+        .collect(Collectors.joining(", "));
   }
 }

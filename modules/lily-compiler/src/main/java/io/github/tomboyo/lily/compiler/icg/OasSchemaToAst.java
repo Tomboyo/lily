@@ -3,8 +3,10 @@ package io.github.tomboyo.lily.compiler.icg;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
+import io.github.tomboyo.lily.compiler.ast.AddInterface;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
+import io.github.tomboyo.lily.compiler.ast.AstInterface;
 import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
@@ -16,6 +18,8 @@ import io.swagger.v3.oas.models.media.Schema;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,15 +78,48 @@ public class OasSchemaToAst {
 
   private Pair<Fqn, Stream<Ast>> evaluateSchema(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
-    // - log that we couldn't generate the thing
-    // - documentation on the stub class
-    // - generate empty stub class so that references to the FQN from other classes still work
+
+    /*
+     * OneOf composed schemas evaluate to a sealed interface. The schema may
+     * be composed of new or existing schemas; in either case, we emit
+     * AddInterface modifiers so that those AST are updated to
+     * implement the new sealed interface before rendering.
+     */
+    if (schema instanceof ComposedSchema c && c.getOneOf() != null) {
+      var ifaceName = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
+
+      /* Evaluate each subordinate schema to AST and append the implements iface
+       * clause to each. */
+      var counter = new AtomicInteger(1);
+      var pairs =
+          c.getOneOf().stream()
+              .map(
+                  s -> {
+                    var subAst = evaluateSchema(
+                            currentPackage.resolve(name),
+                            name.resolve(Integer.toString(counter.getAndIncrement())),
+                            s);
+                    return subAst.mapRight(
+                            stream ->
+                                Stream.concat(stream, Stream.of(new AddInterface(
+                                  subAst.left(),
+                                  ifaceName))));
+                  })
+              .toList();
+
+      var permits = pairs.stream().map(pair -> pair.left()).toList();
+      var iface = new AstInterface(ifaceName, permits);
+      return new Pair<>(
+          ifaceName,
+          Stream.concat(
+              Stream.of(iface), pairs.stream().map(Pair::right).flatMap(Function.identity())));
+    }
 
     if (schema instanceof ComposedSchema || schema.getNot() != null) {
       var fqn = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
       LOGGER.warn(
-          "Generating empty class {} because compositional keywords *allOf, anyOf, oneOf, and not*"
-              + " are not yet supported",
+          "Generating empty class {} because compositional keywords *allOf, anyOf, and not* are not"
+              + " yet supported",
           fqn);
 
       return new Pair<>(
@@ -91,7 +128,7 @@ public class OasSchemaToAst {
               AstClass.of(
                   fqn,
                   List.of(),
-                  "Generated empty class because compositional keywords *allOf, anyOf, oneOf, and"
+                  "Generated empty class because compositional keywords *allOf, anyOf, and"
                       + " not* are not yet supported")));
     }
 
