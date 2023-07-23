@@ -23,12 +23,12 @@ public class ComposedSchemaTest {
                   MySchema:
                       oneOf:
                       - $ref: '#/components/schemas/Foo'
-                      #- type: object
-                      #    properties:
-                      #    foo:
-                      #        type: integer
-                      #        format: int32
-                      #- type: string
+                      - type: object
+                        properties:
+                          foo:
+                            type: integer
+                            format: int32
+                      - type: string
                       #- type: string
                       #- type: string
                       #    format: email
@@ -39,22 +39,54 @@ public class ComposedSchemaTest {
             """);
     }
 
+    // 1. There must be a MySchema interface
+    // 2. The following implement the interface:
+    //    - [x] com.exmaple.Foo
+    //    - [x] com.example.MySchema1
+    //    - [x] com.example.StringAlias
+    //    - [ ] c.e.m.EmailAlias
+    //    - [ ] c.e.m.Int32Alias
+    // 3. The type string entries should collapse into just one
+
     @Test
-    void test(LilyTestSupport support) {
-      // 1. There must be a MySchema interface
-      // 2. The following implement the interface:
-      //    - com.exmaple.Foo
-      //    - com.example.myschema.MySchema1
-      //    - com.example.myschema.StringAlias
-      //    - c.e.m.EmailAlias
-      //    - c.e.m.Int32Alias
-      // 3. The type string entries should collapse into just one
+    void fooImplementsInterface(LilyTestSupport support) {
       assertTrue(
           support.evaluate(
               """
                     return {{package}}.MySchema.class.isAssignableFrom(
                         {{package}}.Foo.class);
                     """,
+              Boolean.class));
+    }
+
+    /*
+     * The second element in the OneOf is anonymous, so we combine the root component's name with its position to create
+     * the name MySchema2. This name is unstable between schema versions: if the position of the type in the list
+     * changes, then so does the generated type name. This is unavoidable.
+     *
+     * Note that MySchema2 is in the same package as MySchema because MySchema is a sealed interface. Members of a
+     * sealed interface either have to be in the same package or the same non-default module (this project isn't
+     * modular).
+     */
+    @Test
+    void mySchema2ImplementsInterface(LilyTestSupport support) {
+      assertTrue(
+          support.evaluate(
+              """
+          return {{package}}.MySchema.class.isAssignableFrom(
+              {{package}}.MySchema2.class);
+          """,
+              Boolean.class));
+    }
+
+    @Test
+    void myStringAliasImplementsInterface(LilyTestSupport support) {
+      assertTrue(
+          support.evaluate(
+              """
+              return {{package}}.MySchema.class.isAssignableFrom(
+                  {{package}}.MySchemaStringAlias.class);
+              """,
               Boolean.class));
     }
   }

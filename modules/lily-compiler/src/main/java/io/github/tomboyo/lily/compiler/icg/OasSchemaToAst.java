@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.toList;
 import io.github.tomboyo.lily.compiler.ast.AddInterface;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
+import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.AstInterface;
 import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
@@ -88,26 +89,52 @@ public class OasSchemaToAst {
     if (schema instanceof ComposedSchema c && c.getOneOf() != null) {
       var ifaceName = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
 
-      /* Evaluate each subordinate schema to AST and append the implements iface
-       * clause to each. */
       var counter = new AtomicInteger(1);
       var pairs =
           c.getOneOf().stream()
               .map(
                   s -> {
-                    var subAst = evaluateSchema(
-                            currentPackage.resolve(name),
-                            name.resolve(Integer.toString(counter.getAndIncrement())),
-                            s);
-                    return subAst.mapRight(
-                            stream ->
-                                Stream.concat(stream, Stream.of(new AddInterface(
-                                  subAst.left(),
-                                  ifaceName))));
+                    if (s.getType() != null
+                        && List.of("integer", "number", "string", "boolean")
+                            .contains(s.getType())) {
+                      // If s is a primitive type, we'll create an alias called e.g.
+                      // com.example.MySchemaStringAlias.
+                      var fqn =
+                          Fqn.newBuilder(currentPackage, name.resolve(s.getType()).resolve("Alias"))
+                              .build();
+
+                      // By default, this will use e.g. java.lang.String as the left-hand side of
+                      // the pair, so we map it
+                      // to the desired FQN.
+                      return new Pair<>(
+                          fqn,
+                          Stream.of(
+                              AstClassAlias.aliasOf(
+                                  fqn,
+                                  toStdLibFqn(s.getType(), s.getFormat()),
+                                  List.of(ifaceName))));
+                    } else {
+                      // Otherwise, we'll name the next type e.g. com.example.MySchema1. This will
+                      // get used
+                      // only if we end up generating an inline object schema.
+                      var intermediate =
+                          evaluateSchema(
+                              currentPackage,
+                              name.resolve(Integer.toString(counter.getAndIncrement())),
+                              s);
+                      return intermediate.mapRight(
+                          stream ->
+                              Stream.concat(
+                                  stream,
+                                  Stream.of(new AddInterface(intermediate.left(), ifaceName))));
+                    }
+
+                    // Finally, add the interface clause to the subordinate AST.
+
                   })
               .toList();
 
-      var permits = pairs.stream().map(pair -> pair.left()).toList();
+      var permits = pairs.stream().map(Pair::left).toList();
       var iface = new AstInterface(ifaceName, permits);
       return new Pair<>(
           ifaceName,

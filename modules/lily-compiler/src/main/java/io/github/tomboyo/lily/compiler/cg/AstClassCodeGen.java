@@ -6,7 +6,6 @@ import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
-
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -76,8 +75,7 @@ public class AstClassCodeGen {
   }
 
   private static String implementsClause(AstClass astClass) {
-    return "implements " + astClass.interfaces().stream()
-        .map(Fqn::toFqpString)
-        .collect(Collectors.joining(", "));
+    return "implements "
+        + astClass.interfaces().stream().map(Fqn::toFqpString).collect(Collectors.joining(", "));
   }
 }

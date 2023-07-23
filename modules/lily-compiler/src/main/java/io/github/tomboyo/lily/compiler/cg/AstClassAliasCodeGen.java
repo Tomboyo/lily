@@ -4,7 +4,6 @@ import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
 
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
-
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -26,9 +25,12 @@ public class AstClassAliasCodeGen {
             """,
             "renderAstClassAlias",
             Map.of(
-                "packageName", ast.name().packageName(),
-                "recordName", ast.name().typeName().upperCamelCase(),
-                "fqpValueName", ast.aliasedType().toFqpString(),
+                "packageName",
+                ast.name().packageName(),
+                "recordName",
+                ast.name().typeName().upperCamelCase(),
+                "fqpValueName",
+                ast.aliasedType().toFqpString(),
                 "implementsClause",
                 implementsClause(ast)));
 
@@ -36,8 +38,7 @@ public class AstClassAliasCodeGen {
   }
 
   private static String implementsClause(AstClassAlias ast) {
-    return "implements " + ast.interfaces().stream()
-        .map(Fqn::toFqpString)
-        .collect(Collectors.joining(", "));
+    return "implements "
+        + ast.interfaces().stream().map(Fqn::toFqpString).collect(Collectors.joining(", "));
   }
 }

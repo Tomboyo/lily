@@ -72,7 +72,7 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              new AstClassAlias(
+              AstClassAlias.aliasOf(
                   Fqn.newBuilder().packageName("p").typeName("MyComponent").build(), expectedRef)),
           actual.collect(Collectors.toSet()));
     }
@@ -90,7 +90,7 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              new AstClassAlias(
+              AstClassAlias.aliasOf(
                   Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
                   Fqn.newBuilder().packageName("p").typeName("MyRef").build())),
           actual.collect(Collectors.toSet()));
@@ -109,7 +109,7 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              new AstClassAlias(
+              AstClassAlias.aliasOf(
                   Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
                   astListOf(astBoolean()))),
           actual.collect(Collectors.toSet()),
@@ -127,7 +127,7 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              new AstClassAlias(
+              AstClassAlias.aliasOf(
                   Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
                   Fqn.newBuilder()
                       .packageName("java.util")
@@ -172,7 +172,7 @@ public class OasComponentsToAstTest {
               AstClass.of(
                   Fqn.newBuilder().packageName("p.mycomponent").typeName("MyComponentItem").build(),
                   List.of()),
-              new AstClassAlias(
+              AstClassAlias.aliasOf(
                   Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
                   astListOf(
                       astListOf(
@@ -195,7 +195,7 @@ public class OasComponentsToAstTest {
 
       assertEquals(
           Set.of(
-              new AstClassAlias(
+              AstClassAlias.aliasOf(
                   Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
                   astListOf(Fqn.newBuilder().packageName("p").typeName("MyRef").build()))),
           actual.collect(Collectors.toSet()),
