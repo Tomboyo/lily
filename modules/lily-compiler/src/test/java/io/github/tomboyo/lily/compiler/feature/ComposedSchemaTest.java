@@ -21,7 +21,7 @@ public class ComposedSchemaTest {
             components:
                 schemas:
                   MySchema:
-                      oneOf:
+                    oneOf:
                       - $ref: '#/components/schemas/Foo'
                       - type: object
                         properties:
@@ -29,24 +29,17 @@ public class ComposedSchemaTest {
                             type: integer
                             format: int32
                       - type: string
-                      #- type: string
                       - type: string
                         format: email
-                      #- type: integer
-                      #    format: int32
+                      - type: integer
+                        format: int32
+                  #MySchemaStringEmailAlias:
+                  #  type: string
+                  #  format: email
                   Foo:
                     type: string
             """);
     }
-
-    // 1. There must be a MySchema interface
-    // 2. The following implement the interface:
-    //    - [x] com.exmaple.Foo
-    //    - [x] com.example.MySchema1
-    //    - [x] com.example.StringAlias
-    //    - [x] c.e.m.StringEmailAlias
-    //    - [ ] c.e.m.IntegerInt32Alias
-    // 3. The type string entries should collapse into just one
 
     @Test
     void fooImplementsInterface(LilyTestSupport support) {
@@ -97,6 +90,17 @@ public class ComposedSchemaTest {
               """
           return {{package}}.MySchema.class.isAssignableFrom(
             {{package}}.MySchemaStringEmailAlias.class);
+          """,
+              Boolean.class));
+    }
+
+    @Test
+    void myIntegerInt32AliasImplementsInterface(LilyTestSupport support) {
+      assertTrue(
+          support.evaluate(
+              """
+          return {{package}}.MySchema.class.isAssignableFrom(
+            {{package}}.MySchemaIntegerInt32Alias.class);
           """,
               Boolean.class));
     }
