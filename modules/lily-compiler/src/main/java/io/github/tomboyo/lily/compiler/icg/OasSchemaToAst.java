@@ -98,10 +98,13 @@ public class OasSchemaToAst {
                         && List.of("integer", "number", "string", "boolean")
                             .contains(s.getType())) {
                       // If s is a primitive type, we'll create an alias called e.g.
-                      // com.example.MySchemaStringAlias.
-                      var fqn =
-                          Fqn.newBuilder(currentPackage, name.resolve(s.getType()).resolve("Alias"))
-                              .build();
+                      // com.example.MySchemaStringEmailAlias.
+                      var simpleName = name.resolve(s.getType());
+                      var format = s.getFormat();
+                      if (format != null) {
+                        simpleName = simpleName.resolve(format);
+                      }
+                      var fqn = Fqn.newBuilder(currentPackage, simpleName.resolve("Alias")).build();
 
                       // By default, this will use e.g. java.lang.String as the left-hand side of
                       // the pair, so we map it
@@ -128,9 +131,6 @@ public class OasSchemaToAst {
                                   stream,
                                   Stream.of(new AddInterface(intermediate.left(), ifaceName))));
                     }
-
-                    // Finally, add the interface clause to the subordinate AST.
-
                   })
               .toList();
 

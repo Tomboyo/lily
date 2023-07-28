@@ -30,8 +30,8 @@ public class ComposedSchemaTest {
                             format: int32
                       - type: string
                       #- type: string
-                      #- type: string
-                      #    format: email
+                      - type: string
+                        format: email
                       #- type: integer
                       #    format: int32
                   Foo:
@@ -44,8 +44,8 @@ public class ComposedSchemaTest {
     //    - [x] com.exmaple.Foo
     //    - [x] com.example.MySchema1
     //    - [x] com.example.StringAlias
-    //    - [ ] c.e.m.EmailAlias
-    //    - [ ] c.e.m.Int32Alias
+    //    - [x] c.e.m.StringEmailAlias
+    //    - [ ] c.e.m.IntegerInt32Alias
     // 3. The type string entries should collapse into just one
 
     @Test
@@ -87,6 +87,17 @@ public class ComposedSchemaTest {
               return {{package}}.MySchema.class.isAssignableFrom(
                   {{package}}.MySchemaStringAlias.class);
               """,
+              Boolean.class));
+    }
+
+    @Test
+    void myStringEmailAliasImplementsInterface(LilyTestSupport support) {
+      assertTrue(
+          support.evaluate(
+              """
+          return {{package}}.MySchema.class.isAssignableFrom(
+            {{package}}.MySchemaStringEmailAlias.class);
+          """,
               Boolean.class));
     }
   }
