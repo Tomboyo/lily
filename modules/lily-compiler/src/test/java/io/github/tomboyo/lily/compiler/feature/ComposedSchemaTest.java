@@ -33,9 +33,6 @@ public class ComposedSchemaTest {
                         format: email
                       - type: integer
                         format: int32
-                  #MySchemaStringEmailAlias:
-                  #  type: string
-                  #  format: email
                   Foo:
                     type: string
             """);

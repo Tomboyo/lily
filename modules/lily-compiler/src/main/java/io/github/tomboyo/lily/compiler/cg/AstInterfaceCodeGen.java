@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AstInterfaceCodeGen {
-  public static Source renderInterface(AstInterface ast) {
+  public static Source renderAstInterface(AstInterface ast) {
     var content =
         writeString(
             """
@@ -17,7 +17,7 @@ public class AstInterfaceCodeGen {
             public sealed interface {{interfaceName}} permits
                 {{permits}} {}
             """,
-            "renderInterface",
+            "renderAstInterface",
             Map.<String, Object>of(
                 "packageName",
                 ast.name().packageName(),

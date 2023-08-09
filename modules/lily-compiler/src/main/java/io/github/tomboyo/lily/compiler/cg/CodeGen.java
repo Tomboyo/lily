@@ -4,7 +4,7 @@ import static io.github.tomboyo.lily.compiler.cg.AstApiCodeGen.renderAstAPi;
 import static io.github.tomboyo.lily.compiler.cg.AstClassAliasCodeGen.renderAstClassAlias;
 import static io.github.tomboyo.lily.compiler.cg.AstClassCodeGen.renderClass;
 import static io.github.tomboyo.lily.compiler.cg.AstHeadersCodeGen.renderAstHeaders;
-import static io.github.tomboyo.lily.compiler.cg.AstInterfaceCodeGen.renderInterface;
+import static io.github.tomboyo.lily.compiler.cg.AstInterfaceCodeGen.renderAstInterface;
 import static io.github.tomboyo.lily.compiler.cg.AstOperationCodeGen.renderAstOperation;
 import static io.github.tomboyo.lily.compiler.cg.AstResponseCodeGen.renderAstResponse;
 import static io.github.tomboyo.lily.compiler.cg.AstResponseSumCodeGen.renderAstResponseSum;
@@ -33,7 +33,7 @@ public class CodeGen {
     } else if (ast instanceof AstHeaders astHeaders) {
       return renderAstHeaders(astHeaders);
     } else if (ast instanceof AstInterface astInterface) {
-      return renderInterface(astInterface);
+      return renderAstInterface(astInterface);
     } else if (ast instanceof AstOperation astOperation) {
       return renderAstOperation(astOperation);
     } else if (ast instanceof AstResponseSum astResponseSum) {
