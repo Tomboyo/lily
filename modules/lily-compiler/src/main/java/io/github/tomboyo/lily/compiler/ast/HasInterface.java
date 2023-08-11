@@ -1,5 +1,7 @@
 package io.github.tomboyo.lily.compiler.ast;
 
+import java.util.Collection;
+
 /** Annotates a Definition that implements interfaces. */
 public interface HasInterface {
 
@@ -8,4 +10,6 @@ public interface HasInterface {
    * clause.
    */
   Definition addInterface(Fqn interfaceName);
+
+  Collection<Fqn> interfaces();
 }

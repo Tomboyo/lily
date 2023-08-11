@@ -1,11 +1,10 @@
 package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
+import static io.github.tomboyo.lily.compiler.cg.support.Interfaces.implementsClause;
 
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
-import io.github.tomboyo.lily.compiler.ast.Fqn;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class AstClassAliasCodeGen {
   public static Source renderAstClassAlias(AstClassAlias ast) {
@@ -35,14 +34,5 @@ public class AstClassAliasCodeGen {
                 implementsClause(ast)));
 
     return new Source(ast.name(), content);
-  }
-
-  private static String implementsClause(AstClassAlias ast) {
-    if (ast.interfaces().isEmpty()) {
-      return "";
-    }
-
-    return "implements "
-        + ast.interfaces().stream().map(Fqn::toFqpString).collect(Collectors.joining(", "));
   }
 }

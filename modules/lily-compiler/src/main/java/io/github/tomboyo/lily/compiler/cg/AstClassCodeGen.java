@@ -1,11 +1,11 @@
 package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
+import static io.github.tomboyo.lily.compiler.cg.support.Interfaces.implementsClause;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
 
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.Field;
-import io.github.tomboyo.lily.compiler.ast.Fqn;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -72,14 +72,5 @@ public class AstClassCodeGen {
           "recordField",
           scope);
     }
-  }
-
-  private static String implementsClause(AstClass astClass) {
-    if (astClass.interfaces().isEmpty()) {
-      return "";
-    }
-
-    return "implements "
-        + astClass.interfaces().stream().map(Fqn::toFqpString).collect(Collectors.joining(", "));
   }
 }
