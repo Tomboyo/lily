@@ -75,6 +75,10 @@ public class AstClassCodeGen {
   }
 
   private static String implementsClause(AstClass astClass) {
+    if (astClass.interfaces().isEmpty()) {
+      return "";
+    }
+
     return "implements "
         + astClass.interfaces().stream().map(Fqn::toFqpString).collect(Collectors.joining(", "));
   }

@@ -38,6 +38,10 @@ public class AstClassAliasCodeGen {
   }
 
   private static String implementsClause(AstClassAlias ast) {
+    if (ast.interfaces().isEmpty()) {
+      return "";
+    }
+
     return "implements "
         + ast.interfaces().stream().map(Fqn::toFqpString).collect(Collectors.joining(", "));
   }
