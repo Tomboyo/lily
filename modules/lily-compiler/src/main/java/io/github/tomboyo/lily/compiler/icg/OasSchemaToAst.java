@@ -3,8 +3,11 @@ package io.github.tomboyo.lily.compiler.icg;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
+import io.github.tomboyo.lily.compiler.ast.AddInterface;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
+import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
+import io.github.tomboyo.lily.compiler.ast.AstInterface;
 import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
@@ -16,6 +19,8 @@ import io.swagger.v3.oas.models.media.Schema;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,15 +79,74 @@ public class OasSchemaToAst {
 
   private Pair<Fqn, Stream<Ast>> evaluateSchema(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
-    // - log that we couldn't generate the thing
-    // - documentation on the stub class
-    // - generate empty stub class so that references to the FQN from other classes still work
+
+    /*
+     * OneOf composed schemas evaluate to a sealed interface. The schema may
+     * be composed of new or existing schemas; in either case, we emit
+     * AddInterface modifiers so that those AST are updated to
+     * implement the new sealed interface before rendering.
+     */
+    if (schema instanceof ComposedSchema c && c.getOneOf() != null) {
+      var ifaceName = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
+
+      var counter = new AtomicInteger(1);
+      var pairs =
+          c.getOneOf().stream()
+              .map(
+                  s -> {
+                    if (s.getType() != null
+                        && List.of("integer", "number", "string", "boolean")
+                            .contains(s.getType())) {
+                      // If s is a primitive type, we'll create an alias called e.g.
+                      // com.example.MySchemaStringEmailAlias.
+                      var simpleName = name.resolve(s.getType());
+                      var format = s.getFormat();
+                      if (format != null) {
+                        simpleName = simpleName.resolve(format);
+                      }
+                      var fqn = Fqn.newBuilder(currentPackage, simpleName.resolve("Alias")).build();
+
+                      // By default, this will use e.g. java.lang.String as the left-hand side of
+                      // the pair, so we map it
+                      // to the desired FQN.
+                      return new Pair<>(
+                          fqn,
+                          Stream.of(
+                              AstClassAlias.aliasOf(
+                                  fqn,
+                                  toStdLibFqn(s.getType(), s.getFormat()),
+                                  List.of(ifaceName))));
+                    } else {
+                      // Otherwise, we'll name the next type e.g. com.example.MySchema1. This will
+                      // get used
+                      // only if we end up generating an inline object schema.
+                      var intermediate =
+                          evaluateSchema(
+                              currentPackage,
+                              name.resolve(Integer.toString(counter.getAndIncrement())),
+                              s);
+                      return intermediate.mapRight(
+                          stream ->
+                              Stream.concat(
+                                  stream,
+                                  Stream.of(new AddInterface(intermediate.left(), ifaceName))));
+                    }
+                  })
+              .toList();
+
+      var permits = pairs.stream().map(Pair::left).toList();
+      var iface = new AstInterface(ifaceName, permits);
+      return new Pair<>(
+          ifaceName,
+          Stream.concat(
+              Stream.of(iface), pairs.stream().map(Pair::right).flatMap(Function.identity())));
+    }
 
     if (schema instanceof ComposedSchema || schema.getNot() != null) {
       var fqn = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
       LOGGER.warn(
-          "Generating empty class {} because compositional keywords *allOf, anyOf, oneOf, and not*"
-              + " are not yet supported",
+          "Generating empty class {} because compositional keywords *allOf, anyOf, and not* are not"
+              + " yet supported",
           fqn);
 
       return new Pair<>(
@@ -91,7 +155,7 @@ public class OasSchemaToAst {
               AstClass.of(
                   fqn,
                   List.of(),
-                  "Generated empty class because compositional keywords *allOf, anyOf, oneOf, and"
+                  "Generated empty class because compositional keywords *allOf, anyOf, and"
                       + " not* are not yet supported")));
     }
 

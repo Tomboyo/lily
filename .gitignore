@@ -5,3 +5,4 @@ target/
 *pom.xml.versionsBackup
 **/pom.xml.versionsBackup
 .flattened-pom.xml
+.vscode

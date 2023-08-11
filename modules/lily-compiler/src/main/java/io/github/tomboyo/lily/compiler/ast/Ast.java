@@ -1,13 +1,6 @@
 package io.github.tomboyo.lily.compiler.ast;
 
-public sealed interface Ast
-    permits AstApi,
-        AstClass,
-        AstClassAlias,
-        AstHeaders,
-        AstOperation,
-        AstResponse,
-        AstResponseSum,
-        AstTaggedOperations {
+/** Ast (Abstract Syntax Tree) elements define new Java types. */
+public sealed interface Ast permits Definition, Modifier {
   Fqn name();
 }

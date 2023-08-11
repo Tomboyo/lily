@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 /**
- * Provides code generation support. All tests within the annotated class shared a package for
+ * Provides code generation support. All tests within the annotated class share a package for
  * generated sources.
  */
 public class LilyExtension implements AfterAllCallback, ParameterResolver {

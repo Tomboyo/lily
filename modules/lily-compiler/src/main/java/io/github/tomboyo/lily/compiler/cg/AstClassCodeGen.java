@@ -1,6 +1,7 @@
 package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
+import static io.github.tomboyo.lily.compiler.cg.support.Interfaces.implementsClause;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
 
 import io.github.tomboyo.lily.compiler.ast.AstClass;
@@ -21,7 +22,7 @@ public class AstClassCodeGen {
              */
             public record {{recordName}}(
                 {{{fields}}}
-            ) {}
+            ) {{implementsClause}} {}
             """,
             "renderClass",
             Map.of(
@@ -34,7 +35,9 @@ public class AstClassCodeGen {
                     .map(AstClassCodeGen::recordField)
                     .collect(Collectors.joining(",\n")),
                 "docstring",
-                ast.docstring()));
+                ast.docstring(),
+                "implementsClause",
+                implementsClause(ast)));
 
     return new Source(ast.name(), content);
   }
