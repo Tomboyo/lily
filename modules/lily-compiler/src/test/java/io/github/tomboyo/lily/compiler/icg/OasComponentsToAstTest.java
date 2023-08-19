@@ -13,14 +13,18 @@ import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astLong;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astOffsetDateTime;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import io.github.tomboyo.lily.compiler.LilyExtension;
+import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
 import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
+import io.github.tomboyo.lily.compiler.cg.Mustache;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -31,9 +35,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class OasComponentsToAstTest {
 
@@ -61,20 +66,57 @@ public class OasComponentsToAstTest {
 
   @Nested
   class ScalarComponents {
-    @ParameterizedTest
-    @MethodSource("io.github.tomboyo.lily.compiler.icg.OasComponentsToAstTest#scalarsSource")
-    void evaluate(String oasType, String oasFormat, Fqn expectedRef) {
-      var actual =
-          OasComponentsToAst.evaluate(
-              PackageName.of("p"),
-              SimpleName.of("MyComponent"),
-              new Schema().type(oasType).format(oasFormat));
 
-      assertEquals(
-          Set.of(
-              AstClassAlias.aliasOf(
-                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(), expectedRef)),
-          actual.collect(Collectors.toSet()));
+    @RegisterExtension
+    static LilyExtension extension = LilyExtension.newBuilder().packagePerMethod().build();
+
+    @ParameterizedTest
+    @CsvSource({
+      "boolean, null, java.lang.Boolean.TRUE",
+      "boolean, unsupported-format, java.lang.Boolean.TRUE",
+      "integer, null, java.math.BigInteger.ONE",
+      "integer, unsupported-format, java.math.BigInteger.ONE",
+      "integer, int32, 1", // integer
+      "integer, int64, 1L", // long
+      "number, null, java.math.BigDecimal.ONE",
+      "number, unsupported-format, java.math.BigDecimal.ONE",
+      "number, double, 1d", // double
+      "number, float, 1f", // float
+      "string, null, \"string\"",
+      "string, unsupportedFormat, \"string\"",
+      "string, password, \"string\"",
+      "string, byte, java.nio.ByteBuffer.allocate(1)",
+      "string, binary, java.nio.ByteBuffer.allocate(1)",
+      "string, date, java.time.LocalDate.now()",
+      "string, date-time, java.time.OffsetDateTime.now()"
+    })
+    void test(String oasType, String oasFormat, String value, LilyTestSupport support) {
+      support.compileOas(
+          Mustache.writeString(
+              """
+              openapi: 3.0.2
+              components:
+                schemas:
+                  Foo:
+                    properties:
+                      p:
+                        type: {{type}}
+                        format: {{format}}
+              """,
+              "scalar-components-test",
+              Map.of(
+                  "type", oasType,
+                  "format", oasFormat)));
+
+      assertTrue(
+          support.evaluate(
+              """
+                var value = {{value}};
+                return value == new {{package}}.Foo(value).p();
+                """,
+              Boolean.class,
+              "value",
+              value));
     }
   }
 

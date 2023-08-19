@@ -9,7 +9,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -18,13 +23,84 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  * Provides code generation support. All tests within the annotated class share a package for
  * generated sources.
  */
-public class LilyExtension implements AfterAllCallback, ParameterResolver {
+public class LilyExtension
+    implements BeforeEachCallback,
+        AfterEachCallback,
+        BeforeAllCallback,
+        AfterAllCallback,
+        ParameterResolver {
 
-  private final LilyTestSupport instance = new LilyTestSupport();
+  enum Mode {
+    PACKAGE_PER_CLASS,
+    PACKAGE_PER_METHOD
+  }
+
+  public static class Builder {
+
+    private Mode mode;
+
+    /**
+     * The extension will use the same generated sources package for all tests in the class.
+     * Generated files are deleted after the class.
+     */
+    public Builder packagePerClass() {
+      this.mode = Mode.PACKAGE_PER_CLASS;
+      return this;
+    }
+
+    /**
+     * The extension will use a different generated sources package for each test method. Generated
+     * files are deleted after each test.
+     */
+    public Builder packagePerMethod() {
+      this.mode = Mode.PACKAGE_PER_METHOD;
+      return this;
+    }
+
+    public LilyExtension build() {
+      return new LilyExtension(mode);
+    }
+  }
+
+  private static final String PACKAGE = "package";
+  private static final String SOURCE_PATHS = "source_paths";
+
+  private final Mode mode;
+
+  public static Builder newBuilder() {
+    return new Builder();
+  }
+
+  private LilyExtension(Mode mode) {
+    this.mode = mode;
+  }
 
   @Override
-  public void afterAll(ExtensionContext extensionContext) {
-    instance.clearPackageFiles();
+  public void beforeEach(ExtensionContext ctx) {
+    if (mode == Mode.PACKAGE_PER_METHOD) {
+      setPackage(ctx, uniquePackageName());
+    }
+  }
+
+  @Override
+  public void afterEach(ExtensionContext ctx) throws IOException {
+    if (mode == Mode.PACKAGE_PER_METHOD) {
+      CompilerSupport.clearPackageFiles(getPackage(ctx));
+    }
+  }
+
+  @Override
+  public void beforeAll(ExtensionContext ctx) {
+    if (mode == Mode.PACKAGE_PER_CLASS) {
+      setPackage(ctx, uniquePackageName());
+    }
+  }
+
+  @Override
+  public void afterAll(ExtensionContext ctx) throws IOException {
+    if (mode == Mode.PACKAGE_PER_CLASS) {
+      CompilerSupport.clearPackageFiles(getPackage(ctx));
+    }
   }
 
   @Override
@@ -35,22 +111,51 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
   }
 
   @Override
-  public Object resolveParameter(
-      ParameterContext parameterContext, ExtensionContext extensionContext)
+  public Object resolveParameter(ParameterContext parameterContext, ExtensionContext ctx)
       throws ParameterResolutionException {
-    return instance;
+    return new LilyTestSupport(ctx);
   }
 
-  public static class LilyTestSupport {
-    private final String packageName = uniquePackageName();
-    private Map<String, Path> generatedSourcePaths;
-    private boolean hasGeneratedCode = false;
+  private Store getStore(ExtensionContext ctx) {
+    return switch (mode) {
+      case PACKAGE_PER_METHOD -> ctx.getStore(
+          Namespace.create(getClass(), ctx.getRequiredTestMethod()));
+      case PACKAGE_PER_CLASS -> ctx.getStore(
+          Namespace.create(getClass(), ctx.getRequiredTestClass()));
+    };
+  }
 
+  private void setPackage(ExtensionContext ctx, String packageName) {
+    getStore(ctx).put(PACKAGE, packageName);
+  }
+
+  private String getPackage(ExtensionContext ctx) {
+    return getStore(ctx).get(PACKAGE, String.class);
+  }
+
+  private void setSourcePaths(ExtensionContext ctx, Map<String, Path> paths) {
+    getStore(ctx).put(SOURCE_PATHS, paths);
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Path> getSourcePaths(ExtensionContext ctx) {
+    return (Map<String, Path>) getStore(ctx).get(SOURCE_PATHS, Map.class);
+  }
+
+  public class LilyTestSupport {
+
+    private final ExtensionContext ctx;
+
+    private LilyTestSupport(ExtensionContext ctx) {
+      this.ctx = ctx;
+    }
+
+    /** Generates and compiled java sources for the given OpenAPI specification located by a URI. */
     public void compileOas(URI uri) {
-      assertHasNotAlreadyGeneratedCode();
+      preventRepeatedCodeGen();
 
       try {
-        generatedSourcePaths = CompilerSupport.compileOas(packageName, uri);
+        setSourcePaths(ctx, CompilerSupport.compileOas(getPackage(ctx), uri));
       } catch (OasParseException e) {
         throw new RuntimeException(e);
       }
@@ -63,30 +168,13 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
      * @see CompilerSupport#compileOas(String, String)
      */
     public void compileOas(String specification) {
-      assertHasNotAlreadyGeneratedCode();
+      preventRepeatedCodeGen();
 
       try {
-        generatedSourcePaths = CompilerSupport.compileOas(packageName, specification);
+        setSourcePaths(ctx, CompilerSupport.compileOas(getPackage(ctx), specification));
       } catch (OasParseException e) {
         throw new RuntimeException(e);
       }
-    }
-
-    private void assertHasNotAlreadyGeneratedCode() {
-      if (hasGeneratedCode) {
-        throw new IllegalStateException(
-            """
-            This support instance has already generated code within the current generated sources
-            package. Classes generated previously may coincidentally have the same name as classes
-            that are expected from this invocation and used in subsequent tests. We are refusing to
-            generate code to avoid such false negatives.
-
-            How to resolve: Ensure that whenever you need to compile an OAS document, you do so
-            within a dedicated `@Nested` class with the LilyExtension. Do not only annotate the
-            outer class.
-            """);
-      }
-      hasGeneratedCode = true;
     }
 
     /** See {@link #evaluate(String, Class, String...)}. */
@@ -113,7 +201,7 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
         throw new IllegalArgumentException("Must be an even number of key-value pairs");
       }
 
-      source = source.replaceAll("\\{\\{package}}", packageName);
+      source = source.replaceAll("\\{\\{package}}", getPackage(ctx));
 
       for (var i = 0; i < kvs.length / 2; i += 2) {
         var key = kvs[i];
@@ -121,12 +209,12 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
         source = source.replaceAll("\\{\\{" + key + "}}", value);
       }
 
-      return CompilerSupport.evaluate(packageName, returnType, source);
+      return CompilerSupport.evaluate(getPackage(ctx), returnType, source);
     }
 
     public String getFileStringForClass(String classname) {
-      classname = classname.replace("{{package}}", packageName);
-      var path = generatedSourcePaths.get(classname);
+      classname = classname.replace("{{package}}", getPackage(ctx));
+      var path = getSourcePaths(ctx).get(classname);
       try {
         return Files.readString(path);
       } catch (IOException e) {
@@ -134,11 +222,24 @@ public class LilyExtension implements AfterAllCallback, ParameterResolver {
       }
     }
 
-    private void clearPackageFiles() {
-      try {
-        CompilerSupport.clearPackageFiles(packageName);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
+    public Class<?> getClassForName(String template) throws ClassNotFoundException {
+      template = template.replace("{{package}}", getPackage(ctx));
+      return Class.forName(template);
+    }
+
+    private void preventRepeatedCodeGen() {
+      if (getSourcePaths(ctx) != null) {
+        throw new IllegalStateException(
+            """
+                This support instance has already generated code within the current generated sources
+                package. Classes generated previously may coincidentally have the same name as classes
+                that are expected from this invocation and used in subsequent tests. We are refusing to
+                generate code to avoid such false negatives.
+
+                How to resolve: Ensure that whenever you need to compile an OAS document, you do so
+                within a dedicated `@Nested` class with the LilyExtension. Do not only annotate the
+                outer class.
+                """);
       }
     }
   }
