@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,66 +79,8 @@ public class OasSchemaToAst {
   private Pair<Fqn, Stream<Ast>> evaluateSchema(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
 
-    /*
-     * OneOf composed schemas evaluate to a sealed interface. The schema may
-     * be composed of new or existing schemas; in either case, we emit
-     * AddInterface modifiers so that those AST are updated to
-     * implement the new sealed interface before rendering.
-     */
     if (schema instanceof ComposedSchema c && c.getOneOf() != null) {
-      var ifaceName = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
-
-      var counter = new AtomicInteger(1);
-      var pairs =
-          c.getOneOf().stream()
-              .map(
-                  s -> {
-                    if (s.getType() != null
-                        && List.of("integer", "number", "string", "boolean")
-                            .contains(s.getType())) {
-                      // If s is a primitive type, we'll create an alias called e.g.
-                      // com.example.MySchemaStringEmailAlias.
-                      var simpleName = name.resolve(s.getType());
-                      var format = s.getFormat();
-                      if (format != null) {
-                        simpleName = simpleName.resolve(format);
-                      }
-                      var fqn = Fqn.newBuilder(currentPackage, simpleName.resolve("Alias")).build();
-
-                      // By default, this will use e.g. java.lang.String as the left-hand side of
-                      // the pair, so we map it
-                      // to the desired FQN.
-                      return new Pair<>(
-                          fqn,
-                          Stream.of(
-                              AstClassAlias.aliasOf(
-                                  fqn,
-                                  toStdLibFqn(s.getType(), s.getFormat()),
-                                  List.of(ifaceName))));
-                    } else {
-                      // Otherwise, we'll name the next type e.g. com.example.MySchema1. This will
-                      // get used
-                      // only if we end up generating an inline object schema.
-                      var intermediate =
-                          evaluateSchema(
-                              currentPackage,
-                              name.resolve(Integer.toString(counter.getAndIncrement())),
-                              s);
-                      return intermediate.mapRight(
-                          stream ->
-                              Stream.concat(
-                                  stream,
-                                  Stream.of(new AddInterface(intermediate.left(), ifaceName))));
-                    }
-                  })
-              .toList();
-
-      var permits = pairs.stream().map(Pair::left).toList();
-      var iface = new AstInterface(ifaceName, permits);
-      return new Pair<>(
-          ifaceName,
-          Stream.concat(
-              Stream.of(iface), pairs.stream().map(Pair::right).flatMap(Function.identity())));
+      return evaluateOneOf(c, currentPackage, name);
     }
 
     if (schema instanceof ComposedSchema || schema.getNot() != null) {
@@ -240,6 +181,20 @@ public class OasSchemaToAst {
     return defaultAst;
   }
 
+  private Fqn fqnForOneOfAlias(
+      PackageName currentPackage, SimpleName oneOfName, String type, String format) {
+    var simpleName = oneOfName.resolve(type);
+    if (format != null) {
+      simpleName = simpleName.resolve(format);
+    }
+
+    return Fqn.newBuilder(currentPackage, simpleName.resolve("Alias")).build();
+  }
+
+  private boolean isPrimitiveType(String type) {
+    return type != null && List.of("integer", "number", "string", "boolean").contains(type);
+  }
+
   private Pair<Fqn, Stream<Ast>> evaluateArray(
       PackageName currentPackage, SimpleName name, ArraySchema arraySchema) {
     if ("object".equals(arraySchema.getItems().getType())) {
@@ -311,5 +266,52 @@ public class OasSchemaToAst {
     return new Pair<>(
         Fqn.newBuilder().packageName(currentPackage).typeName(name).build(),
         Stream.concat(Stream.of(exteriorClass), interiorAst));
+  }
+
+  /*
+   * OneOf composed schemas evaluate to a sealed interface. The schema may
+   * be composed of new or existing schemas; in either case, we emit
+   * AddInterface modifiers so that those AST are updated to
+   * implement the new sealed interface before rendering.
+   */
+  private Pair<Fqn, Stream<Ast>> evaluateOneOf(
+      ComposedSchema schema, PackageName currentPackage, SimpleName name) {
+    var ifaceName = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
+
+    var counter = new AtomicInteger(1);
+    var pairs =
+        schema.getOneOf().stream()
+            .map(
+                s -> {
+                  // If s is a primitive type, we'll create an alias called e.g.
+                  // com.example.MySchemaStringEmailAlias.
+                  if (isPrimitiveType(s.getType())) {
+                    var fqn = fqnForOneOfAlias(currentPackage, name, s.getType(), s.getFormat());
+                    return new Pair<>(
+                        fqn,
+                        Stream.of(
+                            AstClassAlias.aliasOf(
+                                fqn, toStdLibFqn(s.getType(), s.getFormat()), List.of(ifaceName))));
+                  } else {
+                    // Otherwise, we'll name the next type e.g. com.example.MySchema1. This will
+                    // get used only if we end up generating an inline object schema.
+                    var intermediate =
+                        evaluateSchema(
+                            currentPackage,
+                            name.resolve(Integer.toString(counter.getAndIncrement())),
+                            s);
+                    return intermediate.mapRight(
+                        stream ->
+                            Stream.concat(
+                                stream,
+                                Stream.of(new AddInterface(intermediate.left(), ifaceName))));
+                  }
+                })
+            .toList();
+
+    var permits = pairs.stream().map(Pair::left).toList();
+    var iface = new AstInterface(ifaceName, permits);
+    return new Pair<>(
+        ifaceName, Stream.concat(Stream.of(iface), pairs.stream().flatMap(Pair::right)));
   }
 }
