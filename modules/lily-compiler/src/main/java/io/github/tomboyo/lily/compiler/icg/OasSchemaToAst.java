@@ -200,7 +200,7 @@ public class OasSchemaToAst {
     if ("object".equals(arraySchema.getItems().getType())) {
       /*
        AST generated from objects in arrays are named similarly to all other objects in that they
-       are defined withi subordinate packages of superior types (if any). They are also given the "Item" suffix. For
+       are defined within subordinate packages of superior types (if any). They are also given the "Item" suffix. For
        example:
 
        1. Suppose the #/components/Cats component is an array containing [arrays of] objects. If

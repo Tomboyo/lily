@@ -14,6 +14,7 @@ import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astOffsetDateTime;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,7 +23,6 @@ import io.github.tomboyo.lily.compiler.LilyExtension;
 import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
-import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
@@ -221,47 +221,79 @@ public class OasComponentsToAstTest {
       }
     }
 
-    @Test
-    void evaluateWithObjectItem() {
-      var actual =
-          OasComponentsToAst.evaluate(
-              PackageName.of("p"),
-              SimpleName.of("MyComponent"),
-              new ArraySchema()
-                  .items(new ObjectSchema().properties(Map.of("myField", new ObjectSchema()))));
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class WithImplicitObjectItem {
+      @Test
+      void todo() {
+        fail("Todo! test inlined object without explicit type key, because it breaks!");
+      }
+    }
 
-      assertEquals(
-          Set.of(
-              AstClassAlias.aliasOf(
-                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
-                  Fqn.newBuilder()
-                      .packageName("java.util")
-                      .typeName("List")
-                      .typeParameters(
-                          List.of(
-                              Fqn.newBuilder()
-                                  .packageName("p.mycomponent")
-                                  .typeName("MyComponentItem")
-                                  .build()))
-                      .build()),
-              AstClass.of(
-                  Fqn.newBuilder().packageName("p.mycomponent").typeName("MyComponentItem").build(),
-                  List.of(
-                      new Field(
-                          Fqn.newBuilder()
-                              .packageName("p.mycomponent.mycomponentitem")
-                              .typeName("MyField")
-                              .build(),
-                          SimpleName.of("myField"),
-                          "myField"))),
-              AstClass.of(
-                  Fqn.newBuilder()
-                      .packageName("p.mycomponent.mycomponentitem")
-                      .typeName("MyField")
-                      .build(),
-                  List.of())),
-          actual.collect(Collectors.toSet()),
-          "Inline types within aliases are defined in packages subordinate to the class alias");
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class WithExplicitObjectItem {
+
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+                openapi: 3.0.2
+                components:
+                  schemas:
+                    MyComponent:
+                      type: array
+                      items:
+                        # type is explicitly given (not inferred from presence of properties key)
+                        type: object
+                        properties:
+                          foo:
+                            type: string
+                """);
+      }
+
+      @Test
+      void testValue(LilyTestSupport support) {
+        assertTrue(
+            support.evaluate(
+                """
+                  var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+                  return value == new {{package}}.MyComponent(value).value();
+                  """,
+                Boolean.class),
+            """
+                The anonymous object type is generated to a subordinate package. The list is accessible through the
+                value method.
+                """);
+      }
+
+      @Test
+      void testJsonSer(LilyTestSupport support) throws JsonProcessingException {
+        var actual =
+            support.evaluate(
+                """
+                        var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+                        return new {{package}}.MyComponent(value);
+                        """);
+        var mapper = new ObjectMapper();
+        assertEquals("[{\"foo\":\"foo!\"}]", mapper.writeValueAsString(actual));
+      }
+
+      @Test
+      void testJsonDeser(LilyTestSupport support)
+          throws JsonProcessingException, ClassNotFoundException {
+        var expected =
+            support.evaluate(
+                """
+                        var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+                        return new {{package}}.MyComponent(value);
+                        """);
+        var mapper = new ObjectMapper();
+        assertEquals(
+            expected,
+            mapper.readValue(
+                "[{\"foo\":\"foo!\"}]", support.getClassForName("{{package}}.MyComponent")));
+      }
     }
 
     @Test
