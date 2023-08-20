@@ -158,8 +158,7 @@ public class OasComponentsToAstTest {
 
     @Test
     void testJson(LilyTestSupport support) throws JsonProcessingException {
-      Object value = support.evaluate("return new {{package}}.Foo(\"foo!\");");
-      Object alias =
+      var alias =
           support.evaluate(
               """
               var foo = new {{package}}.Foo("foo!");
@@ -168,29 +167,58 @@ public class OasComponentsToAstTest {
 
       var mapper = new ObjectMapper();
       assertEquals(
-          mapper.writeValueAsString(value),
+          "{\"foo\":\"foo!\"}",
           mapper.writeValueAsString(alias),
-          "Alias are serialized as if they were only their value; there is no wrapper");
+          "Alias are serialized as if they were only their aliased value");
     }
   }
 
   @Nested
   class Arrays {
-    @Test
-    void evaluateWithScalarItem() {
-      var actual =
-          OasComponentsToAst.evaluate(
-              PackageName.of("p"),
-              SimpleName.of("MyComponent"),
-              new ArraySchema().items(new Schema<>().type("boolean")));
 
-      assertEquals(
-          Set.of(
-              AstClassAlias.aliasOf(
-                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
-                  astListOf(astBoolean()))),
-          actual.collect(Collectors.toSet()),
-          "Array components evaluate to aliases of lists");
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class WithScalarItem {
+
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+              openapi: 3.0.2
+              components:
+                schemas:
+                  MyComponent:
+                    type: array
+                    items:
+                      type: boolean
+              """);
+      }
+
+      @Test
+      void testAliasing(LilyTestSupport support) {
+        assertTrue(
+            support.evaluate(
+                """
+                var value = java.util.List.of(true, false);
+                return value == new {{package}}.MyComponent(value).value();
+                """,
+                Boolean.class));
+      }
+
+      @Test
+      void testJson(LilyTestSupport support) throws JsonProcessingException {
+        var right =
+            support.evaluate(
+                """
+                return new {{package}}.MyComponent(java.util.List.of(true, false));
+                """);
+
+        var mapper = new ObjectMapper();
+        assertEquals(
+            "[true,false]",
+            mapper.writeValueAsString(right),
+            "Arrays types serialize to bare arrays");
+      }
     }
 
     @Test
