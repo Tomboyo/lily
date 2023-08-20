@@ -20,8 +20,23 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 /**
- * Provides code generation support. All tests within the annotated class share a package for
- * generated sources.
+ * Generates sources in isolated packages per-class or per-method depending on configuration.
+ *
+ * <p>Most functions let the user use the string {@code {{package}}} in place of the actual package
+ * name of generated types. This lets the extension manage unique package names for the user.
+ *
+ * <p>In package-per-class mode, sources are generated and compiled once, and the same package is
+ * shared by all following tests. Sources are deleted at the end of the class.
+ *
+ * <p>In package-per-method mode, sources are generated on a test-by-test basis and package names
+ * are not shared between tests; tests are completely isolated. Sources are deleted after each test
+ * method.
+ *
+ * <p>If using the {@code @ExtendWith} annotation, it runs in package-per-class mode by default.
+ * {@code @RegisterExtension} may be used along with {@link LilyExtension.Builder} to run in either
+ * mode.
+ *
+ * <p>Regardless of mode, all generated classes stay loaded until the JVM exits.
  */
 public class LilyExtension
     implements BeforeEachCallback,
@@ -69,6 +84,11 @@ public class LilyExtension
 
   public static Builder newBuilder() {
     return new Builder();
+  }
+
+  @SuppressWarnings("unused") // instantiated with reflection by ExtendWith annotation
+  public LilyExtension() {
+    this.mode = Mode.PACKAGE_PER_CLASS;
   }
 
   private LilyExtension(Mode mode) {

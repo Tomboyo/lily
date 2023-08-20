@@ -16,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.tomboyo.lily.compiler.LilyExtension;
 import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
@@ -33,8 +35,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -121,21 +125,52 @@ public class OasComponentsToAstTest {
   }
 
   @Nested
+  @ExtendWith(LilyExtension.class)
   class Refs {
-    @Test
-    void evaluate() {
-      var actual =
-          OasComponentsToAst.evaluate(
-              PackageName.of("p"),
-              SimpleName.of("MyComponent"),
-              new Schema().$ref("#/components/schemas/MyRef"));
 
+    @BeforeAll
+    static void beforeAll(LilyTestSupport support) {
+      support.compileOas(
+          """
+              openapi: 3.0.2
+              components:
+                schemas:
+                  MyComponent:
+                    $ref: '#/components/schemas/Foo'
+                  Foo:
+                    properties:
+                      foo:
+                        type: string
+              """);
+    }
+
+    @Test
+    void testValue(LilyTestSupport support) {
+      assertTrue(
+          support.evaluate(
+              """
+                var foo = new {{package}}.Foo("foo!");
+                return foo == new {{package}}.MyComponent(foo).value();
+                """,
+              Boolean.class),
+          "Schemas that alias a $ref become alias types");
+    }
+
+    @Test
+    void testJson(LilyTestSupport support) throws JsonProcessingException {
+      Object value = support.evaluate("return new {{package}}.Foo(\"foo!\");");
+      Object alias =
+          support.evaluate(
+              """
+              var foo = new {{package}}.Foo("foo!");
+              return new {{package}}.MyComponent(foo);
+              """);
+
+      var mapper = new ObjectMapper();
       assertEquals(
-          Set.of(
-              AstClassAlias.aliasOf(
-                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
-                  Fqn.newBuilder().packageName("p").typeName("MyRef").build())),
-          actual.collect(Collectors.toSet()));
+          mapper.writeValueAsString(value),
+          mapper.writeValueAsString(alias),
+          "Alias are serialized as if they were only their value; there is no wrapper");
     }
   }
 
