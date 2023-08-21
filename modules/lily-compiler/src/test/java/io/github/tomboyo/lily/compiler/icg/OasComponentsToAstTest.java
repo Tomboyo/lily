@@ -7,7 +7,6 @@ import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astDouble;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astFloat;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astInteger;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astListOf;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astLocalDate;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astLong;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astOffsetDateTime;
@@ -21,18 +20,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.tomboyo.lily.compiler.LilyExtension;
 import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
-import io.github.tomboyo.lily.compiler.ast.AstClass;
-import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
-import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.cg.Mustache;
-import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
-import io.swagger.v3.oas.models.media.Schema;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -296,47 +288,129 @@ public class OasComponentsToAstTest {
       }
     }
 
-    @Test
-    void evaluateWithArrayOfObjectItem() {
-      var actual =
-          OasComponentsToAst.evaluate(
-              PackageName.of("p"),
-              SimpleName.of("MyComponent"),
-              new ArraySchema().items(new ArraySchema().items(new ObjectSchema())));
+    //  TODO: do we need to test implicit/explicit here? I think just recusing once should be enough
+    // right?
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class WithArrayOfExplicitObjectItem {
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+                openapi: 3.0.2
+                components:
+                  schemas:
+                    MyComponent:
+                      type: array
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            foo:
+                              type: string
+                """);
+      }
 
-      assertEquals(
-          Set.of(
-              AstClass.of(
-                  Fqn.newBuilder().packageName("p.mycomponent").typeName("MyComponentItem").build(),
-                  List.of()),
-              AstClassAlias.aliasOf(
-                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
-                  astListOf(
-                      astListOf(
-                          Fqn.newBuilder()
-                              .packageName("p.mycomponent")
-                              .typeName("MyComponentItem")
-                              .build())))),
-          actual.collect(Collectors.toSet()),
-          "item schemas in nested arrays evaluate to AstClasses nested beneath the alias and not"
-              + " deeper");
+      @Test
+      void testValue(LilyTestSupport support) {
+        assertTrue(
+            support.evaluate(
+                """
+                var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
+                return value == new {{package}}.MyComponent(value).value();
+                """,
+                Boolean.class));
+      }
+
+      @Test
+      void testSer(LilyTestSupport support) throws JsonProcessingException {
+        var value =
+            support.evaluate(
+                """
+                var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
+                return new {{package}}.MyComponent(value).value();
+                """);
+        var mapper = new ObjectMapper();
+        assertEquals("[[{\"foo\":\"foo!\"}]]", mapper.writeValueAsString(value));
+      }
+
+      @Test
+      void testDeser(LilyTestSupport support)
+          throws ClassNotFoundException, JsonProcessingException {
+        var expected =
+            support.evaluate(
+                """
+                var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
+                return new {{package}}.MyComponent(value);
+                """);
+        var mapper = new ObjectMapper();
+        assertEquals(
+            expected,
+            mapper.readValue(
+                "[[{\"foo\":\"foo!\"}]]", support.getClassForName("{{package}}.MyComponent")));
+      }
     }
 
-    @Test
-    void evaluateWithRefItem() {
-      var actual =
-          OasComponentsToAst.evaluate(
-              PackageName.of("p"),
-              SimpleName.of("MyComponent"),
-              new ArraySchema().items(new Schema<>().$ref("#/components/schemas/MyRef")));
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class RefItem {
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+                openapi: 3.0.2
+                components:
+                  schemas:
+                    MyComponent:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Foo'
+                    Foo:
+                      properties:
+                        foo:
+                          type: string
+                """);
+      }
 
-      assertEquals(
-          Set.of(
-              AstClassAlias.aliasOf(
-                  Fqn.newBuilder().packageName("p").typeName("MyComponent").build(),
-                  astListOf(Fqn.newBuilder().packageName("p").typeName("MyRef").build()))),
-          actual.collect(Collectors.toSet()),
-          "arrays of refs evaluate to aliases of lists of the referent type");
+      @Test
+      void testValue(LilyTestSupport support) {
+        assertTrue(
+            support.evaluate(
+                """
+                var value = java.util.List.of(new {{package}}.Foo("foo!");
+                return value == new {{package}}.MyComponent(value).value();
+                """,
+                Boolean.class));
+      }
+
+      @Test
+      void testSer(LilyTestSupport support) throws JsonProcessingException {
+        var value =
+            support.evaluate(
+                """
+                var value = java.util.List.of(new {{package}}.Foo("foo!"));
+                return new {{package}}.MyComponent(value);
+                """);
+        var mapper = new ObjectMapper();
+        assertEquals("[{\"foo\":\"foo!\"}]", mapper.writeValueAsString(value));
+      }
+
+      @Test
+      void testDeser(LilyTestSupport support)
+          throws ClassNotFoundException, JsonProcessingException {
+        var expected =
+            support.evaluate(
+                """
+                var value = java.util.List.of(new {{package}}.Foo("foo!"));
+                return new {{package}}.MyComponent(value);
+                """);
+        var mapper = new ObjectMapper();
+        assertEquals(
+            expected,
+            mapper.readValue(
+                "[{\"foo\":\"foo!\"}]", support.getClassForName("{{package}}.MyComponent")));
+      }
     }
   }
 
