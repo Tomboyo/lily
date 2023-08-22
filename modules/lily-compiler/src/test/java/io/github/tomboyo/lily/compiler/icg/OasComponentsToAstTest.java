@@ -1,20 +1,7 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astBigDecimal;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astBigInteger;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astBoolean;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astDouble;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astFloat;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astInteger;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astLocalDate;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astLong;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astOffsetDateTime;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,39 +13,15 @@ import io.github.tomboyo.lily.compiler.cg.Mustache;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 
 public class OasComponentsToAstTest {
-
-  /** A list of scalar types and formats, and the java types they evaluate to. * */
-  public static Stream<Arguments> scalarsSource() {
-    return Stream.of(
-        arguments("boolean", null, astBoolean()),
-        arguments("boolean", "unsupported-format", astBoolean()),
-        arguments("integer", null, astBigInteger()),
-        arguments("integer", "unsupported-format", astBigInteger()),
-        arguments("integer", "int32", astInteger()),
-        arguments("integer", "int64", astLong()),
-        arguments("number", null, astBigDecimal()),
-        arguments("number", "unsupported-format", astBigDecimal()),
-        arguments("number", "double", astDouble()),
-        arguments("number", "float", astFloat()),
-        arguments("string", null, astString()),
-        arguments("string", "unsupportedFormat", astString()),
-        arguments("string", "password", astString()),
-        arguments("string", "byte", astByteBuffer()),
-        arguments("string", "binary", astByteBuffer()),
-        arguments("string", "date", astLocalDate()),
-        arguments("string", "date-time", astOffsetDateTime()));
-  }
 
   @Nested
   class ScalarComponents {
@@ -216,9 +179,60 @@ public class OasComponentsToAstTest {
     @Nested
     @ExtendWith(LilyExtension.class)
     class WithImplicitObjectItem {
+
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+                openapi: 3.0.2
+                components:
+                  schemas:
+                    MyComponent:
+                      type: array
+                      items:
+                        properties:
+                          foo:
+                            type: string
+                """);
+      }
+
       @Test
-      void todo() {
-        fail("Todo! test inlined object without explicit type key, because it breaks!");
+      void testValue(LilyTestSupport support) {
+        assertTrue(
+            support.evaluate(
+                """
+                var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+                return value == new {{package}}.MyComponent(value).value();
+                """,
+                Boolean.class));
+      }
+
+      @Test
+      void testSer(LilyTestSupport support) throws JsonProcessingException {
+        var value =
+            support.evaluate(
+                """
+                var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+                return new {{package}}.MyComponent(value);
+                """);
+        var mapper = new ObjectMapper();
+        assertEquals("[{\"foo\":\"foo!\"}]", mapper.writeValueAsString(value));
+      }
+
+      @Test
+      void testDeser(LilyTestSupport support)
+          throws ClassNotFoundException, JsonProcessingException {
+        var expected =
+            support.evaluate(
+                """
+                var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+                return new {{package}}.MyComponent(value);
+                """);
+        var mapper = new ObjectMapper();
+        assertEquals(
+            expected,
+            mapper.readValue(
+                "[{\"foo\":\"foo!\"}]", support.getClassForName("{{package}}.MyComponent")));
       }
     }
 
