@@ -4,14 +4,18 @@ import static io.github.tomboyo.lily.compiler.CompilerSupport.uniquePackageName;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
@@ -20,23 +24,15 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 /**
- * Generates sources in isolated packages per-class or per-method depending on configuration.
+ * Generates sources in isolated packages. When a single test method registers the extension, the
+ * package is isolated to that test. When a class registers the extension, all methods in the class
+ * share a reference to the same package. The latter lets you generate code once and run multiple
+ * tests on the compiled sources.
  *
  * <p>Most functions let the user use the string {@code {{package}}} in place of the actual package
  * name of generated types. This lets the extension manage unique package names for the user.
  *
- * <p>In package-per-class mode, sources are generated and compiled once, and the same package is
- * shared by all following tests. Sources are deleted at the end of the class.
- *
- * <p>In package-per-method mode, sources are generated on a test-by-test basis and package names
- * are not shared between tests; tests are completely isolated. Sources are deleted after each test
- * method.
- *
- * <p>If using the {@code @ExtendWith} annotation, it runs in package-per-class mode by default.
- * {@code @RegisterExtension} may be used along with {@link LilyExtension.Builder} to run in either
- * mode.
- *
- * <p>Regardless of mode, all generated classes stay loaded until the JVM exits.
+ * <p>All generated classes stay loaded until the JVM exits.
  */
 public class LilyExtension
     implements BeforeEachCallback,
@@ -45,80 +41,39 @@ public class LilyExtension
         AfterAllCallback,
         ParameterResolver {
 
-  enum Mode {
-    PACKAGE_PER_CLASS,
-    PACKAGE_PER_METHOD
-  }
-
-  public static class Builder {
-
-    private Mode mode;
-
-    /**
-     * The extension will use the same generated sources package for all tests in the class.
-     * Generated files are deleted after the class.
-     */
-    public Builder packagePerClass() {
-      this.mode = Mode.PACKAGE_PER_CLASS;
-      return this;
-    }
-
-    /**
-     * The extension will use a different generated sources package for each test method. Generated
-     * files are deleted after each test.
-     */
-    public Builder packagePerMethod() {
-      this.mode = Mode.PACKAGE_PER_METHOD;
-      return this;
-    }
-
-    public LilyExtension build() {
-      return new LilyExtension(mode);
-    }
+  private enum Mode {
+    CLASS,
+    METHOD;
   }
 
   private static final String PACKAGE = "package";
   private static final String SOURCE_PATHS = "source_paths";
 
-  private final Mode mode;
-
-  public static Builder newBuilder() {
-    return new Builder();
-  }
-
-  @SuppressWarnings("unused") // instantiated with reflection by ExtendWith annotation
-  public LilyExtension() {
-    this.mode = Mode.PACKAGE_PER_CLASS;
-  }
-
-  private LilyExtension(Mode mode) {
-    this.mode = mode;
-  }
 
   @Override
   public void beforeEach(ExtensionContext ctx) {
-    if (mode == Mode.PACKAGE_PER_METHOD) {
+    if (Mode.METHOD == getMode(ctx)) {
       setPackage(ctx, uniquePackageName());
     }
   }
 
   @Override
   public void afterEach(ExtensionContext ctx) throws IOException {
-    if (mode == Mode.PACKAGE_PER_METHOD) {
+    if (Mode.METHOD == getMode(ctx)) {
       CompilerSupport.clearPackageFiles(getPackage(ctx));
     }
   }
 
   @Override
   public void beforeAll(ExtensionContext ctx) {
-    if (mode == Mode.PACKAGE_PER_CLASS) {
+    if (Mode.CLASS == getMode(ctx)) {
       setPackage(ctx, uniquePackageName());
     }
   }
 
   @Override
   public void afterAll(ExtensionContext ctx) throws IOException {
-    if (mode == Mode.PACKAGE_PER_CLASS) {
+    if (Mode.CLASS == getMode(ctx)) {
       CompilerSupport.clearPackageFiles(getPackage(ctx));
     }
   }
@@ -137,10 +92,10 @@ public class LilyExtension
   }
 
   private Store getStore(ExtensionContext ctx) {
-    return switch (mode) {
-      case PACKAGE_PER_METHOD -> ctx.getStore(
+    return switch (getMode(ctx)) {
+      case METHOD -> ctx.getStore(
           Namespace.create(getClass(), ctx.getRequiredTestMethod()));
-      case PACKAGE_PER_CLASS -> ctx.getStore(
+      case CLASS -> ctx.getStore(
           Namespace.create(getClass(), ctx.getRequiredTestClass()));
     };
   }
@@ -160,6 +115,33 @@ public class LilyExtension
   @SuppressWarnings("unchecked")
   private Map<String, Path> getSourcePaths(ExtensionContext ctx) {
     return (Map<String, Path>) getStore(ctx).get(SOURCE_PATHS, Map.class);
+  }
+
+  private Mode getMode(ExtensionContext ctx) {
+    var current = ctx;
+    while (!isExtensionContext(current.getElement().orElseThrow(this::missingContext))) {
+      current = current.getParent().orElseThrow();
+    }
+
+    var element = current.getElement().orElseThrow(this::missingContext);
+    if (element instanceof Method)  {
+      return Mode.METHOD;
+    } else if (element instanceof Class<?>) {
+      return Mode.CLASS;
+    } else {
+      throw new IllegalArgumentException("Extension can only be registered on class or method");
+    }
+  }
+
+  private boolean isExtensionContext(AnnotatedElement element) {
+    return Arrays.stream(element.getDeclaredAnnotations())
+            .filter(a -> a instanceof ExtendWith)
+            .flatMap(a -> Arrays.stream(((ExtendWith) a).value()))
+            .anyMatch(extension -> extension == LilyExtension.class);
+  }
+
+  private IllegalArgumentException missingContext() {
+    return new IllegalArgumentException("Extension must be registered on class or method only");
   }
 
   public class LilyTestSupport {
