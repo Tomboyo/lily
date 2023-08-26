@@ -1,4 +1,4 @@
-package io.github.tomboyo.lily.compiler.feature.components;
+package io.github.tomboyo.lily.compiler.feature.components.schemas;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
