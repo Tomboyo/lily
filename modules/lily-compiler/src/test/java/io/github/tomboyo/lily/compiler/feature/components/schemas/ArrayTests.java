@@ -26,14 +26,14 @@ public class ArrayTests {
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
-                            openapi: 3.0.2
-                            components:
-                              schemas:
-                                MyComponent:
-                                  type: array
-                                  items:
-                                    type: boolean
-                            """);
+          openapi: 3.0.2
+          components:
+            schemas:
+              MyComponent:
+                type: array
+                items:
+                  type: boolean
+          """);
     }
 
     @Test
@@ -41,9 +41,9 @@ public class ArrayTests {
       assertTrue(
           support.evaluate(
               """
-                                    var value = java.util.List.of(true, false);
-                                    return value == new {{package}}.MyComponent(value).value();
-                                    """,
+              var value = java.util.List.of(true, false);
+              return value == new {{package}}.MyComponent(value).value();
+              """,
               Boolean.class));
     }
 
@@ -52,8 +52,8 @@ public class ArrayTests {
       var right =
           support.evaluate(
               """
-                            return new {{package}}.MyComponent(java.util.List.of(true, false));
-                            """);
+              return new {{package}}.MyComponent(java.util.List.of(true, false));
+              """);
 
       var mapper = new ObjectMapper();
       assertEquals("[true,false]", mapper.writeValueAsString(right));
@@ -64,8 +64,8 @@ public class ArrayTests {
       assertEquals(
           support.evaluate(
               """
-                            return new {{package}}.MyComponent(java.util.List.of(true, false));
-                            """),
+              return new {{package}}.MyComponent(java.util.List.of(true, false));
+              """),
           MAPPER.readValue("[true,false]", support.getClassForName("{{package}}.MyComponent")));
     }
   }
@@ -77,18 +77,18 @@ public class ArrayTests {
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
-                    openapi: 3.0.2
-                    components:
-                      schemas:
-                        MyComponent:
-                          type: array
-                          items:
-                            # type is explicitly given (not inferred from presence of properties key)
-                            type: object
-                            properties:
-                              foo:
-                                type: string
-                    """);
+          openapi: 3.0.2
+          components:
+            schemas:
+              MyComponent:
+                type: array
+                items:
+                  # type is explicitly given (not inferred from presence of properties key)
+                  type: object
+                  properties:
+                    foo:
+                      type: string
+          """);
     }
 
     @Test
@@ -99,9 +99,9 @@ public class ArrayTests {
       assertTrue(
           support.evaluate(
               """
-                                    var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
-                                    return value == new {{package}}.MyComponent(value).value();
-                                    """,
+              var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+              return value == new {{package}}.MyComponent(value).value();
+              """,
               Boolean.class));
     }
 
@@ -110,9 +110,9 @@ public class ArrayTests {
       var actual =
           support.evaluate(
               """
-                                    var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
-                                    return new {{package}}.MyComponent(value);
-                                    """);
+              var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+              return new {{package}}.MyComponent(value);
+              """);
       var mapper = new ObjectMapper();
       assertEquals("[{\"foo\":\"foo!\"}]", mapper.writeValueAsString(actual));
     }
@@ -123,9 +123,9 @@ public class ArrayTests {
       var expected =
           support.evaluate(
               """
-                                    var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
-                                    return new {{package}}.MyComponent(value);
-                                    """);
+              var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+              return new {{package}}.MyComponent(value);
+              """);
       var mapper = new ObjectMapper();
       assertEquals(
           expected,
@@ -141,17 +141,17 @@ public class ArrayTests {
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
-                    openapi: 3.0.2
-                    components:
-                      schemas:
-                        MyComponent:
-                          type: array
-                          items:
-                            # `type: object` is implied by the properties key. It is omitted.
-                            properties:
-                              foo:
-                                type: string
-                    """);
+          openapi: 3.0.2
+          components:
+            schemas:
+              MyComponent:
+                type: array
+                items:
+                  # `type: object` is implied by the properties key. It is omitted.
+                  properties:
+                    foo:
+                      type: string
+          """);
     }
 
     @Test
@@ -162,9 +162,9 @@ public class ArrayTests {
       assertTrue(
           support.evaluate(
               """
-                                    var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
-                                    return value == new {{package}}.MyComponent(value).value();
-                                    """,
+              var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+              return value == new {{package}}.MyComponent(value).value();
+              """,
               Boolean.class));
     }
 
@@ -173,9 +173,9 @@ public class ArrayTests {
       var actual =
           support.evaluate(
               """
-                                    var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
-                                    return new {{package}}.MyComponent(value);
-                                    """);
+              var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+              return new {{package}}.MyComponent(value);
+              """);
       var mapper = new ObjectMapper();
       assertEquals("[{\"foo\":\"foo!\"}]", mapper.writeValueAsString(actual));
     }
@@ -186,9 +186,9 @@ public class ArrayTests {
       var expected =
           support.evaluate(
               """
-                                    var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
-                                    return new {{package}}.MyComponent(value);
-                                    """);
+              var value = java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!"));
+              return new {{package}}.MyComponent(value);
+              """);
       var mapper = new ObjectMapper();
       assertEquals(
           expected,
@@ -204,19 +204,19 @@ public class ArrayTests {
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
-                    openapi: 3.0.2
-                    components:
-                      schemas:
-                        MyComponent:
-                          type: array
-                          items:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                foo:
-                                  type: string
-                    """);
+          openapi: 3.0.2
+          components:
+            schemas:
+              MyComponent:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      foo:
+                        type: string
+          """);
     }
 
     @Test
@@ -224,9 +224,9 @@ public class ArrayTests {
       assertTrue(
           support.evaluate(
               """
-                                    var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
-                                    return value == new {{package}}.MyComponent(value).value();
-                                    """,
+              var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
+              return value == new {{package}}.MyComponent(value).value();
+              """,
               Boolean.class));
     }
 
@@ -235,9 +235,9 @@ public class ArrayTests {
       var value =
           support.evaluate(
               """
-                                    var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
-                                    return new {{package}}.MyComponent(value).value();
-                                    """);
+              var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
+              return new {{package}}.MyComponent(value).value();
+              """);
       var mapper = new ObjectMapper();
       assertEquals("[[{\"foo\":\"foo!\"}]]", mapper.writeValueAsString(value));
     }
@@ -248,9 +248,9 @@ public class ArrayTests {
       var expected =
           support.evaluate(
               """
-                                    var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
-                                    return new {{package}}.MyComponent(value);
-                                    """);
+              var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
+              return new {{package}}.MyComponent(value);
+              """);
       var mapper = new ObjectMapper();
       assertEquals(
           expected,
@@ -266,18 +266,18 @@ public class ArrayTests {
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
-                    openapi: 3.0.2
-                    components:
-                      schemas:
-                        MyComponent:
-                          type: array
-                          items:
-                            $ref: '#/components/schemas/Foo'
-                        Foo:
-                          properties:
-                            foo:
-                              type: string
-                    """);
+          openapi: 3.0.2
+          components:
+            schemas:
+              MyComponent:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Foo'
+              Foo:
+                properties:
+                  foo:
+                    type: string
+          """);
     }
 
     @Test
@@ -285,9 +285,9 @@ public class ArrayTests {
       assertTrue(
           support.evaluate(
               """
-                                    var value = java.util.List.of(new {{package}}.Foo("foo!"));
-                                    return value == new {{package}}.MyComponent(value).value();
-                                    """,
+              var value = java.util.List.of(new {{package}}.Foo("foo!"));
+              return value == new {{package}}.MyComponent(value).value();
+              """,
               Boolean.class));
     }
 
@@ -296,9 +296,9 @@ public class ArrayTests {
       var value =
           support.evaluate(
               """
-                                    var value = java.util.List.of(new {{package}}.Foo("foo!"));
-                                    return new {{package}}.MyComponent(value);
-                                    """);
+              var value = java.util.List.of(new {{package}}.Foo("foo!"));
+              return new {{package}}.MyComponent(value);
+              """);
       var mapper = new ObjectMapper();
       assertEquals("[{\"foo\":\"foo!\"}]", mapper.writeValueAsString(value));
     }
@@ -309,9 +309,9 @@ public class ArrayTests {
       var expected =
           support.evaluate(
               """
-                                    var value = java.util.List.of(new {{package}}.Foo("foo!"));
-                                    return new {{package}}.MyComponent(value);
-                                    """);
+              var value = java.util.List.of(new {{package}}.Foo("foo!"));
+              return new {{package}}.MyComponent(value);
+              """);
       var mapper = new ObjectMapper();
       assertEquals(
           expected,
