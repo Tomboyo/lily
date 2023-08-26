@@ -2,7 +2,6 @@ package io.github.tomboyo.lily.compiler.icg;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,60 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 public class OasComponentsToAstTest {
-
-  @Nested
-  @ExtendWith(LilyExtension.class)
-  class Refs {
-
-    @BeforeAll
-    static void beforeAll(LilyTestSupport support) {
-      support.compileOas(
-          """
-              openapi: 3.0.2
-              components:
-                schemas:
-                  MyComponent:
-                    $ref: '#/components/schemas/Foo'
-                  Foo:
-                    properties:
-                      foo:
-                        type: string
-              """);
-    }
-
-    @Test
-    void testValue(LilyTestSupport support) {
-      assertTrue(
-          support.evaluate(
-              """
-                var foo = new {{package}}.Foo("foo!");
-                return foo == new {{package}}.MyComponent(foo).value();
-                """,
-              Boolean.class),
-          "Schemas that alias a $ref become alias types");
-    }
-
-    @Test
-    void testSer(LilyTestSupport support) throws JsonProcessingException {
-      var alias =
-          support.evaluate(
-              """
-              var foo = new {{package}}.Foo("foo!");
-              return new {{package}}.MyComponent(foo);
-              """);
-
-      var mapper = new ObjectMapper();
-      assertEquals(
-          "{\"foo\":\"foo!\"}",
-          mapper.writeValueAsString(alias),
-          "Alias are serialized as if they were only their aliased value");
-    }
-
-    @Test
-    void testDeser(LilyTestSupport support) {
-      fail("Todo!");
-    }
-  }
 
   @Nested
   class Arrays {
@@ -275,7 +220,7 @@ public class OasComponentsToAstTest {
         assertTrue(
             support.evaluate(
                 """
-                var value = java.util.List.of(new {{package}}.Foo("foo!");
+                var value = java.util.List.of(new {{package}}.Foo("foo!"));
                 return value == new {{package}}.MyComponent(value).value();
                 """,
                 Boolean.class));

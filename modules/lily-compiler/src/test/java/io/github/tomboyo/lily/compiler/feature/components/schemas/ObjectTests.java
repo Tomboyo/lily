@@ -23,7 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /*
- * These tests cover all component.schema elements with type object. These schemas are compiled to models.
+ * These tests cover all components.schemas elements with type object. These schemas are compiled to models.
  */
 public class ObjectTests {
 
