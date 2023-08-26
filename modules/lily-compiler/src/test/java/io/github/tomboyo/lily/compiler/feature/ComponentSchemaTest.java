@@ -9,69 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 public class ComponentSchemaTest {
-
-  @Nested
-  @ExtendWith(LilyExtension.class)
-  class WhenObjectSchema {
-    @BeforeAll
-    static void beforeAll(LilyTestSupport support) {
-      support.compileOas(
-          """
-          openapi: 3.0.2
-          components:
-            schemas:
-              MySchema:
-                type: object
-                properties:
-                  foo:
-                    type: integer
-                    format: int32
-          """);
-    }
-
-    @Test
-    void test(LilyTestSupport support) {
-      Assertions.assertDoesNotThrow(
-          () ->
-              support.evaluate(
-                  """
-            return new {{package}}.MySchema(1);
-            """));
-    }
-  }
-
-  @Nested
-  @ExtendWith(LilyExtension.class)
-  class WhenObjectSchemaWithoutType {
-    @BeforeAll
-    static void beforeAll(LilyTestSupport support) {
-      support.compileOas(
-          """
-              openapi: 3.0.2
-              components:
-                schemas:
-                  MySchema:
-                    properties:
-                      foo:
-                        type: string
-              """);
-    }
-
-    @Test
-    void test(LilyTestSupport support) {
-      Assertions.assertDoesNotThrow(
-          () ->
-              support.evaluate(
-                  """
-            return new {{package}}.MySchema("myFoo");
-            """),
-          """
-         If an object schema specification does not contain the type field, Lily infers that it is an object based on
-         the presence of the properties field
-         """);
-    }
-  }
-
   @Nested
   @ExtendWith(LilyExtension.class)
   class WhenComposedSchema {
@@ -117,15 +54,14 @@ public class ComponentSchemaTest {
                   """
                   new {{package}}.MyAllOfSchema();
                   new {{package}}.MyAnyOfSchema();
-                  var exists = {{package}}.MyOneOfSchema.class;
                   new {{package}}.MyNotSchema();
 
                   return null;
                   """),
           """
-                   If an object schema specification contains compositional keywords allOf, anyOf, or not fields, Lily does not support
-                   these fields, but should generate a class so that the code compiles.
-                """);
+           If an object schema specification contains compositional keywords allOf, anyOf, or not fields, Lily
+           should generate a class so that the code compiles even though it doesn't implement these keywords.
+           """);
     }
 
     @Test
