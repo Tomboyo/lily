@@ -49,7 +49,6 @@ public class LilyExtension
   private static final String PACKAGE = "package";
   private static final String SOURCE_PATHS = "source_paths";
 
-
   @Override
   public void beforeEach(ExtensionContext ctx) {
     if (Mode.METHOD == getMode(ctx)) {
@@ -93,10 +92,8 @@ public class LilyExtension
 
   private Store getStore(ExtensionContext ctx) {
     return switch (getMode(ctx)) {
-      case METHOD -> ctx.getStore(
-          Namespace.create(getClass(), ctx.getRequiredTestMethod()));
-      case CLASS -> ctx.getStore(
-          Namespace.create(getClass(), ctx.getRequiredTestClass()));
+      case METHOD -> ctx.getStore(Namespace.create(getClass(), ctx.getRequiredTestMethod()));
+      case CLASS -> ctx.getStore(Namespace.create(getClass(), ctx.getRequiredTestClass()));
     };
   }
 
@@ -124,7 +121,7 @@ public class LilyExtension
     }
 
     var element = current.getElement().orElseThrow(this::missingContext);
-    if (element instanceof Method)  {
+    if (element instanceof Method) {
       return Mode.METHOD;
     } else if (element instanceof Class<?>) {
       return Mode.CLASS;
@@ -135,9 +132,9 @@ public class LilyExtension
 
   private boolean isExtensionContext(AnnotatedElement element) {
     return Arrays.stream(element.getDeclaredAnnotations())
-            .filter(a -> a instanceof ExtendWith)
-            .flatMap(a -> Arrays.stream(((ExtendWith) a).value()))
-            .anyMatch(extension -> extension == LilyExtension.class);
+        .filter(a -> a instanceof ExtendWith)
+        .flatMap(a -> Arrays.stream(((ExtendWith) a).value()))
+        .anyMatch(extension -> extension == LilyExtension.class);
   }
 
   private IllegalArgumentException missingContext() {
