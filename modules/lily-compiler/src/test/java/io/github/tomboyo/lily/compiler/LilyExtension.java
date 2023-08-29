@@ -235,9 +235,10 @@ public class LilyExtension
                 that are expected from this invocation and used in subsequent tests. We are refusing to
                 generate code to avoid such false negatives.
 
-                How to resolve: Ensure that whenever you need to compile an OAS document, you do so
-                within a dedicated `@Nested` class with the LilyExtension. Do not only annotate the
-                outer class.
+                How to resolve: Ensure that more than one OAS document is not compiled per extension
+                scope. The "extension scope" is confined to a single test method when the method is
+                annotated with the extension, or to the entire class when the class is annotated with
+                the extension. The closest annotation wins.
                 """);
       }
     }

@@ -156,9 +156,8 @@ public class ArrayTests {
 
     @Test
     void testIsAlias(LilyTestSupport support) {
-      // Note that the anonymous object is generated to a subordinate package. It is named after the
-      // parent
-      // schema, but with the "Item" suffix.
+      /* Note that the anonymous object is generated to a subordinate package. It is named after the
+       * parent schema, but with the "Item" suffix. */
       assertTrue(
           support.evaluate(
               """
