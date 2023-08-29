@@ -1,12 +1,10 @@
 package io.github.tomboyo.lily.compiler.feature.components.schemas;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.github.tomboyo.lily.compiler.feature.components.schemas.TestSupport.MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.tomboyo.lily.compiler.LilyExtension;
 import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
 import io.github.tomboyo.lily.compiler.cg.Mustache;
@@ -109,15 +107,6 @@ public class ObjectTests {
               "{\"value\":%s}".formatted(valueJson()),
               support.getClassForName("{{package}}.Test")));
     }
-  }
-
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-
-  static {
-    MAPPER
-        .registerModule(new JavaTimeModule())
-        // Prefer ISO-like formats instead of arrays and floats
-        .configure(WRITE_DATES_AS_TIMESTAMPS, false);
   }
 
   /* ParameterizedTest can't use TestTemplate, so we have to live with this duplication */
