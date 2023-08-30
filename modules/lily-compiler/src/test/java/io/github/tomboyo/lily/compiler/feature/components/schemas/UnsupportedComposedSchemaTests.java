@@ -28,12 +28,6 @@ public class UnsupportedComposedSchemaTests {
                     properties:
                       foo:
                         type: string
-              MyOneOfSchema:
-                oneOf:
-                  - type: object
-                    properties:
-                      foo:
-                        type: string
               MyNotSchema:
                 not:
                   type: object
