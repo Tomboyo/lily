@@ -197,10 +197,12 @@ public class OasSchemaToAst {
 
   private Pair<Fqn, Stream<Ast>> evaluateArray(
       PackageName currentPackage, SimpleName name, ArraySchema arraySchema) {
-    if ("object".equals(arraySchema.getItems().getType())) {
+    if ("object".equals(arraySchema.getItems().getType())
+        || (arraySchema.getItems().getType() == null
+            && arraySchema.getItems().getProperties() != null)) {
       /*
        AST generated from objects in arrays are named similarly to all other objects in that they
-       are defined withi subordinate packages of superior types (if any). They are also given the "Item" suffix. For
+       are defined within subordinate packages of superior types (if any). They are also given the "Item" suffix. For
        example:
 
        1. Suppose the #/components/Cats component is an array containing [arrays of] objects. If
