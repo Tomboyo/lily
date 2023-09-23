@@ -1,0 +1,336 @@
+= 2. composed-schema
+
+Date: 2023-09-14
+
+== Status
+
+Accepted
+
+== Context
+
+Lily must support compositional types that use the `allOf`, `anyOf`, `oneOf`, and `not` keywords instead of or in addition to the `properties` keyword.
+
+This decision record dicusses how this support is implemented.
+
+=== Brief Overview Of Composed Schema Keywords
+
+First, note that the compositional keywords `allOf`, `anyOf`, `oneOf`, and `not` may be used _in conjunction_ with the properties keyword, and may be used without the properties keyword.
+
+==== AllOf
+
+Consider the following schema:
+
+[source,yaml]
+----
+Foo:
+  properties:
+    foo:
+      type: string
+  allOf:
+    - properties:
+        bar:
+          type: string
+    - properties:
+        baz:
+          type: string
+----
+
+A legal implementation of Foo must contain each of the properties foo, bar, and baz. This keyword defines a new schema as the concatenation of other schema. 
+
+==== AnyOf
+
+Consider the following schema:
+
+[source,yaml]
+----
+Foo:
+  properties:
+    foo:
+      type: string
+  anyOf:
+    - properties:
+        bar:
+          type: string
+    - properties:
+        baz:
+          type: string
+----
+
+A legal implementation of Foo must contain the foo property, may contain the bar property, and may contain the baz property. An implementaiton may contain both bar and baz, or neither; they are optional. 
+
+Note, however, that two elements could define the same property but of a different type:
+
+[source,yaml]
+----
+Foo:
+  anyOf:
+    - properties:
+        bar:
+          type: string
+    - properties:
+        bar:
+          type: integer
+----
+
+In this case, a legal implementation may define a bar property, and if it does so, the type of bar may be either a string or an integer. Schema authors could also require that when bar is set as a string, it have a sibling property `baz`:
+
+[source,yaml]
+----
+Foo:
+  anyOf:
+    - properties:
+        bar:
+          type: string
+        baz:
+          type: string
+    - properties:
+        bar:
+          type: integer
+----
+
+==== OneOf
+
+Consider the following schema:
+
+[source,yaml]
+----
+Foo:
+  properties:
+    foo:
+      type: string
+  oneOf:
+    - properties:
+        bar:
+          type: string
+    - properties:
+        bar:
+          type: integer
+        baz:
+          type: string
+----
+
+A legal implementation of Foo must contain the foo property. It must also contain the bar property as a string, or the bar property as an integer with a sibling baz string. It may not contain both bar and baz.
+
+As a special case, a schema with only a `oneOf` keyword can define a non-object schema type:
+
+[source,yaml]
+----
+Foo:
+  oneOf:
+    - type: string
+    - type: integer
+    - properties:
+      foo:
+        type: string
+----
+
+This example defines Foo to be _either_ a string, an integer, or an object like `{ foo: "foo!" }`. This is a stand-alone algebraic sum type.
+
+==== Not
+
+Consider the following schema:
+
+[source,yaml]
+----
+Foo:
+  properties:
+    foo:
+      type: string
+  anyOf:
+    - properties:
+        bar:
+          type: string
+    - properties:
+        baz:
+          type: string
+    - properties:
+        buzz:
+          type: string
+  not:
+    - properties:
+        baz:
+          type: string
+        buzz:
+          type: string
+----
+
+A legal implementation of this schema is any component of just the `anyOf` schema _except_ those that contain both the baz and buzz properties. Removing specific combinations of properties from an `anyOf` composed schema seems to be the intended use case.
+
+=== Caveats
+
+Because the `allOf` and `anyOf` keywords can only compose object schema together (how do you implement both string and integer schemas at once?), the presence of these keywords always implies the resulting schema is an object schema (`type: object`), similar to how the presence of `properties` implies the schema is also an object schema. This is not the case for `oneOf` schema, whose components can be primitives.
+
+The `oneOf` keyword always defines a new algebraic sum type, named or anonymous, and may also contribute to the definition of an object schema one of whose properties is that new sum type. Consider the following:
+
+[source,yaml]
+----
+ExampleOne:
+  oneOf:
+    - type: string
+    - type: integer
+
+ExampleTwo:
+  properties:
+    foo:
+      type: string
+  oneOf:
+    - properties:
+        bar:
+          type: string
+    - properties:
+        bar:
+          type: integer
+        buzz:
+          type: integer
+    - properties:
+        baz:
+          type: string
+----
+
+`ExampleOne` defines a new sum type only, composed of primitive types. This could be a  `$ref` target, but is not in this example.
+
+In `ExampleTwo`, the `oneOf` keyword both defines an anonymous sum type composed of three object schemas and contributes to the definition of the `ExampleTwo` object schema.
+
+Whereas `ExampleOne` _is_ a string or an integer, `ExampleTwo` is an object that may _contain_ one of three combinations of properties.
+
+== Decision
+
+=== Definitions
+
+[cols="1,1"]
+|===
+|Component
+|An element of any compositional keyword `oneOf`, `allOf`, `anyOf`, or `not` is a "component".
+
+|Required component
+|A component is "required" if any of its properties is required. Components that are primitive types (i.e. not arrays or objects) are always considered required.
+
+|Optional component
+|A component is "optional" if all of its properties are not required.|
+|===
+
+=== Code Generation
+
+=== Top-Level Composed Type
+
+This ADR proposes a combined model to represent a schema defined by any combination of `properties`, `allOf`, `anyOf`, and `oneOf` keywords. It outlines a fluent "builder"-style API for instantiating models in a forwards-compatible and flexible way, as well as the getter/accessor API with similar considerations.
+
+==== Model
+
+The model is defined by generating a record type with one field for each property defined in the `properties`  keyword or any compositional keyword, including `oneOf`. The `properties` and compositional keywords might define some property, call it "foo", more than once:
+
+. If foo is consistently defined to have the same schema each time (e.g. foo is always a string), then a single field for foo is added to the generated record type.
+. If foo is defined to have different types depending on where it is declared among the components and properties of the parent schema, then the code generator generates a new sealed interface which permits each of the competing types for foo, and one field for foo is added of the new interface's type. Members of the sealed interface may be aliases of primitive types which cannot otherwise participate in sealed interfaces.
+
+For example:
+
+[source,yaml]
+----
+Foo:
+  properties:
+    foo:
+      type: string
+  oneOf:
+    - properties:
+        isCatLover:
+          type: boolean
+    - properties:
+        isDogLover:
+          type: boolean
+  anyOf:
+    - properties:
+        foo:
+          type: boolean
+----
+
+Could be rendered as:
+
+[source,java]
+----
+record Foo(
+        Anon1 foo,
+        Boolean isCatLover,
+        Boolean isDogLover) {}
+
+sealed interface Anon1 permits Anon1String, Anon1Boolean {}
+
+record Anon1String(String value) implements Anon1 {
+    @JsonValue public String value() { return value; }
+}
+
+record Anon1Boolean(Boolean value) implements Anon1 {
+    @JsonValue public Boolean value() { return value; }
+}
+----
+
+==== Builder API
+
+The builder API helps the user construct models from both whole components or individual properties. The builder reserves space to implement run-time validation in the future, though that is outside the scope of this ADR. Builders are generated in the following shape:
+
+[source,java]
+----
+record Foo(/* ... */) {
+    /* A factory to create blank Builders */
+    public static Builder newBuilder() { /* ... */ }
+
+    /* A "copy" factory that initializes a new Builder with the state of a given Foo */
+    public static Builder newBuilder(Foo foo) { /* ... */ }
+}
+
+class Builder {
+  /* "property setter" that sets the age property directly */
+  public Builder withAge(String age) { /* ... */ }
+
+ /* "component setter" that sets all the properties associated with the Bar schema */
+  public Builder composeWithBar(Bar bar) { /* ... */ }
+
+  /* A special case component setter whose argument is the OneOf sealed interface */
+  public Builder composeWithOneOf(OneOf oneOf) { /* ... */  }
+
+  /* The builder which performs no validation. */
+  Foo buildUnvalidated() { /* ... */ }
+
+  /* A builder which also performs no validation, but returns a Map. Used to work around schema imperfections. */
+  Map<String, Object> buildMapUnvalidated() { /* ... */ }
+}
+----
+
+The two static factories allow the user to either initialize a Builder with no state, or initialize the builder with the state of an existing Foo instance (so that the builder is pre-configured to duplicate that instance). These are functions of the model rather than the Builder so that the user does not need to import the Builder type explicitly (and so that the user can type the name of the type they know they want and quickly find the Builder API via code suggestions).
+
+The `with` functions are fluent-style setters. There is one such setter per property of the model, letting the user assign a value to a property introduced by `properties` or any composed schema. If the type of a property is an alias of another type, then an overload of the setter will consume the aliased type. This is a convenience for users constructing models from scratch: Suppose the type Foo has an ID property which is an alias of a String, and that the user is building a Foo from scratch in a test case. Normally the user would need to `withId(Id.newBuilder().withValue("foo").build())`, but instead they can `withId("foo")`. Likewise, if the user already has an ID from some other API interaction, they can set that directly with `withId(theId)`.
+
+The `composeWith` functions are fluent-style setters that consume component models rather than individual properties, letting the user compose models together according to their schema when it is more convenient to do so. This is intended to help users combine existing models or to logically group properties together.
+
+NOTE: The redundant `with` and `composeWith` APIs are intentional. While the `composeWith` API would in theory be sufficient, composed schema are not necessarily stand-alone concepts like "car" or "pet," but rather small collections of related properties that only make sense when embedded into something larger, like "HasId" or "HasTimestamp." Asking a user to instantiate instances of "HasTimestamp" instead of directly setting one or two fields would be irritating and would make the API less intuitive. Furthermore, if a property is migrated from the `properties` keyword to a component in a future iteration if the OAS, calls to `with` continue to compile.
+
+The `composeWithOneOf` function is just a `composeWith` function generated when the schema uses a `oneOf` composition keyword. The `OneOf` corresponds to whatever the name of the generated sealed interface is. This function follows the same rules as all other `composeWith` functions.
+
+Two finishing functions may be used to construct the final instance: `buildUnvalidated` or `buildMapUnvalidated`. The former creates an immutable instance of the model without performing any run-time schema validation, whereas the latter instead create a mutable `Map<String, Object>`. The `Map` variant is intended to allow a user to customize the request in arbitrary ways. This allows the user to work around a wide variety of schema flaws including missing properties or erroneous use of OneOf keywords, while also allowing the generated API to remain as faithful to the schema as possible. The generated API helps the user avoid mistakes when creating schema-compliant objects, but has an escape hatch for when that isn't desirable.
+
+If any setter function (`with` or `composeWith`) is generated that takes an alias type as its argument, then an overload is also generated that consumes the aliased type instead. This has several advantages:
+
+. Users constructing an instance from scratch enjoy a more convenient interface. Suppose the user wants to build a Foo one of whose properties is a type ID which aliases String. Instead of writing `.withId(Id.newBuilder().value("id").build())`, the user can instead `.withId("id")`.
+. Users instead building an instance from objects they already have can still do so in the usual way with `.composeWith(it)`.
+. If a property of primitive type is later replaced with an alias of that type, calls to `with` that set the primitive property will continue to compile as the schema evolves. Likewise, if components move between `oneOf`, `anyOf`, and `allOf` across schema versions, calls to `composeWith` still compile even if components join or leave sealed interfaces.
+
+==== Getters
+
+**Properties**: The code generator generates one getter method `$T get$Name()` for each required property, where `$T` is the property type and `$Name` is the property name. If the property is not required, then the signature is instead `java.util.Optional<$T> get$Name()`. This includes properties from components.
+
+**Components**: The code generator generates one getter method `$T get$Name()` for each component, where `$T` is the component type and `$Name` is the component type name. If the component is not required, then the signature is instead `java.util.Optional<$T> get$Name()`.
+
+If the schema uses the `oneOf` keyword, then the generator defines a `$OneOf get$OneOf()` accessor for the OneOf sealed interface, whatever its name actually is. However, if _any_ `oneOf` component is optional, then this accessor returns `Optional<$OneOf>` instead (since an empty object validates against this `oneOf` schema). Additionally, an `Optional<$T> get$Name()` accessor is generated for each member of the OneOf sealed interface, which ensures backwards-compatibility if any component is moved from another keyword to `oneOf`. (The other direction, when a component is taken from `oneOf` and moved somewhere else, is a case where compiler warnings are desirable, since the semantics underlying the component have significantly changed. Switch statments on the sealed interface _should_ break since the component is no longer mutually exclusive with the remaining OneOf members.)
+
+==== Serialization
+
+Because the class representation imitates the flat, "concatenated" structure of the corresponding JSON, serialization with Jackson requires little customization. We will need @JsonValue annotations wherever wrapper types are used, however, such as for sealed interfaces composed of primitives or JDK classes.
+
+=== Not
+
+No support fo the `not` keyword will be planned in this ADR. However, the `buildUnvalidated` and `buildMapUnvalidated` builder API finisher functions were named as they are specifically to leave room for `buildValidated` and `buildMapValidated` alternatives in future iterations of the API. In both cases, the names are very explicitly about whether run-time validation is performed to avoid any confusion.
+
+== Consequences
+
+The immediate ramification of this change is that users will be able to generate models from schema using compositional keywords, which they currently cannot do. Users will be able to both produce and consume such models.
+
+The use of `buildMapUnvalidated` and `buildMapUnvalidated` ensure the generated API can remain faithful to the OAS and give the user as many advantages as possible when the schema is accurate while still remaining useful when the schema has errors; the user can use the generated API for as much as possible, then create a `Map` and customize it further until a model is correct for their purposes.
