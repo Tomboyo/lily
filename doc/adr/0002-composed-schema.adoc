@@ -343,6 +343,8 @@ If any setter function (`with` or `composeWith`) is generated that takes an alia
 
 If the schema uses the `oneOf` keyword, then the generator defines a `$OneOf get$OneOf()` accessor for the OneOf sealed interface, whatever its name actually is. However, if _any_ `oneOf` component is optional, then this accessor returns `Optional<$OneOf>` instead (since an empty object validates against this `oneOf` schema). Additionally, an `Optional<$T> get$Name()` accessor is generated for each member of the OneOf sealed interface, which ensures backwards-compatibility if any component is moved from another keyword to `oneOf`. (The other direction, when a component is taken from `oneOf` and moved somewhere else, is a case where compiler warnings are desirable, since the semantics underlying the component have significantly changed. Switch statments on the sealed interface _should_ break since the component is no longer mutually exclusive with the remaining OneOf members.)
 
+Any `Optional<$T>`-typed accessor returns an empty Optional whenever any of the required fields of T are missing, and returns a non-empty Optional whenever all the required fields are present. If two schema contain different optional properties but the same required properties, then either both are present or both are absent.
+
 ==== Serialization
 
 Because the class representation imitates the flat, "concatenated" structure of the corresponding JSON, serialization with Jackson requires little customization. We will need @JsonValue annotations wherever wrapper types are used, however, such as for sealed interfaces composed of primitives or JDK classes.
