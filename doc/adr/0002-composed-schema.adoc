@@ -23,6 +23,10 @@ Consider the following schema:
 [source,yaml]
 ----
 Foo:
+  required:
+    - foo
+    - bar
+    - baz
   properties:
     foo:
       type: string
@@ -44,6 +48,8 @@ Consider the following schema:
 [source,yaml]
 ----
 Foo:
+  required:
+    - foo
   properties:
     foo:
       type: string
@@ -51,12 +57,16 @@ Foo:
     - properties:
         bar:
           type: string
+      required:
+        - bar
     - properties:
         baz:
           type: string
+      required:
+        - baz
 ----
 
-A legal implementation of Foo must contain the foo property, may contain the bar property, and may contain the baz property. An implementaiton may contain both bar and baz, or neither; they are optional. 
+A legal implementation of Foo must contain the foo property, may contain the bar property, and may contain the baz property. An implementaiton may contain both bar and baz, or neither; they are optional by virtue of the `allOf` keyword even if the composed schema mark them `required`. 
 
 Note, however, that two elements could define the same property but of a different type:
 
@@ -83,9 +93,14 @@ Foo:
           type: string
         baz:
           type: string
+      required:
+        - bar
+        - baz
     - properties:
         bar:
           type: integer
+      required:
+        - bar
 ----
 
 ==== OneOf
@@ -98,15 +113,22 @@ Foo:
   properties:
     foo:
       type: string
+  required:
+    - foo
   oneOf:
     - properties:
         bar:
           type: string
+      required:
+        - bar
     - properties:
         bar:
           type: integer
         baz:
           type: string
+      required:
+        - bar
+        - baz
 ----
 
 A legal implementation of Foo must contain the foo property. It must also contain the bar property as a string, or the bar property as an integer with a sibling baz string. It may not contain both bar and baz.
@@ -122,6 +144,7 @@ Foo:
     - properties:
       foo:
         type: string
+        required: true
 ----
 
 This example defines Foo to be _either_ a string, an integer, or an object like `{ foo: "foo!" }`. This is a stand-alone algebraic sum type.
