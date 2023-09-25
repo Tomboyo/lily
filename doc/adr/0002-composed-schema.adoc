@@ -23,20 +23,19 @@ Consider the following schema:
 [source,yaml]
 ----
 Foo:
-  required:
-    - foo
-    - bar
-    - baz
   properties:
     foo:
       type: string
+      required: true
   allOf:
     - properties:
         bar:
           type: string
+          required: true
     - properties:
         baz:
           type: string
+          requried: true
 ----
 
 A legal implementation of Foo must contain each of the properties foo, bar, and baz. This keyword defines a new schema as the concatenation of other schema. 
