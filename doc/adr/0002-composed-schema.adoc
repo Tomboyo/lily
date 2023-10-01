@@ -301,13 +301,13 @@ record Foo(/* ... */) {
 
 class Builder {
   /* "property setter" that sets the age property directly */
-  public Builder withAge(String age) { /* ... */ }
+  public Builder setAge(String age) { /* ... */ }
 
  /* "component setter" that sets all the properties associated with the Bar schema */
-  public Builder composeWithBar(Bar bar) { /* ... */ }
+  public Builder composeBar(Bar bar) { /* ... */ }
 
   /* A special case component setter whose argument is the OneOf sealed interface */
-  public Builder composeWithOneOf(OneOf oneOf) { /* ... */  }
+  public Builder composeOneOf(OneOf oneOf) { /* ... */  }
 
   /* The builder which performs no validation. */
   Foo buildUnvalidated() { /* ... */ }
@@ -319,21 +319,21 @@ class Builder {
 
 The two static factories allow the user to either initialize a Builder with no state, or initialize the builder with the state of an existing Foo instance (so that the builder is pre-configured to duplicate that instance). These are functions of the model rather than the Builder so that the user does not need to import the Builder type explicitly (and so that the user can type the name of the type they know they want and quickly find the Builder API via code suggestions).
 
-The `with` functions are fluent-style setters. There is one such setter per property of the model, letting the user assign a value to a property introduced by `properties` or any composed schema. If the type of a property is an alias of another type, then an overload of the setter will consume the aliased type. This is a convenience for users constructing models from scratch: Suppose the type Foo has an ID property which is an alias of a String, and that the user is building a Foo from scratch in a test case. Normally the user would need to `withId(Id.newBuilder().withValue("foo").build())`, but instead they can `withId("foo")`. Likewise, if the user already has an ID from some other API interaction, they can set that directly with `withId(theId)`.
+The `set` functions are fluent-style setters. There is one such setter per property of the model, letting the user assign a value to a property introduced by `properties` or any composed schema. If the type of a property is an alias of another type, then an overload of the setter will consume the aliased type. This is a convenience for users constructing models from scratch: Suppose the type Foo has an ID property which is an alias of a String, and that the user is building a Foo from scratch in a test case. Normally the user would need to `setId(Id.newBuilder().setValue("foo").build())`, but instead they can `setId("foo")`. Likewise, if the user already has an ID from some other API interaction, they can set that directly with `setId(theId)`.
 
-The `composeWith` functions are fluent-style setters that consume component models rather than individual properties, letting the user compose models together according to their schema when it is more convenient to do so. This is intended to help users combine existing models or to logically group properties together.
+The `compose` functions are fluent-style setters that consume component models rather than individual properties, letting the user compose models together according to their schema when it is more convenient to do so. This is intended to help users combine existing models or to logically group properties together.
 
-NOTE: The redundant `with` and `composeWith` APIs are intentional. While the `composeWith` API would in theory be sufficient, composed schema are not necessarily stand-alone concepts like "car" or "pet," but rather small collections of related properties that only make sense when embedded into something larger, like "HasId" or "HasTimestamp." Asking a user to instantiate instances of "HasTimestamp" instead of directly setting one or two fields would be irritating and would make the API less intuitive. Furthermore, if a property is migrated from the `properties` keyword to a component in a future iteration if the OAS, calls to `with` continue to compile.
+NOTE: The redundant `set` and `compose` APIs are intentional. While the `compose` API would in theory be sufficient, composed schema are not necessarily stand-alone concepts like "car" or "pet," but rather small collections of related properties that only make sense when embedded into something larger, like "HasId" or "HasTimestamp." Asking a user to instantiate instances of "HasTimestamp" instead of directly setting one or two fields would be irritating and would make the API less intuitive. Furthermore, if a property is migrated from the `properties` keyword to a component in a future iteration if the OAS, calls to `set` continue to compile.
 
-The `composeWithOneOf` function is just a `composeWith` function generated when the schema uses a `oneOf` composition keyword. The `OneOf` corresponds to whatever the name of the generated sealed interface is. This function follows the same rules as all other `composeWith` functions.
+The `composeOneOf` function is just a `compose` function generated when the schema uses a `oneOf` composition keyword. The `OneOf` corresponds to whatever the name of the generated sealed interface is. This function follows the same rules as all other `compose` functions.
 
 Two finishing functions may be used to construct the final instance: `buildUnvalidated` or `buildMapUnvalidated`. The former creates an immutable instance of the model without performing any run-time schema validation, whereas the latter instead create a mutable `Map<String, Object>`. The `Map` variant is intended to allow a user to customize the request in arbitrary ways. This allows the user to work around a wide variety of schema flaws including missing properties or erroneous use of OneOf keywords, while also allowing the generated API to remain as faithful to the schema as possible. The generated API helps the user avoid mistakes when creating schema-compliant objects, but has an escape hatch for when that isn't desirable.
 
-If any setter function (`with` or `composeWith`) is generated that takes an alias type as its argument, then an overload is also generated that consumes the aliased type instead. This has several advantages:
+If any setter function (`set` or `compose`) is generated that takes an alias type as its argument, then an overload is also generated that consumes the aliased type instead. This has several advantages:
 
-. Users constructing an instance from scratch enjoy a more convenient interface. Suppose the user wants to build a Foo one of whose properties is a type ID which aliases String. Instead of writing `.withId(Id.newBuilder().value("id").build())`, the user can instead `.withId("id")`.
-. Users instead building an instance from objects they already have can still do so in the usual way with `.composeWith(it)`.
-. If a property of primitive type is later replaced with an alias of that type, calls to `with` that set the primitive property will continue to compile as the schema evolves. Likewise, if components move between `oneOf`, `anyOf`, and `allOf` across schema versions, calls to `composeWith` still compile even if components join or leave sealed interfaces.
+. Users constructing an instance from scratch enjoy a more convenient interface. Suppose the user wants to build a Foo one of whose properties is a type ID which aliases String. Instead of writing `.setId(Id.newBuilder().setValue("id").build())`, the user can instead `.setId("id")`.
+. Users instead building an instance from objects they already have can still do so in the usual way with `.compose(it)`.
+. If a property of primitive type is later replaced with an alias of that type, calls to `set` that set the primitive property will continue to compile as the schema evolves. Likewise, if components move between `oneOf`, `anyOf`, and `allOf` across schema versions, calls to `compose` still compile even if components join or leave sealed interfaces.
 
 ==== Getters
 
