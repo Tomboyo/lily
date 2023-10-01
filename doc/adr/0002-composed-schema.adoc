@@ -233,9 +233,9 @@ Whereas `ExampleOne` _is_ a string or an integer, `ExampleTwo` is an object that
 
 === Code Generation
 
-=== Top-Level Composed Type
-
 This ADR proposes a combined model to represent a schema defined by any combination of `properties`, `allOf`, `anyOf`, and `oneOf` keywords. It outlines a fluent "builder"-style API for instantiating models in a forwards-compatible and flexible way, as well as the getter/accessor API with similar considerations.
+
+A special case for `oneOf` schema composed with at least one primitive type is mentioned at the end.
 
 ==== Model
 
@@ -348,6 +348,39 @@ Any `Optional<$T>`-typed accessor returns an empty Optional whenever any of the 
 ==== Serialization
 
 Because the class representation imitates the flat, "concatenated" structure of the corresponding JSON, serialization with Jackson requires little customization. We will need @JsonValue annotations wherever wrapper types are used, however, such as for sealed interfaces composed of primitives or JDK classes.
+
+=== Special-Case OneOf
+
+Consider a schema like the following, where `oneOf` has at least one primitive component:
+
+[source,yaml]
+----
+Foo:
+  oneOf:
+    - type: string
+    - properties:
+        foo:
+          type: string
+    - properties:
+        bar:
+          type: string
+----
+
+Note that this schema does not use the `properties`, `anyOf`, or `allOf` schemas. In this scenario, Foo is rendered as a sealed interface. An alias of each primitive component implements the interface. The remaining object-schema components are rendered as a model as described above.
+
+[source,java]
+----
+sealed interface IFoo permits FooString, Foo {}
+record FooString(String value) implements IFoo {
+    @JsonValue
+    public String value() { return value; }
+    @JsonCreator
+    public FooString jsonCreator(String value) { return new FooString(value); }
+}
+record Foo(String foo, String bar) implements IFoo {}
+----
+
+The sealed interface is named `IFoo` while the object components are combined into `Foo` for forwards- and backwards-compatibility. Suppose that the Foo schema originally consisted only of object components combined via `oneOf`, and the primitive components were added later. Client code would already contain references to `Foo`, and those references would not change as a result of the introduction of `IFoo`. Likewise, if the primitive component is then removed, the removal of `IFoo` does not affect the existing references to `Foo`, which continue to refer to the object model. This is especially useful if the primitive components are removed and other composed schema keywords are added, since `Foo` is already designed to accommodate these kinds of changes (as described in preceding sections).
 
 === Not
 
