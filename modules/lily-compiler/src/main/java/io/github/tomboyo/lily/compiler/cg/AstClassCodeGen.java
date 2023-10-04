@@ -4,6 +4,7 @@ import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
 import static io.github.tomboyo.lily.compiler.cg.support.Interfaces.implementsClause;
 import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
 
+import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.Field;
 import java.util.Map;
@@ -22,7 +23,17 @@ public class AstClassCodeGen {
              */
             public record {{recordName}}(
                 {{{fields}}}
-            ) {{implementsClause}} {}
+            ) {{implementsClause}} {
+              public static {{recordName}}.Builder newBuilder() {
+                return new {{recordName}}.Builder();
+              }
+
+              public static class Builder {
+                {{{builderFields}}}
+                {{{propertySetters}}}
+                {{{build}}}
+              }
+            }
             """,
             "renderClass",
             Map.of(
@@ -37,7 +48,17 @@ public class AstClassCodeGen {
                 "docstring",
                 ast.docstring(),
                 "implementsClause",
-                implementsClause(ast)));
+                implementsClause(ast),
+                "builderFields",
+                ast.fields().stream()
+                    .map(AstClassCodeGen::builderField)
+                    .collect(Collectors.joining("\n")),
+                "propertySetters",
+                ast.fields().stream()
+                    .map(field -> propertySetter(ast, field))
+                    .collect(Collectors.joining("\n")),
+                "build",
+                build(ast)));
 
     return new Source(ast.name(), content);
   }
@@ -72,5 +93,47 @@ public class AstClassCodeGen {
           "recordField",
           scope);
     }
+  }
+
+  private static String builderField(Field field) {
+    return "private "
+        + field.astReference().typeName().upperCamelCase()
+        + " "
+        + field.name().lowerCamelCase()
+        + ";";
+  }
+
+  private static String propertySetter(Ast ast, Field field) {
+    return writeString(
+        """
+                    public {{{builderName}}} set{{Name}}({{{type}}} {{name}}) {
+                      this.{{name}} = {{name}};
+                      return this;
+                    }
+                    """,
+        "AstClassCodeGen.propertySetter",
+        Map.of(
+            "builderName", ast.name().typeName().upperCamelCase() + ".Builder",
+            "Name", field.name().upperCamelCase(),
+            "name", field.name().lowerCamelCase(),
+            "type", field.astReference().toFqpString()));
+  }
+
+  public static String build(AstClass ast) {
+    return writeString(
+        """
+            public {{{Name}}} build() {
+              return new {{{Name}}}(
+                  {{{fields}}}
+              );
+            }
+            """,
+        "AstClassCodeGen.build",
+        Map.of(
+            "Name", ast.name().toFqpString(),
+            "fields",
+                ast.fields().stream()
+                    .map(field -> field.name().lowerCamelCase())
+                    .collect(Collectors.joining(",\n"))));
   }
 }

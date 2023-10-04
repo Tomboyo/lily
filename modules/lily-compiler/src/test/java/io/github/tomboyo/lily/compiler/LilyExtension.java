@@ -202,7 +202,7 @@ public class LilyExtension
 
       source = source.replaceAll("\\{\\{package}}", getPackage(ctx));
 
-      for (var i = 0; i < kvs.length / 2; i += 2) {
+      for (var i = 0; i < kvs.length - 1; i += 2) {
         var key = kvs[i];
         var value = kvs[i + 1];
         source = source.replaceAll("\\{\\{" + key + "}}", value);

@@ -1,6 +1,5 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import io.github.tomboyo.lily.compiler.ast.AddInterface;
@@ -16,9 +15,10 @@ import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -79,38 +79,21 @@ public class OasSchemaToAst {
   private Pair<Fqn, Stream<Ast>> evaluateSchema(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
 
-    if (schema instanceof ComposedSchema c && c.getOneOf() != null) {
-      return evaluateOneOf(c, currentPackage, name);
-    }
-
-    if (schema instanceof ComposedSchema || schema.getNot() != null) {
-      var fqn = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
-      LOGGER.warn(
-          "Generating empty class {} because compositional keywords *allOf, anyOf, and not* are not"
-              + " yet supported",
-          fqn);
-
-      return new Pair<>(
-          fqn,
-          Stream.of(
-              AstClass.of(
-                  fqn,
-                  List.of(),
-                  "Generated empty class because compositional keywords *allOf, anyOf, and"
-                      + " not* are not yet supported")));
+    if (schema.getNot() != null) {
+      LOGGER.warn("The `not` keyword is not yet supported.");
     }
 
     var type = schema.getType();
     if (type == null) {
-      var properties = schema.getProperties();
-      if (properties == null) {
-        return new Pair<>(
-            toBasePackageClassReference(requireNonNull(schema.get$ref())), Stream.of());
+      if (schema.getProperties() != null || schema instanceof ComposedSchema) {
+        return evaluateObject(currentPackage, name, schema);
+      } else if (schema instanceof ArraySchema a) {
+        return evaluateArray(currentPackage, name, a);
+      } else if (schema.get$ref() != null) {
+        return new Pair<>(toBasePackageClassReference(schema.get$ref()), Stream.of());
+      } else {
+        throw new RuntimeException("Can not determine type for schema " + name);
       }
-
-      // If no discriminator, $ref, or type is specified, then it's *probably* an object if it has
-      // properties.
-      return evaluateObject(currentPackage, name, schema);
     }
 
     return switch (type) {
@@ -241,7 +224,7 @@ public class OasSchemaToAst {
      class package.MyClass,
      then any classes defined for MyClass' fields are defined under the package.myclass package.
     */
-    var properties = Optional.ofNullable(schema.getProperties()).orElse(Map.of());
+    var properties = getProperties(schema);
     var interiorPackage = currentPackage.resolve(name.toString());
     var fieldAndAst =
         properties.entrySet().stream()
@@ -268,6 +251,23 @@ public class OasSchemaToAst {
     return new Pair<>(
         Fqn.newBuilder().packageName(currentPackage).typeName(name).build(),
         Stream.concat(Stream.of(exteriorClass), interiorAst));
+  }
+
+  @SuppressWarnings("rawtypes") // not shit I can do about the io.swagger API
+  private Map<String, Schema> getProperties(Schema<?> schema) {
+    var properties = new HashMap<String, Schema>();
+    if (schema.getProperties() != null) {
+      properties.putAll(schema.getProperties());
+    }
+
+    if (schema instanceof ComposedSchema c) {
+      Stream.of(c.getAllOf(), c.getAnyOf(), c.getOneOf())
+          .filter(Objects::nonNull)
+          .flatMap(List::stream)
+          .forEach(s -> properties.putAll(getProperties(s)));
+    }
+
+    return properties;
   }
 
   /*

@@ -20,20 +20,21 @@ public class ComposedTests {
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
+                    openapi: 3.0.2
                     components:
                       schemas:
                         Foo:
                           properties:
-                            - a:
-                                type: string
-                                required: true
-                            - b:
-                                type: string
+                            a:
+                              type: string
+                              required: ['a']
+                            b:
+                              type: string
                           allOf:
                             - properties:
                                 c:
                                   type: string
-                                  required: true
+                                required: ['c']
                             - properties:
                                 d:
                                   type: string
@@ -41,7 +42,7 @@ public class ComposedTests {
                             - properties:
                                 e:
                                   type: string
-                                  required: true
+                                  required: ['e']
                             - properties:
                                 f:
                                   type: string
@@ -49,7 +50,7 @@ public class ComposedTests {
                             - properties:
                                 g:
                                   type: string
-                                  required: true
+                                  required: ['g']
                             - properties:
                                 h:
                                   type: string
@@ -62,15 +63,17 @@ public class ComposedTests {
       assertTrue(
           support.evaluate(
               """
-                          var value = "value";
-                          var foo = {{package}}.Foo.newBuilder()
-                            .set{{name}}(value)
-                            .build();
-                          return value == foo.get{{name}}();
-                          """,
-              boolean.class,
+              var value = "value";
+              var foo = {{package}}.Foo.newBuilder()
+                .set{{Name}}(value)
+                .build();
+              return value == foo.{{name}}();
+              """,
+              Boolean.class,
               "name",
-              parameter));
+              parameter,
+              "Name",
+              parameter.toUpperCase()));
     }
   }
 }
