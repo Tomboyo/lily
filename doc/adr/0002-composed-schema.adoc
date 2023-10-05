@@ -223,12 +223,6 @@ Whereas `ExampleOne` _is_ a string or an integer, `ExampleTwo` is an object that
 |===
 |Component
 |An element of any compositional keyword `oneOf`, `allOf`, `anyOf`, or `not` is a "component".
-
-|Required component
-|A component is "required" if any of its properties is required. Components that are primitive types (i.e. not arrays or objects) are always considered required.
-
-|Optional component
-|A component is "optional" if all of its properties are not required.|
 |===
 
 === Code Generation
@@ -337,15 +331,37 @@ If any setter function (`set` or `compose`) is generated that takes an alias typ
 
 ==== Getters
 
-**Properties**: The code generator generates one getter method `$T get$Name()` for each required property, where `$T` is the property type and `$Name` is the property name. If the property is not required, then the signature is instead `java.util.Optional<$T> get$Name()`. This includes properties from components.
+**Definitions**
+[cols="1,1"]
+|===
+|Mandatory Property
+|
+A "mandatory" property is one which must be defined and non-null in any valid implementation of a schema.
 
-**Components**: The code generator generates one getter method `$T as$Name()` for each component, where `$T` is the component type and `$Name` is the component type name. If the component is not required, then the signature is instead `java.util.Optional<$T> as$Name()`.
+If a property of a schema is `required`, not `nullable`, and comes from the `property` keyword of that schema, then it is mandatory according to that schema.
 
-NOTE: The naming conventions `get$Name` and `as$Name` prevent name collisions. For example, if instead components were accessed via getters like `get$Name`, a property named `foo` could collide with a component named `Foo`. Likewise, if the component getters were instead `getModel$Name` or similar, a property named `modelFoo` would collide with a component named `Foo`. The `get` and `as` prefixes, being that they are not a substring of one another, cannot generate conflicting method signatures.
+If a property of an `allOf` component is mandatory according to the component schema, then it is also mandatory according to the composed schema.
 
-If the schema uses the `oneOf` keyword, then the generator defines a `$OneOf as$OneOf()` accessor for the OneOf sealed interface, whatever its name actually is. However, if _any_ `oneOf` component is optional, then this accessor returns `Optional<$OneOf>` instead (since an empty object validates against this `oneOf` schema). Additionally, an `Optional<$T> as$Name()` accessor is generated for each member of the OneOf sealed interface, which ensures backwards-compatibility if any component is moved from another keyword to `oneOf`. (The other direction, when a component is taken from `oneOf` and moved somewhere else, is a case where compiler warnings are desirable, since the semantics underlying the component have significantly changed. Switch statments on the sealed interface _should_ break since the component is no longer mutually exclusive with the remaining OneOf members.)
+If a property is mandatory according to every `anyOf` component and every `oneOf` component, then it is also mandatory according to the composed schema.
 
-Any `Optional<$T>`-typed accessor returns an empty Optional whenever any of the required fields of T are missing, and returns a non-empty Optional whenever all the required fields are present. If two schema contain different optional properties but the same required properties, then either both are present or both are absent.
+| Mandatory Component
+| Within the scope of a given composed schema, a component of that schema is "mandatory" so long as that component schema is satisfied by every valid implementation of the composed schema. In other words, if any JSON fails to validate against a mandatory component, then the JSON does not validate against the composed schema either.
+
+If an `allOf` component contains any mandatory properties, then the component is mandatory.
+
+If every property that is mandatory according to a given `anyOf` or `oneOf` component is also mandatory according to the composed schema, then that component is mandatory.
+|===
+
+
+**Properties**: For every mandatory property of a schema, the code generator generates a `$T get$Name()` getter method for that property (where `$T` is the type of the property and `$Name` is its name). For all other properties (including from components), the code generator generates a `java.util.Optional<$T> get$Name()` method instead.
+
+**Components**: For every mandatory component, the code generator generates a `$T as$Name()` getter method for that component (where `$T` is the type of the component and `$Name` is its name). For all other components, the generator generates a `java.util.Optional<$T> as$Name()` getter instead.
+
+NOTE: The naming conventions `get$Name` and `as$Name` prevent name collisions. For example, if components were instead accessed via getters like `get$Name`, a property named `foo` could collide with a component named `Foo`. Likewise, if the component getters were instead `getModel$Name` or similar, a property named `modelFoo` would collide with a component named `Foo`. The `get` and `as` prefixes cannot generate conflicting signatures.
+
+If the schema uses the `oneOf` keyword, then the generator defines a `$OneOf as$OneOf()` accessor for the OneOf sealed interface, whatever its name actually is. Note that every valid implementation of the schema must satisfy _at least one_ `oneOf` component, so this is not an `Optional` signature.
+
+**Optional Component Getters**: Any `Optional<$T>`-typed getter for some component `$T` returns an empty Optional whenever any of the mandatory properties of T are missing, and returns a non-empty Optional whenever all the mandatory properties are present. If two schema contain different optional properties but the same mandatory properties, then either both are present or both are absent.
 
 ==== Serialization
 
