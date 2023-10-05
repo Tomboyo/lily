@@ -16,9 +16,11 @@ import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -217,15 +219,16 @@ public class OasSchemaToAst {
 
   private Pair<Fqn, Stream<Ast>> evaluateObject(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
+    var properties = getProperties(schema);
+    var requiredPropertyNames = getRequiredPropertyNames(schema);
+    var interiorPackage = currentPackage.resolve(name.toString());
+
     /*
      Generate the AST required to define the fields of this new class. If we define any classes
-     for our fields, we
-     place them in a subordinate package named after this class. For example, if we define the
-     class package.MyClass,
-     then any classes defined for MyClass' fields are defined under the package.myclass package.
+     for our fields, we place them in a subordinate package named after this class. For example,
+     if we define the class package.MyClass, then any classes defined for MyClass' fields are
+     defined under the package.myclass package.
     */
-    var properties = getProperties(schema);
-    var interiorPackage = currentPackage.resolve(name.toString());
     var fieldAndAst =
         properties.entrySet().stream()
             .map(
@@ -236,10 +239,15 @@ public class OasSchemaToAst {
                       fieldSchema.get$ref() == null
                           ? interiorPackage
                           : basePackage; // $ref's always point to a base package type.
+
                   var refAndAst =
                       evaluateSchema(fieldPackage, SimpleName.of(jsonName), fieldSchema);
+                  var isMandatory =
+                      (fieldSchema.getNullable() == null || !fieldSchema.getNullable())
+                          && requiredPropertyNames.contains(jsonName);
+
                   return refAndAst.mapLeft(
-                      ref -> new Field(ref, SimpleName.of(jsonName), jsonName));
+                      ref -> new Field(ref, SimpleName.of(jsonName), jsonName, isMandatory));
                 })
             .toList();
 
@@ -253,8 +261,9 @@ public class OasSchemaToAst {
         Stream.concat(Stream.of(exteriorClass), interiorAst));
   }
 
-  @SuppressWarnings("rawtypes") // not shit I can do about the io.swagger API
-  private Map<String, Schema> getProperties(Schema<?> schema) {
+  /* Gets properties from both properties keywords and composed schema */
+  @SuppressWarnings({"rawtypes", "unchecked"}) // not shit I can do about the io.swagger API
+  private Map<String, Schema> getProperties(Schema schema) {
     var properties = new HashMap<String, Schema>();
     if (schema.getProperties() != null) {
       properties.putAll(schema.getProperties());
@@ -268,6 +277,25 @@ public class OasSchemaToAst {
     }
 
     return properties;
+  }
+
+  private Set<String> getRequiredPropertyNames(Schema<?> root) {
+    var set = new HashSet<String>();
+    if (root.getRequired() != null) {
+      set.addAll(root.getRequired());
+    }
+
+    if (root instanceof ComposedSchema c) {
+      Stream.of(c.getAllOf(), c.getAnyOf(), c.getOneOf())
+          .filter(Objects::nonNull)
+          .flatMap(List::stream)
+          .map(schema -> ((Schema<?>) schema).getRequired())
+          .filter(Objects::nonNull)
+          .flatMap(List::stream)
+          .forEach(set::add);
+    }
+
+    return set;
   }
 
   /*

@@ -15,65 +15,45 @@ public class ComposedTests {
 
   @Nested
   @ExtendWith(LilyExtension.class)
-  class Getters {
+  class MandatoryProperties {
     @BeforeAll
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
-                    openapi: 3.0.2
-                    components:
-                      schemas:
-                        Foo:
-                          properties:
-                            a:
-                              type: string
-                              required: ['a']
-                            b:
-                              type: string
-                          allOf:
-                            - properties:
-                                c:
-                                  type: string
-                                required: ['c']
-                            - properties:
-                                d:
-                                  type: string
-                          anyOf:
-                            - properties:
-                                e:
-                                  type: string
-                                  required: ['e']
-                            - properties:
-                                f:
-                                  type: string
-                          oneOf:
-                            - properties:
-                                g:
-                                  type: string
-                                  required: ['g']
-                            - properties:
-                                h:
-                                  type: string
-                    """);
+              openapi: 3.0.3
+              components:
+                schemas:
+                  Foo:
+                    properties:
+                      a:
+                        type: string
+                        nullable: true
+                      b:
+                        type: string
+                      c:
+                        type: string
+                      d:
+                        type: string
+                        nullable: false
+                    required: ['a', 'c', 'd']
+              """);
     }
 
     @ParameterizedTest
-    @CsvSource({"a", "c", "e", "g"})
-    void requiredGetters(String parameter, LilyTestSupport support) {
+    @CsvSource({"c", "d"})
+    void mandatoryProperties(String name, LilyTestSupport support) {
       assertTrue(
           support.evaluate(
               """
-              var value = "value";
-              var foo = {{package}}.Foo.newBuilder()
-                .set{{Name}}(value)
-                .build();
-              return value == foo.{{name}}();
+              var value = "foo!";
+              return value == {{package}}.Foo.newBuilder()
+                  .set{{Name}}(value)
+                  .build()
+                  .get{{Name}}();
               """,
               Boolean.class,
-              "name",
-              parameter,
               "Name",
-              parameter.toUpperCase()));
+              name.toUpperCase()));
     }
   }
 }

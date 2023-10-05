@@ -136,7 +136,11 @@ public class OasComponentsToAst {
   }
 
   private static Field moveField(Field field, Map<Fqn, Fqn> nameMap) {
-    return new Field(moveReference(field.astReference(), nameMap), field.name(), field.jsonName());
+    return new Field(
+        moveReference(field.astReference(), nameMap),
+        field.name(),
+        field.jsonName(),
+        field.isMandatory());
   }
 
   private static Fqn moveReference(Fqn ref, Map<Fqn, Fqn> nameMap) {
