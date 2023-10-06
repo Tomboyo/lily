@@ -143,17 +143,23 @@ public class AstClassCodeGen {
   }
 
   private static String propertyGetter(Field field) {
+    var fqpt = field.astReference().toFqpString();
+    var returned = field.name().lowerCamelCase();
+    if (!field.isMandatory()) {
+      fqpt = "java.util.Optional<" + fqpt + ">";
+      returned = "java.util.Optional.ofNullable(" + returned + ")";
+    }
     return writeString(
         """
             public {{{fqpt}}} get{{Name}}() {
-              return {{name}};
+              return {{returned}};
             }
             """,
         "AstClassCodeGen.propertyGetter",
         Map.of(
-            "fqpt", field.astReference().toFqpString(),
+            "fqpt", fqpt,
             "Name", field.name().upperCamelCase(),
-            "name", field.name().lowerCamelCase()));
+            "returned", returned));
   }
 
   private static String builderField(Field field) {

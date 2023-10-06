@@ -55,5 +55,23 @@ public class ComposedTests {
               "Name",
               name.toUpperCase()));
     }
+
+    @ParameterizedTest
+    @CsvSource({"a", "b"})
+    void nonMandatoryProperties(String name, LilyTestSupport support) {
+      assertTrue(
+          support.evaluate(
+              """
+              var value = "foo!";
+              java.util.Optional<String> actual = {{package}}.Foo.newBuilder()
+                  .set{{Name}}(value)
+                  .build()
+                  .get{{Name}}();
+              return value == actual.orElseThrow();
+              """,
+              Boolean.class,
+              "Name",
+              name.toUpperCase()));
+    }
   }
 }
