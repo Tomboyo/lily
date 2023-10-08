@@ -259,16 +259,17 @@ public class ComposedTests {
                       - properties: {}
                       -
               %s
-              """.formatted(propertiesFragment.indent(10)));
+              """
+                  .formatted(propertiesFragment.indent(10)));
         }
 
         @ParameterizedTest
         @CsvSource({"Mandatory1", "Mandatory2", "Optional1", "Optional2", "Optional3"})
         void allPropertiesAreOptional(String name, LilyTestSupport support) {
           assertPropertyIsOptional(
-                  name,
-                  support,
-                  """
+              name,
+              support,
+              """
                   Unless every OneOf component agrees that a property is mandatory, the composed schema does not
                   consider the property mandatory either without another reason to do so.
                   """);
@@ -291,22 +292,21 @@ public class ComposedTests {
               %s
                       -
               %s
-                      - properties:
+                          # The second oneOf also has a third mandatory property, unlike the preceding component
                           mandatory3:
                             type: string
                           required: ['mandatory3']
-              """.formatted(
-                      propertiesFragment.indent(10),
-                      propertiesFragment.indent(10)));
+              """
+                  .formatted(propertiesFragment.indent(10), propertiesFragment.indent(10)));
         }
 
         @ParameterizedTest
         @CsvSource({"Mandatory1", "Mandatory2"})
         void mandatoryProperties(String name, LilyTestSupport support) {
           assertPropertyIsMandatory(
-                  name,
-                  support,
-                  """
+              name,
+              support,
+              """
                   If every oneOf component considers a property to be mandatory, then so does the composed schema.
                   """);
         }
@@ -315,9 +315,9 @@ public class ComposedTests {
         @CsvSource({"Mandatory3", "Optional1", "Optional2", "Optional3"})
         void optionalProperties(String name, LilyTestSupport support) {
           assertPropertyIsOptional(
-                  name,
-                  support,
-                  """
+              name,
+              support,
+              """
                   If one or more oneOf components consider a property to be optional, then so does the composed schema
                   unless there is another reason to consider it mandatory.
                   """);

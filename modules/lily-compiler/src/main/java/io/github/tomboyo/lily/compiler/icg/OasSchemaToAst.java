@@ -1,5 +1,6 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static java.util.Objects.requireNonNullElse;
 import static java.util.stream.Collectors.toList;
 
 import io.github.tomboyo.lily.compiler.ast.AddInterface;
@@ -220,7 +221,7 @@ public class OasSchemaToAst {
   private Pair<Fqn, Stream<Ast>> evaluateObject(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
     var properties = getProperties(schema);
-    var requiredPropertyNames = getRequiredPropertyNames(schema);
+    var mandatoryPropertyNames = getMandatoryPropertyNames(schema);
     var interiorPackage = currentPackage.resolve(name.toString());
 
     /*
@@ -242,9 +243,7 @@ public class OasSchemaToAst {
 
                   var refAndAst =
                       evaluateSchema(fieldPackage, SimpleName.of(jsonName), fieldSchema);
-                  var isMandatory =
-                      (fieldSchema.getNullable() == null || !fieldSchema.getNullable())
-                          && requiredPropertyNames.contains(jsonName);
+                  var isMandatory = mandatoryPropertyNames.contains(jsonName);
 
                   return refAndAst.mapLeft(
                       ref -> new Field(ref, SimpleName.of(jsonName), jsonName, isMandatory));
@@ -279,6 +278,32 @@ public class OasSchemaToAst {
     return properties;
   }
 
+  private Set<String> getMandatoryPropertyNames(Schema<?> root) {
+    var required = getRequiredPropertyNames(root);
+    var nonNullable = getNonNullablePropertyNames(root);
+
+    var result = new HashSet<>(required);
+    result.retainAll(nonNullable);
+
+    /* If all the oneOf schema (one of which MUST validate) agree that a given property is mandatory, then it is
+    mandatory on the composed schema as well. */
+    if (root instanceof ComposedSchema c) {
+      Stream.ofNullable(c.getOneOf())
+          .flatMap(List::stream)
+          .map(this::getMandatoryPropertyNames)
+          .reduce(this::intersection)
+          .ifPresent(result::addAll);
+    }
+
+    return result;
+  }
+
+  private <T> Set<T> intersection(Set<T> a, Set<T> b) {
+    var result = new HashSet<>(a);
+    result.retainAll(b);
+    return result;
+  }
+
   private Set<String> getRequiredPropertyNames(Schema<?> root) {
     var set = new HashSet<String>();
     if (root.getRequired() != null) {
@@ -293,6 +318,25 @@ public class OasSchemaToAst {
     }
 
     return set;
+  }
+
+  private Set<String> getNonNullablePropertyNames(Schema<?> root) {
+    var nonNullable = new HashSet<String>();
+    if (root.getProperties() != null) {
+      root.getProperties().entrySet().stream()
+          .filter(entry -> !requireNonNullElse(entry.getValue().getNullable(), false))
+          .map(Map.Entry::getKey)
+          .forEach(nonNullable::add);
+    }
+
+    if (root instanceof ComposedSchema c) {
+      Stream.ofNullable(c.getAllOf())
+          .flatMap(List::stream)
+          .map(this::getNonNullablePropertyNames)
+          .forEach(nonNullable::addAll);
+    }
+
+    return nonNullable;
   }
 
   /*
