@@ -1,11 +1,13 @@
 package io.github.tomboyo.lily.compiler.feature.components.schemas;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 import io.github.tomboyo.lily.compiler.LilyExtension;
 import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -15,7 +17,7 @@ public class ComposedTests {
 
   @Nested
   class MandatoryProperties {
-    static final String fragment =
+    static final String propertiesFragment =
         """
         required: ['mandatory1', 'mandatory2', 'optional3']
         properties:
@@ -39,20 +41,22 @@ public class ComposedTests {
             nullable: true
         """;
 
-    @Nested
+    @TestInstance(PER_CLASS)
     @ExtendWith(LilyExtension.class)
-    class PropertiesKeyword {
+    abstract class TestTemplate {
+      abstract String schemaFragment();
+
       @BeforeAll
-      static void beforeAll(LilyTestSupport support) {
+      void beforeAll(LilyTestSupport support) {
         support.compileOas(
             """
-              openapi: 3.0.3
-              components:
-                schemas:
-                  Foo:
-              %s
-              """
-                .formatted(fragment.indent(6)));
+                  openapi: 3.0.3
+                  components:
+                    schemas:
+                      Foo:
+                  %s
+                  """
+                .formatted(schemaFragment().indent(6)));
       }
 
       @ParameterizedTest
@@ -61,19 +65,19 @@ public class ComposedTests {
         assertTrue(
             support.evaluate(
                 """
-                var foo = "foo!";
-                return {{package}}.Foo.newBuilder()
-                    .set{{Name}}(foo)
-                    .build()
-                    .get{{Name}}() == foo;
-                """,
+                        var foo = "foo!";
+                        return {{package}}.Foo.newBuilder()
+                            .set{{Name}}(foo)
+                            .build()
+                            .get{{Name}}() == foo;
+                        """,
                 Boolean.class,
                 "Name",
                 name),
             """
-            Foo's builder must define a setter function, and mandatory properties must has an associated
-            non-Optional typed getter.
-            """);
+                Foo's builder must define a setter function, and mandatory properties must has an associated
+                non-Optional typed getter.
+                """);
       }
 
       @ParameterizedTest
@@ -82,16 +86,37 @@ public class ComposedTests {
         assertTrue(
             support.evaluate(
                 """
-                var foo = "foo!";
-                java.util.Optional<String> v = {{package}}.Foo.newBuilder()
-                    .set{{Name}}(foo)
-                    .build()
-                    .get{{Name}}();
-                return foo == v.orElseThrow();
-                """,
+                        var foo = "foo!";
+                        java.util.Optional<String> v = {{package}}.Foo.newBuilder()
+                            .set{{Name}}(foo)
+                            .build()
+                            .get{{Name}}();
+                        return foo == v.orElseThrow();
+                        """,
                 Boolean.class,
                 "Name",
                 name));
+      }
+    }
+
+    @Nested
+    class FromPropertiesKeyword extends TestTemplate {
+      @Override
+      String schemaFragment() {
+        return propertiesFragment;
+      }
+    }
+
+    @Nested
+    class FromAllOfKeyword extends TestTemplate {
+      @Override
+      String schemaFragment() {
+        return """
+                allOf:
+                -
+                %s
+                """
+            .formatted(propertiesFragment.indent(2));
       }
     }
   }

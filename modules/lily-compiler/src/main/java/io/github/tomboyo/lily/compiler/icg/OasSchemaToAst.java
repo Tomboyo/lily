@@ -286,11 +286,9 @@ public class OasSchemaToAst {
     }
 
     if (root instanceof ComposedSchema c) {
-      Stream.of(c.getAllOf(), c.getAnyOf(), c.getOneOf())
-          .filter(Objects::nonNull)
+      Stream.ofNullable(c.getAllOf())
           .flatMap(List::stream)
-          .map(schema -> ((Schema<?>) schema).getRequired())
-          .filter(Objects::nonNull)
+          .flatMap(schema -> Stream.ofNullable(((Schema<?>) schema).getRequired()))
           .flatMap(List::stream)
           .forEach(set::add);
     }
