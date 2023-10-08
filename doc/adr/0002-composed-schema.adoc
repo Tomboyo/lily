@@ -342,7 +342,9 @@ If a property of a schema is `required`, not `nullable`, and comes from the `pro
 
 If a property of an `allOf` component is mandatory according to the component schema, then it is also mandatory according to the composed schema.
 
-If a property is mandatory according to every `anyOf` component and every `oneOf` component, then it is also mandatory according to the composed schema.
+If a property is mandatory according to every `oneOf` component, then it is also mandatory according to the composed schema.
+
+Note that a property can not be mandatory only because it is mandatory according to an anyOf component. An object does not have to validate against any anyOf components, so they do not contribute mandatory properties on their own.
 
 | Mandatory Component
 | Within the scope of a given composed schema, a component of that schema is "mandatory" so long as that component schema is satisfied by every valid implementation of the composed schema. In other words, if any JSON fails to validate against a mandatory component, then the JSON does not validate against the composed schema either.
@@ -350,6 +352,8 @@ If a property is mandatory according to every `anyOf` component and every `oneOf
 If an `allOf` component contains any mandatory properties, then the component is mandatory.
 
 If every property that is mandatory according to a given `anyOf` or `oneOf` component is also mandatory according to the composed schema, then that component is mandatory.
+
+If a component has no mandatory properties, then it is considered mandatory.
 |===
 
 
