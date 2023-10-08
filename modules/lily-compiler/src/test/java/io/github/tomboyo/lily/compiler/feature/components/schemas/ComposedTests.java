@@ -41,6 +41,25 @@ public class ComposedTests {
             nullable: true
         """;
 
+    static void assertPropertyIsOptional(String name, LilyTestSupport support, String message) {
+      assertTrue(
+          support.evaluate(
+              """
+                              var foo = "foo!";
+                              java.util.Optional<String> v = {{package}}.Foo.newBuilder()
+                                  .set{{Name}}(foo)
+                                  .build()
+                                  .get{{Name}}();
+                              return foo == v.orElseThrow();
+                              """,
+              Boolean.class,
+              "Name",
+              name),
+          message);
+    }
+
+    /* Properties from the properties keyword and composed through the allOf keyword behave the same. This test template
+    covers them. */
     @TestInstance(PER_CLASS)
     @ExtendWith(LilyExtension.class)
     abstract class TestTemplate {
@@ -134,6 +153,45 @@ public class ComposedTests {
                %s
                """
             .formatted(propertiesFragment.indent(6));
+      }
+    }
+
+    /* Properties from the AnyOf and OneOf keywords behave differently than from allOf and properties keywords. These do
+    not use the test template. */
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class FromAnyAndOneOfSchema {
+
+      @Nested
+      class WithoutConsensus {
+        @BeforeAll
+        static void beforeAll(LilyTestSupport support) {
+          support.compileOas(
+              """
+                  openapi: 3.0.3
+                  components:
+                    schemas:
+                      Foo:
+                        anyOf:
+                        - properties: {}
+                        -
+                  %s
+                  """
+                  .formatted(propertiesFragment.indent(8)));
+        }
+
+        @ParameterizedTest
+        @CsvSource({"Mandatory1", "Mandatory2", "Optional1", "Optional2", "Optional3"})
+        void allPropertiesAreOptional(String name, LilyTestSupport support) {
+          assertPropertyIsOptional(
+              name,
+              support,
+              """
+              Unless every anyOf and oneOf component agree that a property is mandatory, it is not mandatory on the
+              composed schema. Foo's builder must define a setter for each such property, and Foo must define an
+              Optional-typed getter for each such property.
+              """);
+        }
       }
     }
   }
