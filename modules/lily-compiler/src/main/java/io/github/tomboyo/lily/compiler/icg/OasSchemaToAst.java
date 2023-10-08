@@ -288,8 +288,7 @@ public class OasSchemaToAst {
     if (root instanceof ComposedSchema c) {
       Stream.ofNullable(c.getAllOf())
           .flatMap(List::stream)
-          .flatMap(schema -> Stream.ofNullable(((Schema<?>) schema).getRequired()))
-          .flatMap(List::stream)
+          .flatMap(schema -> getRequiredPropertyNames((Schema<?>) schema).stream())
           .forEach(set::add);
     }
 

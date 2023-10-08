@@ -108,7 +108,7 @@ public class ComposedTests {
     }
 
     @Nested
-    class FromAllOfKeyword extends TestTemplate {
+    class FromAllOfSchema extends TestTemplate {
       @Override
       String schemaFragment() {
         return """
@@ -117,6 +117,23 @@ public class ComposedTests {
                 %s
                 """
             .formatted(propertiesFragment.indent(2));
+      }
+    }
+
+    /* Properties which are mandatory according to an allOf component are mandatory according to the composed schema as
+    well. As a result, mandatory properties from nested allOf components are "transitively" mandatory. */
+    @Nested
+    class FromNestedAllOfSchema extends TestTemplate {
+      @Override
+      String schemaFragment() {
+        return """
+               allOf:
+               - allOf:
+                 - allOf:
+                   -
+               %s
+               """
+            .formatted(propertiesFragment.indent(6));
       }
     }
   }
