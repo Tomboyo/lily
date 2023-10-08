@@ -211,38 +211,34 @@ public class ComposedTests {
     }
 
     @Nested
-    class FromAnyAndOneOfSchema {
-      @Nested
-      @ExtendWith(LilyExtension.class)
-      class WithoutConsensus {
-        @BeforeAll
-        static void beforeAll(LilyTestSupport support) {
-          support.compileOas(
-              """
-                  openapi: 3.0.3
-                  components:
-                    schemas:
-                      Foo:
-                        anyOf:
-                        - properties: {}
-                        -
-                  %s
-                  """
-                  .formatted(propertiesFragment.indent(8)));
-        }
+    @ExtendWith(LilyExtension.class)
+    class FromAnyOfSchema {
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+            openapi: 3.0.3
+            components:
+              schemas:
+                Foo:
+                  anyOf:
+                    -
+            %s
+            """
+                .formatted(propertiesFragment.indent(10)));
+      }
 
-        @ParameterizedTest
-        @CsvSource({"Mandatory1", "Mandatory2", "Optional1", "Optional2", "Optional3"})
-        void allPropertiesAreOptional(String name, LilyTestSupport support) {
-          assertPropertyIsOptional(
-              name,
-              support,
-              """
-              Unless every anyOf and oneOf component agrees that a property is mandatory, it is not mandatory on the
-              composed schema. Foo's builder must define a setter for each such property, and Foo must define an
-              Optional-typed getter for each such property.
-              """);
-        }
+      @ParameterizedTest
+      @CsvSource({"Mandatory1", "Mandatory2", "Optional1", "Optional2", "Optional3"})
+      void allPropertiesAreOptional(String name, LilyTestSupport support) {
+        assertPropertyIsOptional(
+            name,
+            support,
+            """
+            Because an object is never obligated to validate against an anyOf schema, mandatory properties from
+            anyOf component schemas are not mandatory in the composed schema unless there is another reason for them
+            to be mandatory.
+            """);
       }
     }
   }
