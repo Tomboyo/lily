@@ -16,6 +16,7 @@ import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -279,64 +281,44 @@ public class OasSchemaToAst {
   }
 
   private Set<String> getMandatoryPropertyNames(Schema<?> root) {
-    var required = getRequiredPropertyNames(root);
+    List<String> required = requireNonNullElse(root.getRequired(), List.of());
     var nonNullable = getNonNullablePropertyNames(root);
+    var mandatory = intersection(required, nonNullable);
 
-    var result = new HashSet<>(required);
-    result.retainAll(nonNullable);
-
-    /* If all the oneOf schema (one of which MUST validate) agree that a given property is mandatory, then it is
-    mandatory on the composed schema as well. */
     if (root instanceof ComposedSchema c) {
+      /* If all the oneOf schema (one of which MUST validate) agree that a given property is mandatory, then it is
+      mandatory on the composed schema as well. */
       Stream.ofNullable(c.getOneOf())
           .flatMap(List::stream)
           .map(this::getMandatoryPropertyNames)
           .reduce(this::intersection)
-          .ifPresent(result::addAll);
+          .ifPresent(mandatory::addAll);
+
+      /* If a property is mandatory according to an allOf component, then it is mandatory according to the composed
+      schema as well. */
+      Stream.ofNullable(c.getAllOf())
+          .flatMap(List::stream)
+          .map(this::getMandatoryPropertyNames)
+          .forEach(mandatory::addAll);
     }
 
-    return result;
+    return mandatory;
   }
 
-  private <T> Set<T> intersection(Set<T> a, Set<T> b) {
+  private <T> Set<T> intersection(Collection<T> a, Collection<T> b) {
     var result = new HashSet<>(a);
     result.retainAll(b);
     return result;
   }
 
-  private Set<String> getRequiredPropertyNames(Schema<?> root) {
-    var set = new HashSet<String>();
-    if (root.getRequired() != null) {
-      set.addAll(root.getRequired());
-    }
-
-    if (root instanceof ComposedSchema c) {
-      Stream.ofNullable(c.getAllOf())
-          .flatMap(List::stream)
-          .flatMap(schema -> getRequiredPropertyNames((Schema<?>) schema).stream())
-          .forEach(set::add);
-    }
-
-    return set;
-  }
-
   private Set<String> getNonNullablePropertyNames(Schema<?> root) {
-    var nonNullable = new HashSet<String>();
     if (root.getProperties() != null) {
-      root.getProperties().entrySet().stream()
+      return root.getProperties().entrySet().stream()
           .filter(entry -> !requireNonNullElse(entry.getValue().getNullable(), false))
           .map(Map.Entry::getKey)
-          .forEach(nonNullable::add);
+          .collect(Collectors.toSet());
     }
-
-    if (root instanceof ComposedSchema c) {
-      Stream.ofNullable(c.getAllOf())
-          .flatMap(List::stream)
-          .map(this::getNonNullablePropertyNames)
-          .forEach(nonNullable::addAll);
-    }
-
-    return nonNullable;
+    return Set.of();
   }
 
   /*

@@ -163,53 +163,6 @@ public class ComposedTests {
       }
     }
 
-    /* Properties which are mandatory according to an allOf component are mandatory according to the composed schema as
-    well. As a result, mandatory properties from nested allOf components are "transitively" mandatory. */
-    @Nested
-    @ExtendWith(LilyExtension.class)
-    class FromNestedAllOfSchema {
-      @BeforeAll
-      static void beforeAll(LilyTestSupport support) {
-        support.compileOas(
-            """
-                openapi: 3.0.3
-                components:
-                  schemas:
-                    Foo:
-                      allOf:
-                        - allOf:
-                          - allOf:
-                %s
-                """
-                .formatted(propertiesFragment.indent(12)));
-      }
-
-      @ParameterizedTest
-      @CsvSource({"Mandatory1", "Mandatory2"})
-      void mandatoryProperties(String name, LilyTestSupport support) {
-        assertPropertyIsMandatory(
-            name,
-            support,
-            """
-                If a property is mandatory according to an allOf schema, then it is considered mandatory by the composed
-                schemas as well, even transitively though nested allOf schemas.
-                """);
-      }
-
-      @ParameterizedTest
-      @CsvSource({"Optional1", "Optional2", "Optional3"})
-      void optionalProperties(String name, LilyTestSupport support) {
-        assertPropertyIsOptional(
-            name,
-            support,
-            """
-                If a property is considered optional by a component allOf schema, and there are no other reasons that a
-                property should be mandatory, the property is considered optional by the composed schema as well,
-                including if the property is defined transitively through nested allOf schemas.
-                """);
-      }
-    }
-
     @Nested
     @ExtendWith(LilyExtension.class)
     class FromAnyOfSchema {
@@ -322,6 +275,150 @@ public class ComposedTests {
                   unless there is another reason to consider it mandatory.
                   """);
         }
+      }
+    }
+
+    private static String nestedFragment =
+        """
+            oneOf:
+              - properties:
+                  a:
+                    type: string
+                  b:
+                    type: string
+                required: ['a']
+              - properties:
+                  a:
+                    type: string
+                required: ['a']
+            allOf:
+              - properties:
+                  c:
+                    type: string
+                  d:
+                    type: string
+                required: ['c']
+            anyOf:
+              - properties:
+                  e:
+                    type: string
+            """;
+
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class NestedBeneathAllOf {
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+                openapi: 3.0.3
+                components:
+                  schemas:
+                    Foo:
+                      allOf:
+                        -
+                %s
+                """
+                .formatted(nestedFragment.indent(10)));
+      }
+
+      @ParameterizedTest
+      @CsvSource({"A", "C"})
+      void isMandatory(String name, LilyTestSupport support) {
+        assertPropertyIsMandatory(
+            name,
+            support,
+            """
+                Components of allOf components may contribute mandatory properties to a top-level composed schema.
+                """);
+      }
+
+      @ParameterizedTest
+      @CsvSource({"B", "D", "E"})
+      void isOptional(String name, LilyTestSupport support) {
+        assertPropertyIsOptional(
+            name,
+            support,
+            """
+                Components of allOf components may contribute optional properties to a top-level composed schema.
+                """);
+      }
+    }
+
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class NestedBeneathAnyOf {
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+                openapi: 3.0.3
+                components:
+                  schemas:
+                    Foo:
+                      anyOf:
+                        -
+                %s
+                """
+                .formatted(nestedFragment.indent(10)));
+      }
+
+      @ParameterizedTest
+      @CsvSource({"A", "B", "C", "D", "E"})
+      void isOptional(String name, LilyTestSupport support) {
+        assertPropertyIsOptional(
+            name,
+            support,
+            """
+                Components of anyOf components can contribute optional properties to a top-level composed schema.
+                """);
+      }
+    }
+
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class NestedBeneathOneOf {
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+                    openapi: 3.0.3
+                    components:
+                      schemas:
+                        Foo:
+                          oneOf:
+                            - properties:
+                                a:
+                                  type: string
+                                c:
+                                  type: string
+                              required: ['a', 'c']
+                            -
+                    %s
+                    """
+                .formatted(nestedFragment.indent(10)));
+      }
+
+      @ParameterizedTest
+      @CsvSource({"A", "C"})
+      void mandatoryProperties(String name, LilyTestSupport support) {
+        assertPropertyIsMandatory(
+            name,
+            support,
+            """
+                Components of OneOf components may contribute mandatory properties to top-level composed schema.
+                """);
+      }
+
+      @ParameterizedTest
+      @CsvSource({"B", "D", "E"})
+      void optionalProperties(String name, LilyTestSupport support) {
+        assertPropertyIsOptional(
+            name,
+            support,
+            """
+                Components of OneOf components may contribute optional properties to top-level composed schema.
+                """);
       }
     }
   }
