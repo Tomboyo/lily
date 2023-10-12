@@ -13,9 +13,6 @@ import java.util.stream.Collectors;
 public class AstClassCodeGen {
 
   public static Source renderClass(AstClass ast) {
-    // TODO: this should not be a record any more because we EXPLICITLY do not want the default
-    // getter signatures,
-    // unfortunately.
     var content =
         writeString(
             """

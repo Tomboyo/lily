@@ -260,8 +260,8 @@ public class ComposedTests {
               name,
               support,
               """
-                  If every oneOf component considers a property to be mandatory, then so does the composed schema.
-                  """);
+                If every oneOf component considers a property to be mandatory, then so does the composed schema.
+                """);
         }
 
         @ParameterizedTest
