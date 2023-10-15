@@ -167,11 +167,10 @@ public class CompilerSupport {
         .ifPresent(
             (it) -> {
               var source = readAll(it.getSource());
-              var affectedLines =
-                  getLinesAround(source, it.getStartPosition(), it.getEndPosition());
+              var annotatedSource = annotateSource(source, it.getStartPosition(), it.getEndPosition());
               throw new RuntimeException(
-                  "Compilation error in %s:%n%n%s%n```%n%s%n```%n"
-                      .formatted(it.getSource(), it.getMessage(null), affectedLines));
+                  "Compilation error in %s:%n%n%s%nSource:%n%s%n"
+                      .formatted(it.getSource(), it.getMessage(null), annotatedSource));
             });
   }
 
@@ -185,7 +184,7 @@ public class CompilerSupport {
     }
   }
 
-  private static String getLinesAround(String source, long fromLong, long toLong) {
+  private static String annotateSource(String source, long fromLong, long toLong) {
     int from = (int) fromLong;
     int to = (int) toLong;
 
@@ -197,6 +196,15 @@ public class CompilerSupport {
       to = index;
     }
 
-    return source.substring(from, to).trim();
+    var annotation =
+            """
+            %n// BEGIN AFFECTED LINES
+            %s
+            // END AFFECTED LINES%n
+            """.formatted(source.substring(from, to).trim());
+
+    return source.substring(0, from)
+            + annotation
+            + source.substring(to);
   }
 }
