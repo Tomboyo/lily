@@ -196,7 +196,7 @@ public class ComposedTests {
     }
 
     @Nested
-    class FromOneOf {
+    class FromOneOfSchema {
       @Nested
       @ExtendWith(LilyExtension.class)
       class WithoutConsensus {
