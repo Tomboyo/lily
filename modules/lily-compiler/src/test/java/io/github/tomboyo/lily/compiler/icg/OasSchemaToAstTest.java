@@ -25,18 +25,6 @@ class OasSchemaToAstTest {
   //        arguments("string", "date-time", astOffsetDateTime()));
   //  }
   //
-  //  @Test
-  //  public void unsupportedSchemaTypes() {
-  //    assertThrows(
-  //        IllegalArgumentException.class,
-  //        () ->
-  //            OasSchemaToAst.evaluate(
-  //                PackageName.of("p"),
-  //                SimpleName.of("MyBadSchema"),
-  //                new Schema<>().type("unsupported-type")),
-  //        "Unsupported types trigger runtime exceptions.");
-  //  }
-  //
   //  @Nested
   //  class ScalarSchemas {
   //    @ParameterizedTest
