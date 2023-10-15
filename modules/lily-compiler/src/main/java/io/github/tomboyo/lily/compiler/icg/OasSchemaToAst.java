@@ -317,12 +317,21 @@ public class OasSchemaToAst {
           .filter(Objects::nonNull)
           .flatMap(List::stream)
           .forEach(required::add);
+
+      Stream.ofNullable(c.getOneOf())
+          .flatMap(List::stream)
+          .map(s -> (Schema<?>) s) // *additional internal screaming*
+          .map(Schema::getRequired) // TODO: this needs to recurse
+          .filter(Objects::nonNull)
+          .map(HashSet::new)
+          .reduce(this::intersection)
+          .ifPresent(required::addAll);
     }
 
     return required;
   }
 
-  private <T> Set<T> intersection(Collection<T> a, Collection<T> b) {
+  private <T> HashSet<T> intersection(Collection<T> a, Collection<T> b) {
     var result = new HashSet<>(a);
     result.retainAll(b);
     return result;
