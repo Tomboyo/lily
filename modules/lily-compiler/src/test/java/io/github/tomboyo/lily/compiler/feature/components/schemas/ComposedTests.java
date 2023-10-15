@@ -466,5 +466,55 @@ public class ComposedTests {
               be required via the required keyword.
               """);
     }
+
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class OneOfComponent {
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+                openapi: 3.0.3
+                components:
+                  schemas:
+                    Foo:
+                      properties:
+                        a:
+                          type: string
+                        b:
+                          type: string
+                        c:
+                          type: string
+                      oneOf:
+                        - required: ['a']
+                        - required: ['a', 'b']
+                        - required: ['c', 'a']
+                """);
+      }
+
+      @Test
+      void withConsensus(LilyTestSupport support) {
+        assertPropertyIsMandatory(
+            "A",
+            support,
+            """
+                If every oneOf component agrees a property is required, then the composed schema considers the property
+                required as well, potentially making an otherwise optional property mandatory.
+                """);
+      }
+
+      @ParameterizedTest
+      @CsvSource({"B", "C"})
+      void withoutConsensus(String name, LilyTestSupport support) {
+        assertPropertyIsOptional(
+            name,
+            support,
+            """
+                If oneOf components do not agree that a property is required, then they cannot cause the composed schema
+                to consider the property required by themselves. As a result, disagreeing oneOf components couldn't
+                cause a property to become mandatory on the composed schema.
+                """);
+      }
+    }
   }
 }
