@@ -130,6 +130,7 @@ public class ObjectTests {
                               p:
                                 type: {{type}}
                                 format: {{format}}
+                            required: ['p']
                       """,
               "scalar-parameter",
               Map.of(
@@ -311,7 +312,11 @@ public class ObjectTests {
         support.evaluate(
             """
             var value = "foo!";
-            return value == new {{package}}.MySchema(value).value();
+            return value == {{package}}.MySchema.newBuilder()
+                .setValue(value)
+                .build()
+                .getValue()
+                .orElseThrow();
             """,
             Boolean.class),
         """

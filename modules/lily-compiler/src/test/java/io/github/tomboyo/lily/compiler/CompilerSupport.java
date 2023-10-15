@@ -167,7 +167,8 @@ public class CompilerSupport {
         .ifPresent(
             (it) -> {
               var source = readAll(it.getSource());
-              var annotatedSource = annotateSource(source, it.getStartPosition(), it.getEndPosition());
+              var annotatedSource =
+                  annotateSource(source, it.getStartPosition(), it.getEndPosition());
               throw new RuntimeException(
                   "Compilation error in %s:%n%n%s%nSource:%n%s%n"
                       .formatted(it.getSource(), it.getMessage(null), annotatedSource));
@@ -197,14 +198,13 @@ public class CompilerSupport {
     }
 
     var annotation =
-            """
+        """
             %n// BEGIN AFFECTED LINES
             %s
             // END AFFECTED LINES%n
-            """.formatted(source.substring(from, to).trim());
+            """
+            .formatted(source.substring(from, to).trim());
 
-    return source.substring(0, from)
-            + annotation
-            + source.substring(to);
+    return source.substring(0, from) + annotation + source.substring(to);
   }
 }
