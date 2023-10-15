@@ -6,12 +6,46 @@ import io.github.tomboyo.lily.compiler.LilyExtension;
 import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /** These tests cover all components.schemas elements using composition keywords. */
 public class ComposedTests {
+
+  static void assertPropertyIsOptional(String name, LilyTestSupport support, String message) {
+    assertTrue(
+        support.evaluate(
+            """
+                                    var foo = "foo!";
+                                    java.util.Optional<String> v = {{package}}.Foo.newBuilder()
+                                        .set{{Name}}(foo)
+                                        .build()
+                                        .get{{Name}}();
+                                    return foo == v.orElseThrow();
+                                    """,
+            Boolean.class,
+            "Name",
+            name),
+        message);
+  }
+
+  void assertPropertyIsMandatory(String name, LilyTestSupport support, String message) {
+    assertTrue(
+        support.evaluate(
+            """
+                                    var foo = "foo!";
+                                    return {{package}}.Foo.newBuilder()
+                                        .set{{Name}}(foo)
+                                        .build()
+                                        .get{{Name}}() == foo;
+                                    """,
+            Boolean.class,
+            "Name",
+            name),
+        message);
+  }
 
   @Nested
   class MandatoryProperties {
@@ -43,39 +77,6 @@ public class ComposedTests {
             type: string
             nullable: true
         """;
-
-    static void assertPropertyIsOptional(String name, LilyTestSupport support, String message) {
-      assertTrue(
-          support.evaluate(
-              """
-                              var foo = "foo!";
-                              java.util.Optional<String> v = {{package}}.Foo.newBuilder()
-                                  .set{{Name}}(foo)
-                                  .build()
-                                  .get{{Name}}();
-                              return foo == v.orElseThrow();
-                              """,
-              Boolean.class,
-              "Name",
-              name),
-          message);
-    }
-
-    void assertPropertyIsMandatory(String name, LilyTestSupport support, String message) {
-      assertTrue(
-          support.evaluate(
-              """
-                              var foo = "foo!";
-                              return {{package}}.Foo.newBuilder()
-                                  .set{{Name}}(foo)
-                                  .build()
-                                  .get{{Name}}() == foo;
-                              """,
-              Boolean.class,
-              "Name",
-              name),
-          message);
-    }
 
     @Nested
     @ExtendWith(LilyExtension.class)
@@ -420,6 +421,50 @@ public class ComposedTests {
                 Components of OneOf components may contribute optional properties to top-level composed schema.
                 """);
       }
+    }
+  }
+
+  // TODO: nested test (hint! I forgot again!)
+  @Nested
+  class RequiredKeywordScope {
+
+    static final String template =
+        """
+            openapi: 3.0.3
+            components:
+              schemas:
+                Foo:
+                  properties:
+                    a:
+                      type: string
+                  %s:
+                    - required: ['a']
+            """;
+
+    @Test
+    @ExtendWith(LilyExtension.class)
+    void testAllOf(LilyTestSupport support) {
+      support.compileOas(template.formatted("allOf"));
+      assertPropertyIsMandatory(
+          "A",
+          support,
+          """
+              If an allOf component declares a property required, then the composed schema treats the property as required as
+              well. Otherwise optional properties on the composed schema may be mandatory as a result.
+              """);
+    }
+
+    @Test
+    @ExtendWith(LilyExtension.class)
+    void testAnyOf(LilyTestSupport support) {
+      support.compileOas(template.formatted("anyOf"));
+      assertPropertyIsOptional(
+          "A",
+          support,
+          """
+              Because anyOf components are inherently optional, they cannot cause properties of the composed schema to
+              be required via the required keyword.
+              """);
     }
   }
 }

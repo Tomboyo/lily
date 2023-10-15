@@ -281,7 +281,7 @@ public class OasSchemaToAst {
   }
 
   private Set<String> getMandatoryPropertyNames(Schema<?> root) {
-    List<String> required = requireNonNullElse(root.getRequired(), List.of());
+    var required = requiredPropertyNames(root);
     var nonNullable = getNonNullablePropertyNames(root);
     var mandatory = intersection(required, nonNullable);
 
@@ -305,6 +305,23 @@ public class OasSchemaToAst {
     return mandatory;
   }
 
+  private Set<String> requiredPropertyNames(Schema<?> root) {
+    var required = new HashSet<>(requireNonNullElse(root.getRequired(), List.of()));
+
+    /* AllOf component required keywords are flattened into the composed schema. */
+    if (root instanceof ComposedSchema c) {
+      Stream.ofNullable(c.getAllOf())
+          .flatMap(List::stream)
+          .map(s -> (Schema<?>) s) // *internal screaming*
+          .map(Schema::getRequired) // TODO: this needs to recurse
+          .filter(Objects::nonNull)
+          .flatMap(List::stream)
+          .forEach(required::add);
+    }
+
+    return required;
+  }
+
   private <T> Set<T> intersection(Collection<T> a, Collection<T> b) {
     var result = new HashSet<>(a);
     result.retainAll(b);
@@ -326,6 +343,8 @@ public class OasSchemaToAst {
    * be composed of new or existing schemas; in either case, we emit
    * AddInterface modifiers so that those AST are updated to
    * implement the new sealed interface before rendering.
+   *
+   * TODO: remove me
    */
   private Pair<Fqn, Stream<Ast>> evaluateOneOf(
       ComposedSchema schema, PackageName currentPackage, SimpleName name) {
