@@ -18,13 +18,13 @@ public class ComposedTests {
     assertTrue(
         support.evaluate(
             """
-                                    var foo = "foo!";
-                                    java.util.Optional<String> v = {{package}}.Foo.newBuilder()
-                                        .set{{Name}}(foo)
-                                        .build()
-                                        .get{{Name}}();
-                                    return foo == v.orElseThrow();
-                                    """,
+            var foo = "foo!";
+            java.util.Optional<String> v = {{package}}.Foo.newBuilder()
+                .set{{Name}}(foo)
+                .build()
+                .get{{Name}}();
+            return foo == v.orElseThrow();
+            """,
             Boolean.class,
             "Name",
             name),
@@ -35,12 +35,12 @@ public class ComposedTests {
     assertTrue(
         support.evaluate(
             """
-                                    var foo = "foo!";
-                                    return {{package}}.Foo.newBuilder()
-                                        .set{{Name}}(foo)
-                                        .build()
-                                        .get{{Name}}() == foo;
-                                    """,
+            var foo = "foo!";
+            return {{package}}.Foo.newBuilder()
+                .set{{Name}}(foo)
+                .build()
+                .get{{Name}}() == foo;
+            """,
             Boolean.class,
             "Name",
             name),
