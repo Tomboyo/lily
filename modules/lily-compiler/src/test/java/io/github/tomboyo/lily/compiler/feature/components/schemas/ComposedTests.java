@@ -47,6 +47,9 @@ public class ComposedTests {
         message);
   }
 
+  /* Tests covering when a property is considered "mandatory," i.e. must be set to a non-null value in order for the
+  schema to validate. Properties which are required and not-nullable are considered mandatory. Some components can
+  contribute mandatory properties. */
   @Nested
   class MandatoryProperties {
 
@@ -424,6 +427,8 @@ public class ComposedTests {
     }
   }
 
+  /* Tests covering inheritance/scope rules for the required keyword. Whether a property is required on a composed
+  schema may be governed by whether it is required in component schema. */
   // TODO: nested test (hint! I forgot again!)
   @Nested
   class RequiredKeywordScope {
@@ -514,6 +519,101 @@ public class ComposedTests {
                 to consider the property required by themselves. As a result, disagreeing oneOf components couldn't
                 cause a property to become mandatory on the composed schema.
                 """);
+      }
+    }
+
+    @Nested
+    class WhenNested {
+      static final String template =
+          """
+              openapi: 3.0.3
+              components:
+                schemas:
+                  Foo:
+                    properties:
+                      a:
+                        type: string
+                      b:
+                        type: string
+                      c:
+                        type: string
+                    %s:
+                      - allOf:
+                        - required: ['a', 'c']
+                      - oneOf:
+                        - required: ['b', 'c']
+              """;
+
+      @Nested
+      @ExtendWith(LilyExtension.class)
+      class NestedBeneathAllOf {
+        @BeforeAll
+        static void beforeAll(LilyTestSupport support) {
+          support.compileOas(template.formatted("allOf"));
+        }
+
+        @ParameterizedTest
+        @CsvSource({"A", "B", "C"})
+        void isRequired(String name, LilyTestSupport support) {
+          assertPropertyIsMandatory(
+              name,
+              support,
+              """
+                          Required properties may be inherited through components nested beneath an allOf component.
+                          """);
+        }
+      }
+
+      @Nested
+      @ExtendWith(LilyExtension.class)
+      class NestedBeneathAnyOf {
+        @BeforeAll
+        static void beforeAll(LilyTestSupport support) {
+          support.compileOas(template.formatted("anyOf"));
+        }
+
+        @ParameterizedTest
+        @CsvSource({"A", "B", "C"})
+        void isOptional(String name, LilyTestSupport support) {
+          assertPropertyIsOptional(
+              name,
+              support,
+              """
+                  Required properties are never inherited through anyOf components, which are inherently optional.
+                  """);
+        }
+      }
+
+      @Nested
+      @ExtendWith(LilyExtension.class)
+      class NestedBeneathOneOf {
+        @BeforeAll
+        static void beforeAll(LilyTestSupport support) {
+          support.compileOas(template.formatted("oneOf"));
+        }
+
+        @Test
+        void isMandatory(LilyTestSupport support) {
+          assertPropertyIsMandatory(
+              "C",
+              support,
+              """
+                  Required properties may be inherited through components nested beneath an oneOf component. All nested
+                  oneOf components must agree that a property is required, however.
+                  """);
+        }
+
+        @ParameterizedTest
+        @CsvSource({"A", "B"})
+        void isOptional(String name, LilyTestSupport support) {
+          assertPropertyIsOptional(
+              name,
+              support,
+              """
+                  If components nested beneath a oneOf component do not agree that a property is required, then unless
+                  the top-level composed schema has another reason to consider the property required, it is not.
+                  """);
+        }
       }
     }
   }

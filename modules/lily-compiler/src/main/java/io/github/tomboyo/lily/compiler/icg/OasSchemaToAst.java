@@ -313,17 +313,14 @@ public class OasSchemaToAst {
       Stream.ofNullable(c.getAllOf())
           .flatMap(List::stream)
           .map(s -> (Schema<?>) s) // *internal screaming*
-          .map(Schema::getRequired) // TODO: this needs to recurse
-          .filter(Objects::nonNull)
-          .flatMap(List::stream)
+          .map(this::requiredPropertyNames)
+          .flatMap(Set::stream)
           .forEach(required::add);
 
       Stream.ofNullable(c.getOneOf())
           .flatMap(List::stream)
           .map(s -> (Schema<?>) s) // *additional internal screaming*
-          .map(Schema::getRequired) // TODO: this needs to recurse
-          .filter(Objects::nonNull)
-          .map(HashSet::new)
+          .map(this::requiredPropertyNames)
           .reduce(this::intersection)
           .ifPresent(required::addAll);
     }
