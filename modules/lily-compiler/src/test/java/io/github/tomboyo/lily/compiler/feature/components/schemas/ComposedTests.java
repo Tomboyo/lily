@@ -429,7 +429,6 @@ public class ComposedTests {
 
   /* Tests covering inheritance/scope rules for the required keyword. Whether a property is required on a composed
   schema may be governed by whether it is required in component schema. */
-  // TODO: nested test (hint! I forgot again!)
   @Nested
   class RequiredKeywordScope {
 
