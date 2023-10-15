@@ -111,13 +111,13 @@ public class OasApiResponsesToAst {
                                 headersName.toPackage(),
                                 SimpleName.of(name).resolve("Header"),
                                 header.getSchema())
-                            // TODO
+                            // TODO: issues/98
                             .mapLeft(fqn -> new Field(fqn, SimpleName.of(name), name, false)));
                   } else if (header.get$ref() != null) {
                     var fqn =
                         OasSchemaToAst.fqnForRef(basePackage, requireNonNull(header.get$ref()));
                     return Stream.of(
-                        // TODO
+                        // TODO: issues/98
                         new Pair<>(
                             new Field(fqn, SimpleName.of(name), name, false), Stream.<Ast>of()));
                   } else {
