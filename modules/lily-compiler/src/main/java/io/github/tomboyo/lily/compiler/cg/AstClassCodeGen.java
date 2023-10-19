@@ -90,7 +90,7 @@ public class AstClassCodeGen {
                   using=io.github.tomboyo.lily.http.deser.ByteBufferDeserializer.class)
               {{{fqpt}}} {{name}}
               """,
-          "AstClassCodeGen.constructorParameter.byteBuffer",
+          "AstClassCodeGen.recordField.byteBuffer",
           scope);
     } else {
       return writeString(
@@ -98,7 +98,7 @@ public class AstClassCodeGen {
               @com.fasterxml.jackson.annotation.JsonProperty("{{jsonName}}")
               {{{fqpt}}} {{name}}
               """,
-          "AstClassCodeGen.constructorParameter",
+          "AstClassCodeGen.recordField",
           scope);
     }
   }
