@@ -308,8 +308,8 @@ public class OasSchemaToAst {
   private Set<String> requiredPropertyNames(Schema<?> root) {
     var required = new HashSet<>(requireNonNullElse(root.getRequired(), List.of()));
 
-    /* AllOf component required keywords are flattened into the composed schema. */
     if (root instanceof ComposedSchema c) {
+      /* AllOf component required keywords are flattened into the composed schema. */
       Stream.ofNullable(c.getAllOf())
           .flatMap(List::stream)
           .map(s -> (Schema<?>) s) // *internal screaming*
@@ -317,6 +317,9 @@ public class OasSchemaToAst {
           .flatMap(Set::stream)
           .forEach(required::add);
 
+      /* When OneOf components "have consensus," i.e. they agree that a property is required, then that requirement is
+      propagated to the composed schema as well. (One OneOf _must_ validate, so if they all say a property is required,
+      then it's required.) */
       Stream.ofNullable(c.getOneOf())
           .flatMap(List::stream)
           .map(s -> (Schema<?>) s) // *additional internal screaming*
