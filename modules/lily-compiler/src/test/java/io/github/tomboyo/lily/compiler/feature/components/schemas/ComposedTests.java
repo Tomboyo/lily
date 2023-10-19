@@ -21,7 +21,7 @@ public class ComposedTests {
             var foo = "foo!";
             java.util.Optional<String> v = {{package}}.Foo.newBuilder()
                 .set{{Name}}(foo)
-                .build()
+                .buildUnvalidated()
                 .get{{Name}}();
             return foo == v.orElseThrow();
             """,
@@ -38,7 +38,7 @@ public class ComposedTests {
             var foo = "foo!";
             return {{package}}.Foo.newBuilder()
                 .set{{Name}}(foo)
-                .build()
+                .buildUnvalidated()
                 .get{{Name}}() == foo;
             """,
             Boolean.class,

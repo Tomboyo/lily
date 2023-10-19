@@ -314,7 +314,7 @@ public class ObjectTests {
             var value = "foo!";
             return value == {{package}}.MySchema.newBuilder()
                 .setValue(value)
-                .build()
+                .buildUnvalidated()
                 .getValue()
                 .orElseThrow();
             """,

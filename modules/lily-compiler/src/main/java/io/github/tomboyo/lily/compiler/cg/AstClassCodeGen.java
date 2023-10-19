@@ -35,7 +35,7 @@ public class AstClassCodeGen {
               public static class Builder {
                 {{{builderFields}}}
                 {{{propertySetters}}}
-                {{{build}}}
+                {{{buildUnvalidated}}}
               }
             }
             """,
@@ -65,8 +65,8 @@ public class AstClassCodeGen {
                 ast.fields().stream()
                     .map(field -> propertySetter(ast, field))
                     .collect(Collectors.joining("\n")),
-                "build",
-                build(ast)));
+                "buildUnvalidated",
+                buildUnvalidated(ast)));
 
     return new Source(ast.name(), content);
   }
@@ -147,16 +147,16 @@ public class AstClassCodeGen {
             "type", field.astReference().toFqpString()));
   }
 
-  public static String build(AstClass ast) {
+  public static String buildUnvalidated(AstClass ast) {
     return writeString(
         """
-            public {{{Name}}} build() {
+            public {{{Name}}} buildUnvalidated() {
               return new {{{Name}}}(
                   {{{fields}}}
               );
             }
             """,
-        "AstClassCodeGen.build",
+        "AstClassCodeGen.buildUnvalidated",
         Map.of(
             "Name", ast.name().toFqpString(),
             "fields",
