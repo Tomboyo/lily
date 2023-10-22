@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
+import org.junit.platform.commons.support.AnnotationSupport;
 
 /**
  * Generates sources in isolated packages. When a single test method registers the extension, the
@@ -116,7 +117,7 @@ public class LilyExtension
 
   private Mode getMode(ExtensionContext ctx) {
     var current = ctx;
-    while (!isExtensionContext(current.getElement().orElseThrow(this::missingContext))) {
+    while (!isExtendedWithLily(current.getElement().orElseThrow(this::missingContext))) {
       current = current.getParent().orElseThrow();
     }
 
@@ -130,11 +131,10 @@ public class LilyExtension
     }
   }
 
-  private boolean isExtensionContext(AnnotatedElement element) {
-    return Arrays.stream(element.getDeclaredAnnotations())
-        .filter(a -> a instanceof ExtendWith)
-        .flatMap(a -> Arrays.stream(((ExtendWith) a).value()))
-        .anyMatch(extension -> extension == LilyExtension.class);
+  private boolean isExtendedWithLily(AnnotatedElement element) {
+    return AnnotationSupport.findAnnotation(element, ExtendWith.class)
+        .map(a -> Arrays.stream(a.value()).anyMatch(it -> it == LilyExtension.class))
+        .orElse(false);
   }
 
   private IllegalArgumentException missingContext() {
@@ -202,7 +202,7 @@ public class LilyExtension
 
       source = source.replaceAll("\\{\\{package}}", getPackage(ctx));
 
-      for (var i = 0; i < kvs.length / 2; i += 2) {
+      for (var i = 0; i < kvs.length - 1; i += 2) {
         var key = kvs[i];
         var value = kvs[i + 1];
         source = source.replaceAll("\\{\\{" + key + "}}", value);

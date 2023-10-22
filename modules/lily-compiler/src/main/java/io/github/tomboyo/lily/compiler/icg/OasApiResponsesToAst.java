@@ -111,12 +111,15 @@ public class OasApiResponsesToAst {
                                 headersName.toPackage(),
                                 SimpleName.of(name).resolve("Header"),
                                 header.getSchema())
-                            .mapLeft(fqn -> new Field(fqn, SimpleName.of(name), name)));
+                            // TODO: issues/98
+                            .mapLeft(fqn -> new Field(fqn, SimpleName.of(name), name, false)));
                   } else if (header.get$ref() != null) {
                     var fqn =
                         OasSchemaToAst.fqnForRef(basePackage, requireNonNull(header.get$ref()));
                     return Stream.of(
-                        new Pair<>(new Field(fqn, SimpleName.of(name), name), Stream.<Ast>of()));
+                        // TODO: issues/98
+                        new Pair<>(
+                            new Field(fqn, SimpleName.of(name), name, false), Stream.<Ast>of()));
                   } else {
                     // The OAS is malformed.
                     return Stream.of();

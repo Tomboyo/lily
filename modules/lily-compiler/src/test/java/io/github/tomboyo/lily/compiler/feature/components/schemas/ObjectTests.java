@@ -2,6 +2,7 @@ package io.github.tomboyo.lily.compiler.feature.components.schemas;
 
 import static io.github.tomboyo.lily.compiler.feature.components.schemas.TestSupport.MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -129,6 +130,7 @@ public class ObjectTests {
                               p:
                                 type: {{type}}
                                 format: {{format}}
+                            required: ['p']
                       """,
               "scalar-parameter",
               Map.of(
@@ -310,12 +312,34 @@ public class ObjectTests {
         support.evaluate(
             """
             var value = "foo!";
-            return value == new {{package}}.MySchema(value).value();
+            return value == {{package}}.MySchema.newBuilder()
+                .setValue(value)
+                .buildUnvalidated()
+                .getValue()
+                .orElseThrow();
             """,
             Boolean.class),
         """
         If an object schema specification does not contain the type field, Lily infers that it is an
         object based on the presence of the properties field
         """);
+  }
+
+  @Test
+  @ExtendWith(LilyExtension.class)
+  void unsupportedType(LilyTestSupport support) {
+    assertThrows(
+        RuntimeException.class,
+        () ->
+            support.compileOas(
+                """
+                openapi: 3.0.3
+                components:
+                  schemas:
+                    Foo:
+                      properties:
+                        foo:
+                          type: unknowntype
+                """));
   }
 }

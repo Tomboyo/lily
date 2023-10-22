@@ -1,6 +1,6 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.stream.Collectors.toList;
 
 import io.github.tomboyo.lily.compiler.ast.AddInterface;
@@ -16,9 +16,13 @@ import io.github.tomboyo.lily.compiler.util.Pair;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -79,38 +83,21 @@ public class OasSchemaToAst {
   private Pair<Fqn, Stream<Ast>> evaluateSchema(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
 
-    if (schema instanceof ComposedSchema c && c.getOneOf() != null) {
-      return evaluateOneOf(c, currentPackage, name);
-    }
-
-    if (schema instanceof ComposedSchema || schema.getNot() != null) {
-      var fqn = Fqn.newBuilder().packageName(currentPackage).typeName(name).build();
-      LOGGER.warn(
-          "Generating empty class {} because compositional keywords *allOf, anyOf, and not* are not"
-              + " yet supported",
-          fqn);
-
-      return new Pair<>(
-          fqn,
-          Stream.of(
-              AstClass.of(
-                  fqn,
-                  List.of(),
-                  "Generated empty class because compositional keywords *allOf, anyOf, and"
-                      + " not* are not yet supported")));
+    if (schema.getNot() != null) {
+      LOGGER.warn("The `not` keyword is not yet supported.");
     }
 
     var type = schema.getType();
     if (type == null) {
-      var properties = schema.getProperties();
-      if (properties == null) {
-        return new Pair<>(
-            toBasePackageClassReference(requireNonNull(schema.get$ref())), Stream.of());
+      if (schema.getProperties() != null || schema instanceof ComposedSchema) {
+        return evaluateObject(currentPackage, name, schema);
+      } else if (schema instanceof ArraySchema a) {
+        return evaluateArray(currentPackage, name, a);
+      } else if (schema.get$ref() != null) {
+        return new Pair<>(toBasePackageClassReference(schema.get$ref()), Stream.of());
+      } else {
+        throw new RuntimeException("Can not determine type for schema " + name);
       }
-
-      // If no discriminator, $ref, or type is specified, then it's *probably* an object if it has
-      // properties.
-      return evaluateObject(currentPackage, name, schema);
     }
 
     return switch (type) {
@@ -234,15 +221,16 @@ public class OasSchemaToAst {
 
   private Pair<Fqn, Stream<Ast>> evaluateObject(
       PackageName currentPackage, SimpleName name, Schema<?> schema) {
+    var properties = getProperties(schema);
+    var mandatoryPropertyNames = getMandatoryPropertyNames(schema);
+    var interiorPackage = currentPackage.resolve(name.toString());
+
     /*
      Generate the AST required to define the fields of this new class. If we define any classes
-     for our fields, we
-     place them in a subordinate package named after this class. For example, if we define the
-     class package.MyClass,
-     then any classes defined for MyClass' fields are defined under the package.myclass package.
+     for our fields, we place them in a subordinate package named after this class. For example,
+     if we define the class package.MyClass, then any classes defined for MyClass' fields are
+     defined under the package.myclass package.
     */
-    var properties = Optional.ofNullable(schema.getProperties()).orElse(Map.of());
-    var interiorPackage = currentPackage.resolve(name.toString());
     var fieldAndAst =
         properties.entrySet().stream()
             .map(
@@ -253,10 +241,13 @@ public class OasSchemaToAst {
                       fieldSchema.get$ref() == null
                           ? interiorPackage
                           : basePackage; // $ref's always point to a base package type.
+
                   var refAndAst =
                       evaluateSchema(fieldPackage, SimpleName.of(jsonName), fieldSchema);
+                  var isMandatory = mandatoryPropertyNames.contains(jsonName);
+
                   return refAndAst.mapLeft(
-                      ref -> new Field(ref, SimpleName.of(jsonName), jsonName));
+                      ref -> new Field(ref, SimpleName.of(jsonName), jsonName, isMandatory));
                 })
             .toList();
 
@@ -270,11 +261,122 @@ public class OasSchemaToAst {
         Stream.concat(Stream.of(exteriorClass), interiorAst));
   }
 
+  /* Gets properties from both properties keywords and composed schema */
+  @SuppressWarnings({"rawtypes", "unchecked"}) // not shit I can do about the io.swagger API
+  private Map<String, Schema> getProperties(Schema schema) {
+    var properties = new HashMap<String, Schema>();
+    if (schema.getProperties() != null) {
+      properties.putAll(schema.getProperties());
+    }
+
+    if (schema instanceof ComposedSchema c) {
+      Stream.of(c.getAllOf(), c.getAnyOf(), c.getOneOf())
+          .filter(Objects::nonNull)
+          .flatMap(List::stream)
+          .forEach(s -> properties.putAll(getProperties(s)));
+    }
+
+    return properties;
+  }
+
+  private Set<String> getMandatoryPropertyNames(Schema<?> root) {
+    var required = requiredPropertyNames(root);
+    var nonNullable = getNonNullablePropertyNames(root);
+    var mandatory = intersection(required, nonNullable);
+
+    if (root instanceof ComposedSchema c) {
+      /* If all the oneOf schema (one of which MUST validate) agree that a given property is mandatory, then it is
+      mandatory on the composed schema as well. */
+      Stream.ofNullable(c.getOneOf())
+          .flatMap(List::stream)
+          .map(this::getMandatoryPropertyNames)
+          .reduce(this::intersection)
+          .ifPresent(mandatory::addAll);
+
+      /* If a property is mandatory according to an allOf component, then it is mandatory according to the composed
+      schema as well. */
+      Stream.ofNullable(c.getAllOf())
+          .flatMap(List::stream)
+          .map(this::getMandatoryPropertyNames)
+          .forEach(mandatory::addAll);
+    }
+
+    return mandatory;
+  }
+
+  private Set<String> requiredPropertyNames(Schema<?> root) {
+    var required = new HashSet<>(requireNonNullElse(root.getRequired(), List.of()));
+
+    if (root instanceof ComposedSchema c) {
+      /* AllOf component required keywords are flattened into the composed schema. */
+      Stream.ofNullable(c.getAllOf())
+          .flatMap(List::stream)
+          .map(s -> (Schema<?>) s) // *internal screaming*
+          .map(this::requiredPropertyNames)
+          .flatMap(Set::stream)
+          .forEach(required::add);
+
+      /* When OneOf components "have consensus," i.e. they agree that a property is required, then that requirement is
+      propagated to the composed schema as well. (One OneOf _must_ validate, so if they all say a property is required,
+      then it's required.) */
+      Stream.ofNullable(c.getOneOf())
+          .flatMap(List::stream)
+          .map(s -> (Schema<?>) s) // *additional internal screaming*
+          .map(this::requiredPropertyNames)
+          .reduce(this::intersection)
+          .ifPresent(required::addAll);
+    }
+
+    return required;
+  }
+
+  private Set<String> getNonNullablePropertyNames(Schema<?> root) {
+    var result = new HashSet<String>();
+    if (root.getProperties() != null) {
+      root.getProperties().entrySet().stream()
+          .filter(entry -> !requireNonNullElse(entry.getValue().getNullable(), false))
+          .map(Map.Entry::getKey)
+          .forEach(result::add);
+    }
+
+    if (root instanceof ComposedSchema c) {
+      // When an allOf property is not nullable, then it's not nullable on the composed schema
+      // either
+      Stream.ofNullable(c.getAllOf())
+          .flatMap(List::stream)
+          .map(schema -> (Schema<?>) schema)
+          .map(this::getNonNullablePropertyNames)
+          .flatMap(Set::stream)
+          .forEach(result::add);
+
+      /* If every oneOf schema agrees that a property is not nullable ("consensus"), then it's not nullable on the
+      composed schema either. */
+      Stream.ofNullable(c.getOneOf())
+          .flatMap(List::stream)
+          .map(schema -> (Schema<?>) schema)
+          .map(this::getNonNullablePropertyNames)
+          .reduce(this::intersection)
+          .ifPresent(result::addAll);
+    }
+
+    // AnyOf schema are inherently optional, so their properties are irrelevant.
+
+    return result;
+  }
+
+  private <T> HashSet<T> intersection(Collection<T> a, Collection<T> b) {
+    var result = new HashSet<>(a);
+    result.retainAll(b);
+    return result;
+  }
+
   /*
    * OneOf composed schemas evaluate to a sealed interface. The schema may
    * be composed of new or existing schemas; in either case, we emit
    * AddInterface modifiers so that those AST are updated to
    * implement the new sealed interface before rendering.
+   *
+   * TODO: remove me
    */
   private Pair<Fqn, Stream<Ast>> evaluateOneOf(
       ComposedSchema schema, PackageName currentPackage, SimpleName name) {

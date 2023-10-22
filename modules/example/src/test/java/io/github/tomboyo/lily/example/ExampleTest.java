@@ -56,7 +56,8 @@ public class ExampleTest {
      * ShowPetByIdResponse may consist of the 200 and Default variants.
      */
     if (response instanceof ShowPetById200 okResponse) {
-      assertEquals(new Pet(1234L, "Reginald", null), okResponse.body());
+      assertEquals(
+          Pet.newBuilder().setId(1234L).setName("Reginald").buildUnvalidated(), okResponse.body());
     } else if (response instanceof ShowPetByIdDefault) {
       fail("Expected 200.");
     } else {
@@ -104,7 +105,7 @@ public class ExampleTest {
      */
     var response = operation.sendSync(request);
     if (response instanceof ShowPetById200 ok) {
-      assertEquals(new Pet(1234L, "Reginald", null), ok.body());
+      assertEquals(Pet.newBuilder().setId(1234L).setName("Reginald").buildUnvalidated(), ok.body());
     } else {
       fail("Expected a 200 response");
     }
