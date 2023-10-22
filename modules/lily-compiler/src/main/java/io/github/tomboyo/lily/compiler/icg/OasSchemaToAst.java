@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -331,20 +330,44 @@ public class OasSchemaToAst {
     return required;
   }
 
+  private Set<String> getNonNullablePropertyNames(Schema<?> root) {
+    var result = new HashSet<String>();
+    if (root.getProperties() != null) {
+      root.getProperties().entrySet().stream()
+          .filter(entry -> !requireNonNullElse(entry.getValue().getNullable(), false))
+          .map(Map.Entry::getKey)
+          .forEach(result::add);
+    }
+
+    if (root instanceof ComposedSchema c) {
+      // When an allOf property is not nullable, then it's not nullable on the composed schema
+      // either
+      Stream.ofNullable(c.getAllOf())
+          .flatMap(List::stream)
+          .map(schema -> (Schema<?>) schema)
+          .map(this::getNonNullablePropertyNames)
+          .flatMap(Set::stream)
+          .forEach(result::add);
+
+      /* If every oneOf schema agrees that a property is not nullable ("consensus"), then it's not nullable on the
+      composed schema either. */
+      Stream.ofNullable(c.getOneOf())
+          .flatMap(List::stream)
+          .map(schema -> (Schema<?>) schema)
+          .map(this::getNonNullablePropertyNames)
+          .reduce(this::intersection)
+          .ifPresent(result::addAll);
+    }
+
+    // AnyOf schema are inherently optional, so their properties are irrelevant.
+
+    return result;
+  }
+
   private <T> HashSet<T> intersection(Collection<T> a, Collection<T> b) {
     var result = new HashSet<>(a);
     result.retainAll(b);
     return result;
-  }
-
-  private Set<String> getNonNullablePropertyNames(Schema<?> root) {
-    if (root.getProperties() != null) {
-      return root.getProperties().entrySet().stream()
-          .filter(entry -> !requireNonNullElse(entry.getValue().getNullable(), false))
-          .map(Map.Entry::getKey)
-          .collect(Collectors.toSet());
-    }
-    return Set.of();
   }
 
   /*

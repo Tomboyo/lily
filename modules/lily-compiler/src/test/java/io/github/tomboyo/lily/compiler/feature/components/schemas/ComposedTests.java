@@ -616,4 +616,206 @@ public class ComposedTests {
       }
     }
   }
+
+  /* Tests covering inheritance/scope rules for nullability of properties. */
+  @Nested
+  class NullableKeywordScope {
+    @ExtendWith(LilyExtension.class)
+    @Test
+    void allOf(LilyTestSupport support) {
+      support.compileOas(
+          """
+                openapi: 3.0.3
+                components:
+                  schemas:
+                    Foo:
+                      required: ['a']
+                      allOf:
+                        - properties:
+                            a:
+                              type: string
+                """);
+
+      assertPropertyIsMandatory(
+          "A",
+          support,
+          """
+                If a component allOf schema declares a non-nullable property, then the property is
+                non-nullable in the composed schema as well
+                """);
+    }
+
+    @ExtendWith(LilyExtension.class)
+    @Test
+    void anyOf(LilyTestSupport support) {
+      support.compileOas(
+          """
+                openapi: 3.0.3
+                components:
+                  schemas:
+                    Foo:
+                      required: ['a']
+                      anyOf:
+                        - properties:
+                            a:
+                              type: string
+                """);
+
+      assertPropertyIsOptional(
+          "A",
+          support,
+          """
+                Even if a component anyOf schema declares a non-nullable property, the property is still optional
+                according to the composed schema because anyOf schemas are inherently optional.
+                """);
+    }
+
+    @Nested
+    @ExtendWith(LilyExtension.class)
+    class OneOfComponent {
+      @BeforeAll
+      static void beforeAll(LilyTestSupport support) {
+        support.compileOas(
+            """
+                  openapi: 3.0.3
+                  components:
+                    schemas:
+                      Foo:
+                        required: ['a', 'b']
+                        oneOf:
+                          - properties:
+                              a:
+                                type: string
+                              b:
+                                type: string
+                          - properties:
+                              a:
+                                type: string
+                              b:
+                                type: string
+                                # Not in consensus with the other component
+                                nullable: true
+                  """);
+      }
+
+      @Test
+      void withConsensus(LilyTestSupport support) {
+        assertPropertyIsMandatory(
+            "A",
+            support,
+            """
+                  When OneOf components agree that a property is not nullable, the composed schema considers the
+                  property to be non-nullable as well.
+                  """);
+      }
+
+      @Test
+      void withoutConsensus(LilyTestSupport support) {
+        assertPropertyIsOptional(
+            "B",
+            support,
+            """
+                  When OneOf components differ on whether a property is nullable, the composed schema considers the
+                  property optional.
+                  """);
+      }
+    }
+
+    @Nested
+    class WhenNested {
+      static final String template =
+          """
+                  openapi: 3.0.3
+                  components:
+                    schemas:
+                      Foo:
+                        required: ['a', 'b', 'c']
+                        %s:
+                          - allOf:
+                            - properties:
+                                a:
+                                  type: string
+                                b:
+                                  type: string
+                          - oneOf:
+                            - properties:
+                                a:
+                                  type: string
+                                c:
+                                  type: string
+                    """;
+
+      @Nested
+      @ExtendWith(LilyExtension.class)
+      class BeneathAllOf {
+        @BeforeAll
+        static void beforeAll(LilyTestSupport support) {
+          support.compileOas(template.formatted("allOf"));
+        }
+
+        @ParameterizedTest
+        @CsvSource({"A", "B", "C"})
+        void isMandatory(String name, LilyTestSupport support) {
+          assertPropertyIsMandatory(
+              name,
+              support,
+              """
+                    Nullability is inherited recursively through components of allOf components.
+                    """);
+        }
+      }
+
+      @Nested
+      @ExtendWith(LilyExtension.class)
+      class BeneathOneOf {
+        @BeforeAll
+        static void beforeAll(LilyTestSupport support) {
+          support.compileOas(template.formatted("oneOf"));
+        }
+
+        @Test
+        void isMandatory(LilyTestSupport support) {
+          assertPropertyIsMandatory(
+              "A",
+              support,
+              """
+                    Nullability is inherited recursively per-property through oneOf components with consensus.
+                    """);
+        }
+
+        @ParameterizedTest
+        @CsvSource({"B", "C"})
+        void isOptional(String name, LilyTestSupport support) {
+          assertPropertyIsOptional(
+              name,
+              support,
+              """
+                    Nullability is inherited recursively per-property through oneOf components, but if they do not agree
+                    on the nullability of a property, is is considered optional by composed schema.
+                    """);
+        }
+      }
+
+      @Nested
+      @ExtendWith(LilyExtension.class)
+      class BeneathAnyOf {
+        @BeforeAll
+        static void beforeAll(LilyTestSupport support) {
+          support.compileOas(template.formatted("anyOf"));
+        }
+
+        @ParameterizedTest
+        @CsvSource({"A", "B", "C"})
+        void isOptional(String name, LilyTestSupport support) {
+          assertPropertyIsOptional(
+              name,
+              support,
+              """
+                    Though properties are discovered recursively through anyOf components, they are inherently optional,
+                    so their proeprties are always considered optional by composed schema regardless of nullability.
+                    """);
+        }
+      }
+    }
+  }
 }
