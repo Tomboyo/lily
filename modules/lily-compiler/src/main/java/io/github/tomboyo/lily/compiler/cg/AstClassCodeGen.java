@@ -2,11 +2,11 @@ package io.github.tomboyo.lily.compiler.cg;
 
 import static io.github.tomboyo.lily.compiler.cg.Mustache.writeString;
 import static io.github.tomboyo.lily.compiler.cg.support.Interfaces.implementsClause;
-import static io.github.tomboyo.lily.compiler.icg.StdlibFqns.astByteBuffer;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.Field;
+import io.github.tomboyo.lily.compiler.cg.support.Fields;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -46,9 +46,7 @@ public class AstClassCodeGen {
                 "TypeName",
                 ast.name().typeName().upperCamelCase(),
                 "recordFields",
-                ast.fields().stream()
-                    .map(AstClassCodeGen::recordField)
-                    .collect(Collectors.joining(",\n")),
+                Fields.recordFields(ast.fields()),
                 "propertyGetters",
                 ast.fields().stream()
                     .map(AstClassCodeGen::propertyGetter)
@@ -71,64 +69,28 @@ public class AstClassCodeGen {
     return new Source(ast.name(), content);
   }
 
-  private static String recordField(Field field) {
-    var scope =
-        Map.of(
-            "fqpt", field.astReference().toFqpString(),
-            "name", field.name().lowerCamelCase(),
-            "jsonName", field.jsonName());
-
-    if (field.astReference().equals(astByteBuffer())) {
-      // Byte buffers will deser as B64 strings by default, which is not compliant with the OpenAPI
-      // specification, so we add custom deser.
-      return writeString(
-          """
-              @com.fasterxml.jackson.annotation.JsonProperty("{{jsonName}}")
-              @com.fasterxml.jackson.databind.annotation.JsonSerialize(
-                  using=io.github.tomboyo.lily.http.deser.ByteBufferSerializer.class)
-              @com.fasterxml.jackson.databind.annotation.JsonDeserialize(
-                  using=io.github.tomboyo.lily.http.deser.ByteBufferDeserializer.class)
-              {{{fqpt}}} {{name}}
-              """,
-          "AstClassCodeGen.recordField.byteBuffer",
-          scope);
-    } else {
-      return writeString(
-          """
-              @com.fasterxml.jackson.annotation.JsonProperty("{{jsonName}}")
-              {{{fqpt}}} {{name}}
-              """,
-          "AstClassCodeGen.recordField",
-          scope);
-    }
-  }
-
   private static String propertyGetter(Field field) {
     var fqpt = field.astReference().toFqpString();
-    var returned = field.name().lowerCamelCase();
+    var returned = Fields.fieldName(field);
     if (!field.isMandatory()) {
       fqpt = "java.util.Optional<" + fqpt + ">";
       returned = "java.util.Optional.ofNullable(" + returned + ")";
     }
     return writeString(
         """
-            public {{{fqpt}}} get{{Name}}() {
+            public {{{fqpt}}} {{getterName}}() {
               return {{returned}};
             }
             """,
         "AstClassCodeGen.propertyGetter",
         Map.of(
             "fqpt", fqpt,
-            "Name", field.name().upperCamelCase(),
+            "getterName", Fields.getterNameForField(field),
             "returned", returned));
   }
 
   private static String builderField(Field field) {
-    return "private "
-        + field.astReference().toFqpString()
-        + " "
-        + field.name().lowerCamelCase()
-        + ";";
+    return "private " + field.astReference().toFqpString() + " " + Fields.fieldName(field) + ";";
   }
 
   private static String propertySetter(Ast ast, Field field) {
@@ -143,7 +105,7 @@ public class AstClassCodeGen {
         Map.of(
             "builderName", ast.name().typeName().upperCamelCase() + ".Builder",
             "Name", field.name().upperCamelCase(),
-            "name", field.name().lowerCamelCase(),
+            "name", Fields.fieldName(field),
             "type", field.astReference().toFqpString()));
   }
 
@@ -160,8 +122,6 @@ public class AstClassCodeGen {
         Map.of(
             "Name", ast.name().toFqpString(),
             "fields",
-                ast.fields().stream()
-                    .map(field -> field.name().lowerCamelCase())
-                    .collect(Collectors.joining(",\n"))));
+                ast.fields().stream().map(Fields::fieldName).collect(Collectors.joining(",\n"))));
   }
 }
