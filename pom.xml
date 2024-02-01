@@ -20,8 +20,8 @@
 
     <licenses>
         <license>
-            <name>MIT License</name>
-            <url>https://www.opensource.org/licenses/mit-license.php</url>
+            <name>GPL3 License</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.en.html</url>
         </license>
     </licenses>
 
