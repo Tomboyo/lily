@@ -19,7 +19,12 @@
         <main.project.dir>${project.basedir}/../..</main.project.dir>
     </properties>
 
+
     <dependencies>
+        <dependency>
+            <groupId>org.clojure</groupId>
+            <artifactId>clojure</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
             <artifactId>swagger-parser</artifactId>
@@ -73,7 +78,27 @@
     </dependencies>
 
     <build>
+        <resources>
+            <!-- Add source to jar. It will be compiled JIT. -->
+          <resource><directory>src/main/clojure</directory></resource>
+        </resources>
         <plugins>
+            <plugin>
+                <groupId>com.theoryinpractise</groupId>
+                <artifactId>clojure-maven-plugin</artifactId>
+                <executions>
+                  <execution>
+                    <id>compile</id>
+                    <phase>compile</phase>
+                    <goals><goal>compile</goal></goals>
+                  </execution>
+                  <execution>
+                    <id>test</id>
+                    <phase>test</phase>
+                    <goals><goal>test</goal></goals>
+                  </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
