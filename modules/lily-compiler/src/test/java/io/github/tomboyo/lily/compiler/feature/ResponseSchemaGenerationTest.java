@@ -53,8 +53,8 @@ class ResponseSchemaGenerationTest {
       assertTrue(
           evaluate(
               """
-                  return %s.getfoooperation.GetFooResponse.class.isAssignableFrom(%s.getfoooperation.GetFoo200.class);
-                  """
+return %s.getfoooperation.GetFooResponse.class.isAssignableFrom(%s.getfoooperation.GetFoo200.class);
+"""
                   .formatted(packageName, packageName),
               Boolean.class),
           "The 200 response is a member of the response sum type");
@@ -65,8 +65,8 @@ class ResponseSchemaGenerationTest {
       assertTrue(
           evaluate(
               """
-              return %s.getfoooperation.GetFooResponse.class.isAssignableFrom(%s.getfoooperation.GetFoo404.class);
-              """
+return %s.getfoooperation.GetFooResponse.class.isAssignableFrom(%s.getfoooperation.GetFoo404.class);
+"""
                   .formatted(packageName, packageName),
               Boolean.class),
           "The 404 response is a member of the response sum type");
@@ -77,8 +77,8 @@ class ResponseSchemaGenerationTest {
       assertTrue(
           evaluate(
               """
-                  return %s.getfoooperation.GetFooResponse.class.isAssignableFrom(%s.getfoooperation.GetFooDefault.class);
-                  """
+return %s.getfoooperation.GetFooResponse.class.isAssignableFrom(%s.getfoooperation.GetFooDefault.class);
+"""
                   .formatted(packageName, packageName),
               Boolean.class),
           "The default response is a member of the response sum type");

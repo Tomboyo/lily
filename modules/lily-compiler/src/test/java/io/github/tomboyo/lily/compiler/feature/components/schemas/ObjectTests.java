@@ -62,6 +62,7 @@ public class ObjectTests {
 
     /** A java expression that instantiates the value field. No return keyword, no trailing `;`. */
     String valueJava();
+
     /** The JSON string representation of the value property */
     String valueJson();
 
@@ -69,16 +70,16 @@ public class ObjectTests {
     static void setup(String propertySchema, String otherComponents, LilyTestSupport support) {
       support.compileOas(
           """
-              openapi: 3.0.2
-              components:
-                schemas:
-                  Test:
-                    type: object
-                    properties:
-                      value:
-              %s
-              %s
-              """
+          openapi: 3.0.2
+          components:
+            schemas:
+              Test:
+                type: object
+                properties:
+                  value:
+          %s
+          %s
+          """
               .formatted(propertySchema.indent(10), otherComponents.indent(4)));
     }
 
@@ -87,9 +88,9 @@ public class ObjectTests {
       assertTrue(
           support.evaluate(
               """
-                      var value = %s;
-                      return value == new {{package}}.Test(value).value();
-                      """
+              var value = %s;
+              return value == new {{package}}.Test(value).value();
+              """
                   .formatted(valueJava()),
               Boolean.class));
     }
@@ -121,17 +122,17 @@ public class ObjectTests {
       support.compileOas(
           Mustache.writeString(
               """
-                      openapi: 3.0.2
-                      components:
-                        schemas:
-                          Foo:
-                            type: object
-                            properties:
-                              p:
-                                type: {{type}}
-                                format: {{format}}
-                            required: ['p']
-                      """,
+              openapi: 3.0.2
+              components:
+                schemas:
+                  Foo:
+                    type: object
+                    properties:
+                      p:
+                        type: {{type}}
+                        format: {{format}}
+                    required: ['p']
+              """,
               "scalar-parameter",
               Map.of(
                   "type", oasType,
@@ -140,9 +141,9 @@ public class ObjectTests {
       assertTrue(
           support.evaluate(
               """
-                      var value = {{value}};
-                      return value == new {{package}}.Foo(value).p();
-                      """,
+              var value = {{value}};
+              return value == new {{package}}.Foo(value).p();
+              """,
               Boolean.class,
               "value",
               value));
@@ -228,11 +229,11 @@ public class ObjectTests {
     static void beforeAll(LilyTestSupport support) {
       TestTemplate.setup(
           """
-              type: array
-              items:
-                type: integer
-                format: int32
-              """,
+          type: array
+          items:
+            type: integer
+            format: int32
+          """,
           "",
           support);
     }
@@ -275,9 +276,9 @@ public class ObjectTests {
       TestTemplate.setup(
           "$ref: '#/components/schemas/Ref'",
           """
-              Ref:
-                type: string
-              """,
+          Ref:
+            type: string
+          """,
           support);
     }
 
@@ -320,9 +321,9 @@ public class ObjectTests {
             """,
             Boolean.class),
         """
-        If an object schema specification does not contain the type field, Lily infers that it is an
-        object based on the presence of the properties field
-        """);
+If an object schema specification does not contain the type field, Lily infers that it is an
+object based on the presence of the properties field
+""");
   }
 
   @Test

@@ -14,26 +14,26 @@ public class AstResponseSumCodeGen {
     var content =
         writeString(
             """
-        package {{packageName}};
+package {{packageName}};
 
-        public sealed interface {{typeName}} permits {{members}} {
+public sealed interface {{typeName}} permits {{members}} {
 
-          /** Access the native java.net.http.HttpResponse describing the result of an operation. */
-          public java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse();
+  /** Access the native java.net.http.HttpResponse describing the result of an operation. */
+  public java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse();
 
-          public static {{typeName}} fromHttpResponse(
-              java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse,
-              com.fasterxml.jackson.databind.ObjectMapper objectMapper)
-                  throws java.io.IOException {
-            return switch(httpResponse.statusCode()) {
-              {{#statusCodeToMember}}
-              case {{statusCode}} -> {{memberName}}.fromHttpResponse(httpResponse, objectMapper);
-              {{/statusCodeToMember}}
-              default -> {{{defaultMember}}};
-            };
-          }
-        };
-        """,
+  public static {{typeName}} fromHttpResponse(
+      java.net.http.HttpResponse<? extends java.io.InputStream> httpResponse,
+      com.fasterxml.jackson.databind.ObjectMapper objectMapper)
+          throws java.io.IOException {
+    return switch(httpResponse.statusCode()) {
+      {{#statusCodeToMember}}
+      case {{statusCode}} -> {{memberName}}.fromHttpResponse(httpResponse, objectMapper);
+      {{/statusCodeToMember}}
+      default -> {{{defaultMember}}};
+    };
+  }
+};
+""",
             "renderAstResponseSum",
             Map.of(
                 "packageName",

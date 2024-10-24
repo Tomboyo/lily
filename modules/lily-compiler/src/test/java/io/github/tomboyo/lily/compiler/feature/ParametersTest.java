@@ -52,23 +52,23 @@ public class ParametersTest {
       static void beforeAll(LilyTestSupport support) throws Exception {
         support.compileOas(
             """
-                openapi: 3.0.2
-                paths:
-                  /pets/{kennelId}/{petId}:
-                    get:
-                      operationId: getPetFromKennel
-                      parameters:
-                        - name: kennelId
-                          in: path
-                          required: true
-                          schema:
-                            type: string
-                        - name: petId
-                          in: path
-                          required: true
-                          schema:
-                            type: string
-                """);
+            openapi: 3.0.2
+            paths:
+              /pets/{kennelId}/{petId}:
+                get:
+                  operationId: getPetFromKennel
+                  parameters:
+                    - name: kennelId
+                      in: path
+                      required: true
+                      schema:
+                        type: string
+                    - name: petId
+                      in: path
+                      required: true
+                      schema:
+                        type: string
+            """);
       }
 
       @Test
@@ -76,17 +76,17 @@ public class ParametersTest {
         var actual =
             support.evaluate(
                 """
-                    return {{package}}.Api.newBuilder()
-                      .uri("https://example.com/")
-                      .build()
-                      .everyOperation()
-                      .getPetFromKennel()
-                      .path(path ->
-                          path.kennelId("kennelId")
-                              .petId("petId"))
-                      .httpRequest()
-                      .uri();
-                    """,
+                return {{package}}.Api.newBuilder()
+                  .uri("https://example.com/")
+                  .build()
+                  .everyOperation()
+                  .getPetFromKennel()
+                  .path(path ->
+                      path.kennelId("kennelId")
+                          .petId("petId"))
+                  .httpRequest()
+                  .uri();
+                """,
                 URI.class);
         assertThat(
             "Named path parameters are bound by the path method",
@@ -99,16 +99,16 @@ public class ParametersTest {
         var actual =
             support.evaluate(
                 """
-                    return {{package}}.Api.newBuilder()
-                      .uri("https://example.com/")
-                      .build()
-                      .everyOperation()
-                      .getPetFromKennel()
-                      .path(path ->
-                          path.kennelId("kennelId")
-                              .petId("petId"))
-                      .pathString();
-                    """,
+                return {{package}}.Api.newBuilder()
+                  .uri("https://example.com/")
+                  .build()
+                  .everyOperation()
+                  .getPetFromKennel()
+                  .path(path ->
+                      path.kennelId("kennelId")
+                          .petId("petId"))
+                  .pathString();
+                """,
                 String.class);
         assertEquals(
             "pets/kennelId/petId",
@@ -126,29 +126,29 @@ public class ParametersTest {
       static void beforeAll(LilyTestSupport support) throws Exception {
         support.compileOas(
             """
-                openapi: 3.0.2
-                paths:
-                  /pets:
-                    get:
-                      operationId: listPets
-                      parameters:
-                        - name: limit
-                          in: query
-                          schema:
-                            type: integer
-                            format: int32
-                          # Path parameters are simple by default
-                          # style: simple
-                        - name: include
-                          in: query
-                          schema:
-                            type: array
-                            items:
-                              type: string
-                          # Query parameters are form-explode by default
-                          # style: form
-                          # explode: true
-                """);
+            openapi: 3.0.2
+            paths:
+              /pets:
+                get:
+                  operationId: listPets
+                  parameters:
+                    - name: limit
+                      in: query
+                      schema:
+                        type: integer
+                        format: int32
+                      # Path parameters are simple by default
+                      # style: simple
+                    - name: include
+                      in: query
+                      schema:
+                        type: array
+                        items:
+                          type: string
+                      # Query parameters are form-explode by default
+                      # style: form
+                      # explode: true
+            """);
       }
 
       @Test
@@ -156,17 +156,17 @@ public class ParametersTest {
         var actual =
             support.evaluate(
                 """
-                    return {{package}}.Api.newBuilder()
-                      .uri("https://example.com/")
-                      .build()
-                      .everyOperation()
-                      .listPets()
-                      .query(query -> query
-                          .limit(5)
-                          .include(java.util.List.of("name", "age")))
-                      .httpRequest()
-                      .uri();
-                    """,
+                return {{package}}.Api.newBuilder()
+                  .uri("https://example.com/")
+                  .build()
+                  .everyOperation()
+                  .listPets()
+                  .query(query -> query
+                      .limit(5)
+                      .include(java.util.List.of("name", "age")))
+                  .httpRequest()
+                  .uri();
+                """,
                 URI.class);
         assertThat(
             "Query parameters are bound by the query method",
@@ -179,16 +179,16 @@ public class ParametersTest {
         var actual =
             support.evaluate(
                 """
-                    return {{package}}.Api.newBuilder()
-                      .uri("https://example.com/")
-                      .build()
-                      .everyOperation()
-                      .listPets()
-                      .query(query -> query
-                          .limit(5)
-                          .include(java.util.List.of("name", "age")))
-                      .queryString();
-                    """,
+                return {{package}}.Api.newBuilder()
+                  .uri("https://example.com/")
+                  .build()
+                  .everyOperation()
+                  .listPets()
+                  .query(query -> query
+                      .limit(5)
+                      .include(java.util.List.of("name", "age")))
+                  .queryString();
+                """,
                 String.class);
 
         assertEquals(
@@ -206,19 +206,19 @@ public class ParametersTest {
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
-            openapi: 3.0.2
-            paths:
-              /pets:
-                get:
-                  operationId: listPets
-                  parameters:
-                    - $ref: "#/components/schemas/Foo"
-                    - name: limit
-                      in: query
-                      schema:
-                        type: integer
-                        format: int32
-            """);
+          openapi: 3.0.2
+          paths:
+            /pets:
+              get:
+                operationId: listPets
+                parameters:
+                  - $ref: "#/components/schemas/Foo"
+                  - name: limit
+                    in: query
+                    schema:
+                      type: integer
+                      format: int32
+          """);
     }
 
     @Test
@@ -227,14 +227,14 @@ public class ParametersTest {
           () ->
               support.evaluate(
                   """
-            return {{package}}.Api.newBuilder()
-              .uri("https://example.com/")
-              .build()
-              .everyOperation()
-              .listPets()
-              .query(query -> query
-                  .limit(5));
-            """),
+                  return {{package}}.Api.newBuilder()
+                    .uri("https://example.com/")
+                    .build()
+                    .everyOperation()
+                    .listPets()
+                    .query(query -> query
+                        .limit(5));
+                  """),
           "Unsupported parameter specifications do not prevent evaluation of supported"
               + " parameters.");
     }

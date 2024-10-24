@@ -82,14 +82,14 @@ public class RequestBodyTest {
       var request =
           support.evaluate(
               """
-          return {{package}}.Api.newBuilder()
-            .uri("{{uri}}")
-            .build()
-            .everyOperation()
-            .createPet()
-            .body(new {{package}}.Pet("Fido", 12))
-            .httpRequest();
-          """,
+              return {{package}}.Api.newBuilder()
+                .uri("{{uri}}")
+                .build()
+                .everyOperation()
+                .createPet()
+                .body(new {{package}}.Pet("Fido", 12))
+                .httpRequest();
+              """,
               HttpRequest.class,
               "uri",
               info.getHttpBaseUrl());
@@ -114,37 +114,37 @@ public class RequestBodyTest {
     static void beforeAll(LilyTestSupport support) {
       support.compileOas(
           """
-            openapi: 3.0.2
-            paths:
-              /pets:
-                put:
-                  operationId: createPet
-                  requestBody:
-                    content:
-                      'application/json':
-                        schema:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                            age:
-                              type: integer
-                              format: int32
-            """);
+          openapi: 3.0.2
+          paths:
+            /pets:
+              put:
+                operationId: createPet
+                requestBody:
+                  content:
+                    'application/json':
+                      schema:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          age:
+                            type: integer
+                            format: int32
+          """);
     }
 
     @Test
     void sendSync(LilyTestSupport support, WireMockRuntimeInfo info) {
       support.evaluate(
           """
-        return {{package}}.Api.newBuilder()
-          .uri("{{url}}")
-          .build()
-          .everyOperation()
-          .createPet()
-          .body(new {{package}}.createpetoperation.CreatePetBody("Fido", 12))
-          .sendSync();
-        """,
+          return {{package}}.Api.newBuilder()
+            .uri("{{url}}")
+            .build()
+            .everyOperation()
+            .createPet()
+            .body(new {{package}}.createpetoperation.CreatePetBody("Fido", 12))
+            .sendSync();
+          """,
           "url",
           info.getHttpBaseUrl());
 
@@ -163,14 +163,14 @@ public class RequestBodyTest {
       var request =
           support.evaluate(
               """
-          return {{package}}.Api.newBuilder()
-            .uri("{{url}}")
-            .build()
-            .everyOperation()
-            .createPet()
-            .body(new {{package}}.createpetoperation.CreatePetBody("Fido", 12))
-            .httpRequest();
-          """,
+              return {{package}}.Api.newBuilder()
+                .uri("{{url}}")
+                .build()
+                .everyOperation()
+                .createPet()
+                .body(new {{package}}.createpetoperation.CreatePetBody("Fido", 12))
+                .httpRequest();
+              """,
               HttpRequest.class,
               "url",
               info.getHttpBaseUrl());

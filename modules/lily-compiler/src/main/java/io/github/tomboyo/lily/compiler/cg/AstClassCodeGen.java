@@ -83,21 +83,21 @@ public class AstClassCodeGen {
       // specification, so we add custom deser.
       return writeString(
           """
-              @com.fasterxml.jackson.annotation.JsonProperty("{{jsonName}}")
-              @com.fasterxml.jackson.databind.annotation.JsonSerialize(
-                  using=io.github.tomboyo.lily.http.deser.ByteBufferSerializer.class)
-              @com.fasterxml.jackson.databind.annotation.JsonDeserialize(
-                  using=io.github.tomboyo.lily.http.deser.ByteBufferDeserializer.class)
-              {{{fqpt}}} {{name}}
-              """,
+          @com.fasterxml.jackson.annotation.JsonProperty("{{jsonName}}")
+          @com.fasterxml.jackson.databind.annotation.JsonSerialize(
+              using=io.github.tomboyo.lily.http.deser.ByteBufferSerializer.class)
+          @com.fasterxml.jackson.databind.annotation.JsonDeserialize(
+              using=io.github.tomboyo.lily.http.deser.ByteBufferDeserializer.class)
+          {{{fqpt}}} {{name}}
+          """,
           "AstClassCodeGen.recordField.byteBuffer",
           scope);
     } else {
       return writeString(
           """
-              @com.fasterxml.jackson.annotation.JsonProperty("{{jsonName}}")
-              {{{fqpt}}} {{name}}
-              """,
+          @com.fasterxml.jackson.annotation.JsonProperty("{{jsonName}}")
+          {{{fqpt}}} {{name}}
+          """,
           "AstClassCodeGen.recordField",
           scope);
     }
@@ -112,10 +112,10 @@ public class AstClassCodeGen {
     }
     return writeString(
         """
-            public {{{fqpt}}} get{{Name}}() {
-              return {{returned}};
-            }
-            """,
+        public {{{fqpt}}} get{{Name}}() {
+          return {{returned}};
+        }
+        """,
         "AstClassCodeGen.propertyGetter",
         Map.of(
             "fqpt", fqpt,
@@ -134,11 +134,11 @@ public class AstClassCodeGen {
   private static String propertySetter(Ast ast, Field field) {
     return writeString(
         """
-                    public {{{builderName}}} set{{Name}}({{{type}}} {{name}}) {
-                      this.{{name}} = {{name}};
-                      return this;
-                    }
-                    """,
+        public {{{builderName}}} set{{Name}}({{{type}}} {{name}}) {
+          this.{{name}} = {{name}};
+          return this;
+        }
+        """,
         "AstClassCodeGen.propertySetter",
         Map.of(
             "builderName", ast.name().typeName().upperCamelCase() + ".Builder",
@@ -150,12 +150,12 @@ public class AstClassCodeGen {
   public static String buildUnvalidated(AstClass ast) {
     return writeString(
         """
-            public {{{Name}}} buildUnvalidated() {
-              return new {{{Name}}}(
-                  {{{fields}}}
-              );
-            }
-            """,
+        public {{{Name}}} buildUnvalidated() {
+          return new {{{Name}}}(
+              {{{fields}}}
+          );
+        }
+        """,
         "AstClassCodeGen.buildUnvalidated",
         Map.of(
             "Name", ast.name().toFqpString(),

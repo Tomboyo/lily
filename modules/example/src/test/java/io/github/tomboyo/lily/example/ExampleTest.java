@@ -28,9 +28,11 @@ public class ExampleTest {
     /* This wiremock stub imitates the petstore yaml's showPetById operation. */
     stubFor(
         get("/pets/1234")
-            .willReturn(ok("""
-            {"id": 1234, "name": "Reginald"}
-            """)));
+            .willReturn(
+                ok(
+                    """
+                    {"id": 1234, "name": "Reginald"}
+                    """)));
 
     /* First, create an API instance, which is safe to share. This will typically be a singleton. */
     var api =
@@ -77,9 +79,11 @@ public class ExampleTest {
     /* This wiremock stub imitates the petstore yaml's showPetById operation. */
     stubFor(
         get("/pets/1234?foo=foo&bar=bar")
-            .willReturn(ok("""
-            {"id": 1234, "name": "Reginald"}
-            """)));
+            .willReturn(
+                ok(
+                    """
+                    {"id": 1234, "name": "Reginald"}
+                    """)));
 
     var api = Api.newBuilder().uri(info.getHttpBaseUrl()).build();
 

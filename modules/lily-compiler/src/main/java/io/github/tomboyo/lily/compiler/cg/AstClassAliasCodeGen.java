@@ -11,17 +11,17 @@ public class AstClassAliasCodeGen {
     var content =
         writeString(
             """
-            package {{packageName}};
-            public record {{recordName}}(
-                {{{fqpValueName}}} value
-            ) {{implementsClause}} {
-              @com.fasterxml.jackson.annotation.JsonCreator
-              public static {{{recordName}}} creator({{{fqpValueName}}} value) { return new {{recordName}}(value); }
+package {{packageName}};
+public record {{recordName}}(
+    {{{fqpValueName}}} value
+) {{implementsClause}} {
+  @com.fasterxml.jackson.annotation.JsonCreator
+  public static {{{recordName}}} creator({{{fqpValueName}}} value) { return new {{recordName}}(value); }
 
-              @com.fasterxml.jackson.annotation.JsonValue
-              public {{{fqpValueName}}} value() { return value; }
-            }
-            """,
+  @com.fasterxml.jackson.annotation.JsonValue
+  public {{{fqpValueName}}} value() { return value; }
+}
+""",
             "renderAstClassAlias",
             Map.of(
                 "packageName",

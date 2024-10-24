@@ -199,10 +199,10 @@ public class CompilerSupport {
 
     var annotation =
         """
-            %n// BEGIN AFFECTED LINES
-            %s
-            // END AFFECTED LINES%n
-            """
+        %n// BEGIN AFFECTED LINES
+        %s
+        // END AFFECTED LINES%n
+        """
             .formatted(source.substring(from, to).trim());
 
     return source.substring(0, from) + annotation + source.substring(to);

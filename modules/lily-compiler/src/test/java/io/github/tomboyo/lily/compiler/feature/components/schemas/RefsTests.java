@@ -22,16 +22,16 @@ public class RefsTests {
   static void beforeAll(LilyExtension.LilyTestSupport support) {
     support.compileOas(
         """
-                openapi: 3.0.2
-                components:
-                  schemas:
-                    Test:
-                      $ref: '#/components/schemas/Ref'
-                    Ref:
-                      properties:
-                        foo:
-                          type: string
-                """);
+        openapi: 3.0.2
+        components:
+          schemas:
+            Test:
+              $ref: '#/components/schemas/Ref'
+            Ref:
+              properties:
+                foo:
+                  type: string
+        """);
   }
 
   @Test
@@ -39,14 +39,14 @@ public class RefsTests {
     assertTrue(
         support.evaluate(
             """
-                        var foo = new {{package}}.Ref("foo!");
-                        return foo == new {{package}}.Test(foo).value();
-                        """,
+            var foo = new {{package}}.Ref("foo!");
+            return foo == new {{package}}.Test(foo).value();
+            """,
             Boolean.class),
         """
-        `$ref` schemas are generated as "aliases" of the referenced type. The aliased value is accessible
-        through the `value()` getter regardless of property name.
-        """);
+`$ref` schemas are generated as "aliases" of the referenced type. The aliased value is accessible
+through the `value()` getter regardless of property name.
+""");
   }
 
   @Test
@@ -54,8 +54,8 @@ public class RefsTests {
     var obj =
         support.evaluate(
             """
-                        return new {{package}}.Test(new {{package}}.Ref("foo!"));
-                        """);
+            return new {{package}}.Test(new {{package}}.Ref("foo!"));
+            """);
     assertEquals(
         "{\"foo\":\"foo!\"}",
         MAPPER.writeValueAsString(obj),
@@ -67,8 +67,8 @@ public class RefsTests {
     assertEquals(
         support.evaluate(
             """
-                      return new {{package}}.Test(new {{package}}.Ref("foo!"));
-                      """),
+            return new {{package}}.Test(new {{package}}.Ref("foo!"));
+            """),
         MAPPER.readValue("{\"foo\":\"foo!\"}", support.getClassForName("{{package}}.Test")));
   }
 }

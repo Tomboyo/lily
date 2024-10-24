@@ -230,16 +230,16 @@ public class LilyExtension
       if (getSourcePaths(ctx) != null) {
         throw new IllegalStateException(
             """
-                This support instance has already generated code within the current generated sources
-                package. Classes generated previously may coincidentally have the same name as classes
-                that are expected from this invocation and used in subsequent tests. We are refusing to
-                generate code to avoid such false negatives.
+            This support instance has already generated code within the current generated sources
+            package. Classes generated previously may coincidentally have the same name as classes
+            that are expected from this invocation and used in subsequent tests. We are refusing to
+            generate code to avoid such false negatives.
 
-                How to resolve: Ensure that more than one OAS document is not compiled per extension
-                scope. The "extension scope" is confined to a single test method when the method is
-                annotated with the extension, or to the entire class when the class is annotated with
-                the extension. The closest annotation wins.
-                """);
+            How to resolve: Ensure that more than one OAS document is not compiled per extension
+            scope. The "extension scope" is confined to a single test method when the method is
+            annotated with the extension, or to the entire class when the class is annotated with
+            the extension. The closest annotation wins.
+            """);
       }
     }
   }

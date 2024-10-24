@@ -55,12 +55,12 @@ public class OperationGroupsTest {
         getPetOperation,
         evaluate(
                 """
-            return %s.Api.newBuilder()
-              .uri("https://example.com/")
-              .build()
-              .dogOperations()
-              .getPet();
-            """
+                return %s.Api.newBuilder()
+                  .uri("https://example.com/")
+                  .build()
+                  .dogOperations()
+                  .getPet();
+                """
                     .formatted(packageName))
             .getClass(),
         "The getPet operation is grouped under dogOperations() because it has the dog tag");
@@ -68,12 +68,12 @@ public class OperationGroupsTest {
         getPetOperation,
         evaluate(
                 """
-            return %s.Api.newBuilder()
-              .uri("https://example.com/")
-              .build()
-              .catOperations()
-              .getPet();
-            """
+                return %s.Api.newBuilder()
+                  .uri("https://example.com/")
+                  .build()
+                  .catOperations()
+                  .getPet();
+                """
                     .formatted(packageName))
             .getClass(),
         "The getPet operation is grouped under catOperations() because it also has the cat tag");
@@ -81,12 +81,12 @@ public class OperationGroupsTest {
         postPetOperation,
         evaluate(
                 """
-            return %s.Api.newBuilder()
-                .uri("https://example.com/")
-                .build()
-                .dogOperations()
-                .postPet();
-            """
+                return %s.Api.newBuilder()
+                    .uri("https://example.com/")
+                    .build()
+                    .dogOperations()
+                    .postPet();
+                """
                     .formatted(packageName))
             .getClass(),
         "The postPet operation is grouped under dogOperations() because it has the dog tag");
@@ -94,11 +94,11 @@ public class OperationGroupsTest {
         Arrays.stream(
                 evaluate(
                         """
-            return %s.Api.newBuilder()
-                .uri("https://example.com/")
-                .build()
-                .catOperations();
-            """
+                        return %s.Api.newBuilder()
+                            .uri("https://example.com/")
+                            .build()
+                            .catOperations();
+                        """
                             .formatted(packageName))
                     .getClass()
                     .getDeclaredMethods())
@@ -112,12 +112,12 @@ public class OperationGroupsTest {
     var methods =
         evaluate(
                 """
-        return %s.Api.newBuilder()
-            .uri("https://example.com/")
-            .build()
-            .everyOperation()
-            .getClass();
-        """
+                return %s.Api.newBuilder()
+                    .uri("https://example.com/")
+                    .build()
+                    .everyOperation()
+                    .getClass();
+                """
                     .formatted(packageName),
                 Class.class)
             .getDeclaredMethods();
@@ -136,12 +136,12 @@ public class OperationGroupsTest {
     var methods =
         evaluate(
                 """
-            return %s.Api.newBuilder()
-                .uri("https://example.com/")
-                .build()
-                .everyUntaggedOperation()
-                .getClass();
-            """
+                return %s.Api.newBuilder()
+                    .uri("https://example.com/")
+                    .build()
+                    .everyUntaggedOperation()
+                    .getClass();
+                """
                     .formatted(packageName),
                 Class.class)
             .getDeclaredMethods();

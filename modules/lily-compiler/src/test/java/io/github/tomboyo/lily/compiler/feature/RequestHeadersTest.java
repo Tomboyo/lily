@@ -65,14 +65,14 @@ public class RequestHeadersTest {
       var request =
           lily.evaluate(
               """
-          return {{package}}.Api.newBuilder()
-            .uri("{{uri}}")
-            .build()
-            .everyOperation()
-            .listPets()
-            .headers(headers -> headers.xLimit(10))
-            .httpRequest();
-          """,
+              return {{package}}.Api.newBuilder()
+                .uri("{{uri}}")
+                .build()
+                .everyOperation()
+                .listPets()
+                .headers(headers -> headers.xLimit(10))
+                .httpRequest();
+              """,
               HttpRequest.class,
               "uri",
               info.getHttpBaseUrl());
@@ -131,14 +131,14 @@ public class RequestHeadersTest {
       var request =
           lily.evaluate(
               """
-          return {{package}}.Api.newBuilder()
-            .uri("{{uri}}")
-            .build()
-            .everyOperation()
-            .listPets()
-            .headers(headers -> headers.xLimit(new {{package}}.XLimit(10)))
-            .httpRequest();
-          """,
+              return {{package}}.Api.newBuilder()
+                .uri("{{uri}}")
+                .build()
+                .everyOperation()
+                .listPets()
+                .headers(headers -> headers.xLimit(new {{package}}.XLimit(10)))
+                .httpRequest();
+              """,
               HttpRequest.class,
               "uri",
               info.getHttpBaseUrl());

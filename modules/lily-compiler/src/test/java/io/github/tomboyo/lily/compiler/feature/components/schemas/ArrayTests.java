@@ -223,9 +223,9 @@ public class ArrayTests {
       assertTrue(
           support.evaluate(
               """
-              var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
-              return value == new {{package}}.MyComponent(value).value();
-              """,
+var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
+return value == new {{package}}.MyComponent(value).value();
+""",
               Boolean.class));
     }
 
@@ -234,9 +234,9 @@ public class ArrayTests {
       var value =
           support.evaluate(
               """
-              var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
-              return new {{package}}.MyComponent(value).value();
-              """);
+var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
+return new {{package}}.MyComponent(value).value();
+""");
       var mapper = new ObjectMapper();
       assertEquals("[[{\"foo\":\"foo!\"}]]", mapper.writeValueAsString(value));
     }
@@ -247,9 +247,9 @@ public class ArrayTests {
       var expected =
           support.evaluate(
               """
-              var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
-              return new {{package}}.MyComponent(value);
-              """);
+var value = java.util.List.of(java.util.List.of(new {{package}}.mycomponent.MyComponentItem("foo!")));
+return new {{package}}.MyComponent(value);
+""");
       var mapper = new ObjectMapper();
       assertEquals(
           expected,
