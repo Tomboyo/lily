@@ -15,6 +15,10 @@
     <packaging>jar</packaging>
     <description>Example project</description>
 
+    <properties>
+        <revision>0.0.0-SNAPSHOT</revision>
+    </properties>
+
     <pluginRepositories>
         <pluginRepository>
             <!-- The parent project installs everything here at pre-integration-test -->

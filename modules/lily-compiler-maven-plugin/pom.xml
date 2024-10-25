@@ -21,6 +21,7 @@
     <properties>
         <maven.version>3.6.3</maven.version>
         <main.project.dir>${project.basedir}/../..</main.project.dir>
+        <revision>0.0.0-SNAPSHOT</revision>
     </properties>
 
     <dependencies>

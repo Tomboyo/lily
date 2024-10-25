@@ -11,6 +11,10 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
+    <properties>
+      <revision>0.0.0-SNAPSHOT</revision>
+    </properties>
+
     <artifactId>lily-http</artifactId>
     <packaging>jar</packaging>
     <description>Supporting classes for generated Lily APIs.</description>
