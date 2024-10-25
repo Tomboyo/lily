@@ -1,8 +1,12 @@
-target/
 .idea/
 .gradle/
 *.iml
+.vscode
+
+.clj-kondo/**
+.lsp/**
+
 *pom.xml.versionsBackup
 **/pom.xml.versionsBackup
 .flattened-pom.xml
-.vscode
+target/
