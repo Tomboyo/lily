@@ -62,16 +62,17 @@ public class OasComponentsToAst {
     }
 
     return switch (component.getType()) {
-      case "integer", "number", "string", "boolean" -> Stream.concat(
-          Stream.of(
-              AstClassAlias.aliasOf(
-                  Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
-                  fqnAndAst.left())),
-          fqnAndAst.right());
+      case "integer", "number", "string", "boolean" ->
+          Stream.concat(
+              Stream.of(
+                  AstClassAlias.aliasOf(
+                      Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
+                      fqnAndAst.left())),
+              fqnAndAst.right());
       case "array" -> evaluateArray(basePackage, fqnAndAst, componentName);
       case "object" -> fqnAndAst.right();
-      default -> throw new IllegalArgumentException(
-          "Unexpected component type: " + component.getType());
+      default ->
+          throw new IllegalArgumentException("Unexpected component type: " + component.getType());
     };
   }
 

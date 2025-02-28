@@ -101,8 +101,8 @@ public class OasSchemaToAst {
     }
 
     return switch (type) {
-      case "integer", "number", "string", "boolean" -> new Pair<>(
-          toStdLibFqn(schema.getType(), schema.getFormat()), Stream.of());
+      case "integer", "number", "string", "boolean" ->
+          new Pair<>(toStdLibFqn(schema.getType(), schema.getFormat()), Stream.of());
       case "array" -> evaluateArray(currentPackage, name, (ArraySchema) schema);
       case "object" -> evaluateObject(currentPackage, name, schema);
       default -> throw new IllegalArgumentException(("Unexpected type: " + type));

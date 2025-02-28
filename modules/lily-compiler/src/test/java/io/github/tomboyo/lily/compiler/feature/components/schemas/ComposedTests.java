@@ -88,12 +88,12 @@ public class ComposedTests {
       static void beforeAll(LilyTestSupport support) {
         support.compileOas(
             """
-                openapi: 3.0.3
-                components:
-                  schemas:
-                    Foo:
-                %s
-                """
+            openapi: 3.0.3
+            components:
+              schemas:
+                Foo:
+            %s
+            """
                 .formatted(propertiesFragment.indent(6)));
       }
 
@@ -104,10 +104,10 @@ public class ComposedTests {
             name,
             support,
             """
-                Properties from the properties keyword of a schema which are required and non-nullable are mandatory.
-                For each such property, Foo's builder must define a setter and Foo must define a non-Optional typed
-                getter.
-                """);
+Properties from the properties keyword of a schema which are required and non-nullable are mandatory.
+For each such property, Foo's builder must define a setter and Foo must define a non-Optional typed
+getter.
+""");
       }
 
       @ParameterizedTest
@@ -117,10 +117,10 @@ public class ComposedTests {
             name,
             support,
             """
-                Properties from the properties keyword of a schema which are either not required or are nullable are not
-                mandatory (i.e. optional). For each such property, Foo's builder must define a setter and Foo must
-                define an Optional-typed getter.
-                """);
+Properties from the properties keyword of a schema which are either not required or are nullable are not
+mandatory (i.e. optional). For each such property, Foo's builder must define a setter and Foo must
+define an Optional-typed getter.
+""");
       }
     }
 
@@ -131,14 +131,14 @@ public class ComposedTests {
       static void beforeAll(LilyTestSupport support) {
         support.compileOas(
             """
-                openapi: 3.0.3
-                components:
-                  schemas:
-                    Foo:
-                      allOf:
-                        -
-                %s
-                """
+            openapi: 3.0.3
+            components:
+              schemas:
+                Foo:
+                  allOf:
+                    -
+            %s
+            """
                 .formatted(propertiesFragment.indent(10)));
       }
 
@@ -149,9 +149,9 @@ public class ComposedTests {
             name,
             support,
             """
-                If a property is considered mandatory by a component allOf schema, then it is mandatory according to the
-                composed schema as well.
-                """);
+If a property is considered mandatory by a component allOf schema, then it is mandatory according to the
+composed schema as well.
+""");
       }
 
       @ParameterizedTest
@@ -161,9 +161,9 @@ public class ComposedTests {
             name,
             support,
             """
-                If a property is considered optional by a component allOf schema, and there are no other reasons that a
-                property should be mandatory, the property is considered optional by the composed schema as well.
-                """);
+If a property is considered optional by a component allOf schema, and there are no other reasons that a
+property should be mandatory, the property is considered optional by the composed schema as well.
+""");
       }
     }
 
@@ -192,10 +192,10 @@ public class ComposedTests {
             name,
             support,
             """
-            Because an object is never obligated to validate against an anyOf schema, mandatory properties from
-            anyOf component schemas are not mandatory in the composed schema unless there is another reason for them
-            to be mandatory.
-            """);
+Because an object is never obligated to validate against an anyOf schema, mandatory properties from
+anyOf component schemas are not mandatory in the composed schema unless there is another reason for them
+to be mandatory.
+""");
       }
     }
 
@@ -227,9 +227,9 @@ public class ComposedTests {
               name,
               support,
               """
-                  Unless every OneOf component agrees that a property is mandatory, the composed schema does not
-                  consider the property mandatory either without another reason to do so.
-                  """);
+Unless every OneOf component agrees that a property is mandatory, the composed schema does not
+consider the property mandatory either without another reason to do so.
+""");
         }
       }
 
@@ -240,20 +240,20 @@ public class ComposedTests {
         static void beforeAll(LilyTestSupport support) {
           support.compileOas(
               """
-              openapi: 3.0.3
-              components:
-                schemas:
-                  Foo:
-                    oneOf:
-                      -
-              %s
-                      -
-              %s
-                          # The second oneOf also has a third mandatory property, unlike the preceding component
-                          mandatory3:
-                            type: string
-                          required: ['mandatory3']
-              """
+openapi: 3.0.3
+components:
+  schemas:
+    Foo:
+      oneOf:
+        -
+%s
+        -
+%s
+            # The second oneOf also has a third mandatory property, unlike the preceding component
+            mandatory3:
+              type: string
+            required: ['mandatory3']
+"""
                   .formatted(propertiesFragment.indent(10), propertiesFragment.indent(10)));
         }
 
@@ -264,8 +264,8 @@ public class ComposedTests {
               name,
               support,
               """
-                If every oneOf component considers a property to be mandatory, then so does the composed schema.
-                """);
+If every oneOf component considers a property to be mandatory, then so does the composed schema.
+""");
         }
 
         @ParameterizedTest
@@ -275,38 +275,38 @@ public class ComposedTests {
               name,
               support,
               """
-                  If one or more oneOf components consider a property to be optional, then so does the composed schema
-                  unless there is another reason to consider it mandatory.
-                  """);
+If one or more oneOf components consider a property to be optional, then so does the composed schema
+unless there is another reason to consider it mandatory.
+""");
         }
       }
     }
 
     private static String nestedFragment =
         """
-            oneOf:
-              - properties:
-                  a:
-                    type: string
-                  b:
-                    type: string
-                required: ['a']
-              - properties:
-                  a:
-                    type: string
-                required: ['a']
-            allOf:
-              - properties:
-                  c:
-                    type: string
-                  d:
-                    type: string
-                required: ['c']
-            anyOf:
-              - properties:
-                  e:
-                    type: string
-            """;
+        oneOf:
+          - properties:
+              a:
+                type: string
+              b:
+                type: string
+            required: ['a']
+          - properties:
+              a:
+                type: string
+            required: ['a']
+        allOf:
+          - properties:
+              c:
+                type: string
+              d:
+                type: string
+            required: ['c']
+        anyOf:
+          - properties:
+              e:
+                type: string
+        """;
 
     @Nested
     @ExtendWith(LilyExtension.class)
@@ -315,14 +315,14 @@ public class ComposedTests {
       static void beforeAll(LilyTestSupport support) {
         support.compileOas(
             """
-                openapi: 3.0.3
-                components:
-                  schemas:
-                    Foo:
-                      allOf:
-                        -
-                %s
-                """
+            openapi: 3.0.3
+            components:
+              schemas:
+                Foo:
+                  allOf:
+                    -
+            %s
+            """
                 .formatted(nestedFragment.indent(10)));
       }
 
@@ -333,8 +333,8 @@ public class ComposedTests {
             name,
             support,
             """
-                Components of allOf components may contribute mandatory properties to a top-level composed schema.
-                """);
+Components of allOf components may contribute mandatory properties to a top-level composed schema.
+""");
       }
 
       @ParameterizedTest
@@ -344,8 +344,8 @@ public class ComposedTests {
             name,
             support,
             """
-                Components of allOf components may contribute optional properties to a top-level composed schema.
-                """);
+Components of allOf components may contribute optional properties to a top-level composed schema.
+""");
       }
     }
 
@@ -356,14 +356,14 @@ public class ComposedTests {
       static void beforeAll(LilyTestSupport support) {
         support.compileOas(
             """
-                openapi: 3.0.3
-                components:
-                  schemas:
-                    Foo:
-                      anyOf:
-                        -
-                %s
-                """
+            openapi: 3.0.3
+            components:
+              schemas:
+                Foo:
+                  anyOf:
+                    -
+            %s
+            """
                 .formatted(nestedFragment.indent(10)));
       }
 
@@ -374,8 +374,8 @@ public class ComposedTests {
             name,
             support,
             """
-                Components of anyOf components can contribute optional properties to a top-level composed schema.
-                """);
+Components of anyOf components can contribute optional properties to a top-level composed schema.
+""");
       }
     }
 
@@ -386,20 +386,20 @@ public class ComposedTests {
       static void beforeAll(LilyTestSupport support) {
         support.compileOas(
             """
-                    openapi: 3.0.3
-                    components:
-                      schemas:
-                        Foo:
-                          oneOf:
-                            - properties:
-                                a:
-                                  type: string
-                                c:
-                                  type: string
-                              required: ['a', 'c']
-                            -
-                    %s
-                    """
+            openapi: 3.0.3
+            components:
+              schemas:
+                Foo:
+                  oneOf:
+                    - properties:
+                        a:
+                          type: string
+                        c:
+                          type: string
+                      required: ['a', 'c']
+                    -
+            %s
+            """
                 .formatted(nestedFragment.indent(10)));
       }
 
@@ -410,8 +410,8 @@ public class ComposedTests {
             name,
             support,
             """
-                Components of OneOf components may contribute mandatory properties to top-level composed schema.
-                """);
+Components of OneOf components may contribute mandatory properties to top-level composed schema.
+""");
       }
 
       @ParameterizedTest
@@ -421,8 +421,8 @@ public class ComposedTests {
             name,
             support,
             """
-                Components of OneOf components may contribute optional properties to top-level composed schema.
-                """);
+Components of OneOf components may contribute optional properties to top-level composed schema.
+""");
       }
     }
   }
@@ -434,16 +434,16 @@ public class ComposedTests {
 
     static final String template =
         """
-            openapi: 3.0.3
-            components:
-              schemas:
-                Foo:
-                  properties:
-                    a:
-                      type: string
-                  %s:
-                    - required: ['a']
-            """;
+        openapi: 3.0.3
+        components:
+          schemas:
+            Foo:
+              properties:
+                a:
+                  type: string
+              %s:
+                - required: ['a']
+        """;
 
     @Test
     @ExtendWith(LilyExtension.class)
@@ -453,9 +453,9 @@ public class ComposedTests {
           "A",
           support,
           """
-              If an allOf component declares a property required, then the composed schema treats the property as required as
-              well. Otherwise optional properties on the composed schema may be mandatory as a result.
-              """);
+If an allOf component declares a property required, then the composed schema treats the property as required as
+well. Otherwise optional properties on the composed schema may be mandatory as a result.
+""");
     }
 
     @Test
@@ -466,9 +466,9 @@ public class ComposedTests {
           "A",
           support,
           """
-              Because anyOf components are inherently optional, they cannot cause properties of the composed schema to
-              be required via the required keyword.
-              """);
+Because anyOf components are inherently optional, they cannot cause properties of the composed schema to
+be required via the required keyword.
+""");
     }
 
     @Nested
@@ -478,22 +478,22 @@ public class ComposedTests {
       static void beforeAll(LilyTestSupport support) {
         support.compileOas(
             """
-                openapi: 3.0.3
-                components:
-                  schemas:
-                    Foo:
-                      properties:
-                        a:
-                          type: string
-                        b:
-                          type: string
-                        c:
-                          type: string
-                      oneOf:
-                        - required: ['a']
-                        - required: ['a', 'b']
-                        - required: ['c', 'a']
-                """);
+            openapi: 3.0.3
+            components:
+              schemas:
+                Foo:
+                  properties:
+                    a:
+                      type: string
+                    b:
+                      type: string
+                    c:
+                      type: string
+                  oneOf:
+                    - required: ['a']
+                    - required: ['a', 'b']
+                    - required: ['c', 'a']
+            """);
       }
 
       @Test
@@ -502,9 +502,9 @@ public class ComposedTests {
             "A",
             support,
             """
-                If every oneOf component agrees a property is required, then the composed schema considers the property
-                required as well, potentially making an otherwise optional property mandatory.
-                """);
+If every oneOf component agrees a property is required, then the composed schema considers the property
+required as well, potentially making an otherwise optional property mandatory.
+""");
       }
 
       @ParameterizedTest
@@ -514,10 +514,10 @@ public class ComposedTests {
             name,
             support,
             """
-                If oneOf components do not agree that a property is required, then they cannot cause the composed schema
-                to consider the property required by themselves. As a result, disagreeing oneOf components couldn't
-                cause a property to become mandatory on the composed schema.
-                """);
+If oneOf components do not agree that a property is required, then they cannot cause the composed schema
+to consider the property required by themselves. As a result, disagreeing oneOf components couldn't
+cause a property to become mandatory on the composed schema.
+""");
       }
     }
 
@@ -525,23 +525,23 @@ public class ComposedTests {
     class WhenNested {
       static final String template =
           """
-              openapi: 3.0.3
-              components:
-                schemas:
-                  Foo:
-                    properties:
-                      a:
-                        type: string
-                      b:
-                        type: string
-                      c:
-                        type: string
-                    %s:
-                      - allOf:
-                        - required: ['a', 'c']
-                      - oneOf:
-                        - required: ['b', 'c']
-              """;
+          openapi: 3.0.3
+          components:
+            schemas:
+              Foo:
+                properties:
+                  a:
+                    type: string
+                  b:
+                    type: string
+                  c:
+                    type: string
+                %s:
+                  - allOf:
+                    - required: ['a', 'c']
+                  - oneOf:
+                    - required: ['b', 'c']
+          """;
 
       @Nested
       @ExtendWith(LilyExtension.class)
@@ -558,8 +558,8 @@ public class ComposedTests {
               name,
               support,
               """
-                          Required properties may be inherited through components nested beneath an allOf component.
-                          """);
+Required properties may be inherited through components nested beneath an allOf component.
+""");
         }
       }
 
@@ -578,8 +578,8 @@ public class ComposedTests {
               name,
               support,
               """
-                  Required properties are never inherited through anyOf components, which are inherently optional.
-                  """);
+Required properties are never inherited through anyOf components, which are inherently optional.
+""");
         }
       }
 
@@ -597,9 +597,9 @@ public class ComposedTests {
               "C",
               support,
               """
-                  Required properties may be inherited through components nested beneath an oneOf component. All nested
-                  oneOf components must agree that a property is required, however.
-                  """);
+Required properties may be inherited through components nested beneath an oneOf component. All nested
+oneOf components must agree that a property is required, however.
+""");
         }
 
         @ParameterizedTest
@@ -609,9 +609,9 @@ public class ComposedTests {
               name,
               support,
               """
-                  If components nested beneath a oneOf component do not agree that a property is required, then unless
-                  the top-level composed schema has another reason to consider the property required, it is not.
-                  """);
+If components nested beneath a oneOf component do not agree that a property is required, then unless
+the top-level composed schema has another reason to consider the property required, it is not.
+""");
         }
       }
     }
@@ -625,24 +625,24 @@ public class ComposedTests {
     void allOf(LilyTestSupport support) {
       support.compileOas(
           """
-                openapi: 3.0.3
-                components:
-                  schemas:
-                    Foo:
-                      required: ['a']
-                      allOf:
-                        - properties:
-                            a:
-                              type: string
-                """);
+          openapi: 3.0.3
+          components:
+            schemas:
+              Foo:
+                required: ['a']
+                allOf:
+                  - properties:
+                      a:
+                        type: string
+          """);
 
       assertPropertyIsMandatory(
           "A",
           support,
           """
-                If a component allOf schema declares a non-nullable property, then the property is
-                non-nullable in the composed schema as well
-                """);
+          If a component allOf schema declares a non-nullable property, then the property is
+          non-nullable in the composed schema as well
+          """);
     }
 
     @ExtendWith(LilyExtension.class)
@@ -650,24 +650,24 @@ public class ComposedTests {
     void anyOf(LilyTestSupport support) {
       support.compileOas(
           """
-                openapi: 3.0.3
-                components:
-                  schemas:
-                    Foo:
-                      required: ['a']
-                      anyOf:
-                        - properties:
-                            a:
-                              type: string
-                """);
+          openapi: 3.0.3
+          components:
+            schemas:
+              Foo:
+                required: ['a']
+                anyOf:
+                  - properties:
+                      a:
+                        type: string
+          """);
 
       assertPropertyIsOptional(
           "A",
           support,
           """
-                Even if a component anyOf schema declares a non-nullable property, the property is still optional
-                according to the composed schema because anyOf schemas are inherently optional.
-                """);
+Even if a component anyOf schema declares a non-nullable property, the property is still optional
+according to the composed schema because anyOf schemas are inherently optional.
+""");
     }
 
     @Nested
@@ -677,25 +677,25 @@ public class ComposedTests {
       static void beforeAll(LilyTestSupport support) {
         support.compileOas(
             """
-                  openapi: 3.0.3
-                  components:
-                    schemas:
-                      Foo:
-                        required: ['a', 'b']
-                        oneOf:
-                          - properties:
-                              a:
-                                type: string
-                              b:
-                                type: string
-                          - properties:
-                              a:
-                                type: string
-                              b:
-                                type: string
-                                # Not in consensus with the other component
-                                nullable: true
-                  """);
+            openapi: 3.0.3
+            components:
+              schemas:
+                Foo:
+                  required: ['a', 'b']
+                  oneOf:
+                    - properties:
+                        a:
+                          type: string
+                        b:
+                          type: string
+                    - properties:
+                        a:
+                          type: string
+                        b:
+                          type: string
+                          # Not in consensus with the other component
+                          nullable: true
+            """);
       }
 
       @Test
@@ -704,9 +704,9 @@ public class ComposedTests {
             "A",
             support,
             """
-                  When OneOf components agree that a property is not nullable, the composed schema considers the
-                  property to be non-nullable as well.
-                  """);
+When OneOf components agree that a property is not nullable, the composed schema considers the
+property to be non-nullable as well.
+""");
       }
 
       @Test
@@ -715,9 +715,9 @@ public class ComposedTests {
             "B",
             support,
             """
-                  When OneOf components differ on whether a property is nullable, the composed schema considers the
-                  property optional.
-                  """);
+When OneOf components differ on whether a property is nullable, the composed schema considers the
+property optional.
+""");
       }
     }
 
@@ -725,25 +725,25 @@ public class ComposedTests {
     class WhenNested {
       static final String template =
           """
-                  openapi: 3.0.3
-                  components:
-                    schemas:
-                      Foo:
-                        required: ['a', 'b', 'c']
-                        %s:
-                          - allOf:
-                            - properties:
-                                a:
-                                  type: string
-                                b:
-                                  type: string
-                          - oneOf:
-                            - properties:
-                                a:
-                                  type: string
-                                c:
-                                  type: string
-                    """;
+          openapi: 3.0.3
+          components:
+            schemas:
+              Foo:
+                required: ['a', 'b', 'c']
+                %s:
+                  - allOf:
+                    - properties:
+                        a:
+                          type: string
+                        b:
+                          type: string
+                  - oneOf:
+                    - properties:
+                        a:
+                          type: string
+                        c:
+                          type: string
+          """;
 
       @Nested
       @ExtendWith(LilyExtension.class)
@@ -760,8 +760,8 @@ public class ComposedTests {
               name,
               support,
               """
-                    Nullability is inherited recursively through components of allOf components.
-                    """);
+              Nullability is inherited recursively through components of allOf components.
+              """);
         }
       }
 
@@ -779,8 +779,8 @@ public class ComposedTests {
               "A",
               support,
               """
-                    Nullability is inherited recursively per-property through oneOf components with consensus.
-                    """);
+Nullability is inherited recursively per-property through oneOf components with consensus.
+""");
         }
 
         @ParameterizedTest
@@ -790,9 +790,9 @@ public class ComposedTests {
               name,
               support,
               """
-                    Nullability is inherited recursively per-property through oneOf components, but if they do not agree
-                    on the nullability of a property, is is considered optional by composed schema.
-                    """);
+Nullability is inherited recursively per-property through oneOf components, but if they do not agree
+on the nullability of a property, is is considered optional by composed schema.
+""");
         }
       }
 
@@ -811,9 +811,9 @@ public class ComposedTests {
               name,
               support,
               """
-                    Though properties are discovered recursively through anyOf components, they are inherently optional,
-                    so their proeprties are always considered optional by composed schema regardless of nullability.
-                    """);
+Though properties are discovered recursively through anyOf components, they are inherently optional,
+so their proeprties are always considered optional by composed schema regardless of nullability.
+""");
         }
       }
     }

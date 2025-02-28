@@ -38,8 +38,8 @@ public class AstHeadersCodeGen {
             "name", field.name().lowerCamelCase());
     return writeString(
         """
-          {{{typeName}}} {{name}}
-          """,
+        {{{typeName}}} {{name}}
+        """,
         "AstHeadersCodeGen.recordField",
         scope);
   }

@@ -25,14 +25,14 @@ public class HttpRequestMethodTest {
     packageName =
         compileOas(
             """
-                openapi: 3.0.2
-                paths:
-                  /foo:
-                    get:
-                      operationId: get-foo
-                    post:
-                      operationId: post-foo
-                """);
+            openapi: 3.0.2
+            paths:
+              /foo:
+                get:
+                  operationId: get-foo
+                post:
+                  operationId: post-foo
+            """);
   }
 
   @Test
@@ -58,13 +58,13 @@ public class HttpRequestMethodTest {
     actual =
         evaluate(
             """
-        return %s.Api.newBuilder()
-          .uri("https://example.com/")
-          .build()
-          .everyOperation()
-          .getFoo()
-          .httpRequest();
-        """
+            return %s.Api.newBuilder()
+              .uri("https://example.com/")
+              .build()
+              .everyOperation()
+              .getFoo()
+              .httpRequest();
+            """
                 .formatted(packageName),
             HttpRequest.class);
 

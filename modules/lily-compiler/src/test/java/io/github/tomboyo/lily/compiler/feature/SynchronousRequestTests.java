@@ -38,31 +38,31 @@ class SynchronousRequestTests {
       packageName =
           compileOas(
               """
-                  openapi: 3.0.2
-                  paths:
-                    /pets:
-                      get:
-                        operationId: listPets
-                        tags:
-                          - pet
-                        responses:
-                          '200':
-                            headers:
-                              x-my-header:
-                                schema:
+              openapi: 3.0.2
+              paths:
+                /pets:
+                  get:
+                    operationId: listPets
+                    tags:
+                      - pet
+                    responses:
+                      '200':
+                        headers:
+                          x-my-header:
+                            schema:
+                              type: string
+                        content:
+                          'application/json':
+                            schema:
+                              type: object
+                              properties:
+                                name:
                                   type: string
-                            content:
-                              'application/json':
-                                schema:
-                                  type: object
-                                  properties:
-                                    name:
-                                      type: string
-                                    age:
-                                      type: integer
-                                      format: int32
+                                age:
+                                  type: integer
+                                  format: int32
 
-                  """);
+              """);
     }
 
     @Test
@@ -71,21 +71,21 @@ class SynchronousRequestTests {
           get("/pets")
               .willReturn(
                   ok("""
-            { "name": "Fido", "age": 5 }
-            """)
+                  { "name": "Fido", "age": 5 }
+                  """)
                       .withHeader("x-my-header", "value")));
 
       var actual =
           evaluate(
               """
-          return %s.Api.newBuilder()
-              .uri("%s")
-              .build()
-              .petOperations()
-              .listPets()
-              .sendSync()
-              .httpResponse();
-          """
+              return %s.Api.newBuilder()
+                  .uri("%s")
+                  .build()
+                  .petOperations()
+                  .listPets()
+                  .sendSync()
+                  .httpResponse();
+              """
                   .formatted(packageName, info.getHttpBaseUrl()),
               HttpResponse.class);
 
@@ -102,20 +102,20 @@ class SynchronousRequestTests {
           get("/pets")
               .willReturn(
                   ok("""
-            { "name": "Fido", "age": 5 }
-            """)
+                  { "name": "Fido", "age": 5 }
+                  """)
                       .withHeader("x-my-header", "value")));
 
       var actual =
           evaluate(
               """
-          return %s.Api.newBuilder()
-              .uri("%s")
-              .build()
-              .petOperations()
-              .listPets()
-              .sendSync();
-          """
+              return %s.Api.newBuilder()
+                  .uri("%s")
+                  .build()
+                  .petOperations()
+                  .listPets()
+                  .sendSync();
+              """
                   .formatted(packageName, info.getHttpBaseUrl()));
 
       assertTrue(
@@ -141,20 +141,20 @@ class SynchronousRequestTests {
           get("/pets")
               .willReturn(
                   ok("""
-            ({[some gibberish that can't be deserialized
-            """)
+                  ({[some gibberish that can't be deserialized
+                  """)
                       .withHeader("x-my-header", "value")));
 
       var actual =
           evaluate(
               """
-          return %s.Api.newBuilder()
-              .uri("%s")
-              .build()
-              .petOperations()
-              .listPets()
-              .sendSync();
-          """
+              return %s.Api.newBuilder()
+                  .uri("%s")
+                  .build()
+                  .petOperations()
+                  .listPets()
+                  .sendSync();
+              """
                   .formatted(packageName, info.getHttpBaseUrl()));
 
       var e =
@@ -180,17 +180,17 @@ class SynchronousRequestTests {
       packageName =
           compileOas(
               """
-                  openapi: 3.0.2
-                  paths:
-                    /pets:
-                      get:
-                        operationId: listPets
-                        tags:
-                          - pet
-                        responses:
-                          '204':
-                            description: 'no content'
-                  """);
+              openapi: 3.0.2
+              paths:
+                /pets:
+                  get:
+                    operationId: listPets
+                    tags:
+                      - pet
+                    responses:
+                      '204':
+                        description: 'no content'
+              """);
     }
 
     @Test
@@ -200,14 +200,14 @@ class SynchronousRequestTests {
       var actual =
           evaluate(
               """
-          return %s.Api.newBuilder()
-              .uri("%s")
-              .build()
-              .petOperations()
-              .listPets()
-              .sendSync()
-              .httpResponse();
-          """
+              return %s.Api.newBuilder()
+                  .uri("%s")
+                  .build()
+                  .petOperations()
+                  .listPets()
+                  .sendSync()
+                  .httpResponse();
+              """
                   .formatted(packageName, info.getHttpBaseUrl()),
               HttpResponse.class);
 
@@ -233,28 +233,28 @@ class SynchronousRequestTests {
       var packageName =
           compileOas(
               """
-                  openapi: 3.0.2
-                  paths:
-                    /pets:
-                      get:
-                        operationId: listPets
-                        tags:
-                          - pet
-                        responses:
-                          'default':
-                            description: 'default response'
-                  """);
+              openapi: 3.0.2
+              paths:
+                /pets:
+                  get:
+                    operationId: listPets
+                    tags:
+                      - pet
+                    responses:
+                      'default':
+                        description: 'default response'
+              """);
 
       var actual =
           evaluate(
               """
-          return %s.Api.newBuilder()
-              .uri("%s")
-              .build()
-              .petOperations()
-              .listPets()
-              .sendSync();
-          """
+              return %s.Api.newBuilder()
+                  .uri("%s")
+                  .build()
+                  .petOperations()
+                  .listPets()
+                  .sendSync();
+              """
                   .formatted(packageName, info.getHttpBaseUrl()));
 
       assertTrue(
@@ -268,26 +268,26 @@ class SynchronousRequestTests {
       var packageName =
           compileOas(
               """
-                  openapi: 3.0.2
-                  paths:
-                    /pets:
-                      get:
-                        operationId: listPets
-                        tags:
-                          - pet
-                        responses:
-                  """);
+              openapi: 3.0.2
+              paths:
+                /pets:
+                  get:
+                    operationId: listPets
+                    tags:
+                      - pet
+                    responses:
+              """);
 
       var actual =
           evaluate(
               """
-          return %s.Api.newBuilder()
-              .uri("%s")
-              .build()
-              .petOperations()
-              .listPets()
-              .sendSync();
-          """
+              return %s.Api.newBuilder()
+                  .uri("%s")
+                  .build()
+                  .petOperations()
+                  .listPets()
+                  .sendSync();
+              """
                   .formatted(packageName, info.getHttpBaseUrl()));
 
       assertTrue(
@@ -324,18 +324,18 @@ class SynchronousRequestTests {
     var actual =
         evaluate(
             """
-        var operation = %s.Api.newBuilder()
-          .uri("%s")
-          .build()
-          .everyOperation()
-          .listPets();
-        var response = operation.sendSync(
-            operation.httpRequest());
-        if (response instanceof %s.listpetsoperation.ListPets200 ok) {
-          return ok.body();
-        }
-        throw new RuntimeException("Expected 200 OK response");
-        """
+            var operation = %s.Api.newBuilder()
+              .uri("%s")
+              .build()
+              .everyOperation()
+              .listPets();
+            var response = operation.sendSync(
+                operation.httpRequest());
+            if (response instanceof %s.listpetsoperation.ListPets200 ok) {
+              return ok.body();
+            }
+            throw new RuntimeException("Expected 200 OK response");
+            """
                 .formatted(packageName, info.getHttpBaseUrl(), packageName),
             String.class);
 

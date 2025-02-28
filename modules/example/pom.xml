@@ -38,7 +38,7 @@
                 <artifactId>lily-compiler-maven-plugin</artifactId>
                 <version>${revision}</version>
                 <configuration>
-                    <uri>https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v3.0/petstore.yaml</uri>
+                    <uri>https://raw.githubusercontent.com/OAI/learn.openapis.org/refs/heads/main/examples/v3.0/petstore.json</uri>
                     <!-- Uncomment to customize the default generated sources directory. -->
                     <!-- <outputDir>target/generated-sources</outputDir> -->
                     <basePackage>io.github.tomboyo.lily.example</basePackage>

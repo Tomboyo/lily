@@ -62,11 +62,11 @@ public class HttpClientHolderTest {
     var actual =
         evaluate(
             """
-        return %s.Api.newBuilder()
-          .uri("https://example.com/")
-          .build()
-          .httpClient();
-        """
+            return %s.Api.newBuilder()
+              .uri("https://example.com/")
+              .build()
+              .httpClient();
+            """
                 .formatted(packageName),
             HttpClient.class);
 
