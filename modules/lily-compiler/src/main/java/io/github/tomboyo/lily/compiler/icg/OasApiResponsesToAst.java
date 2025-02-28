@@ -1,7 +1,5 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
@@ -12,12 +10,9 @@ import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
+import io.github.tomboyo.lily.compiler.oas.model.*;
 import io.github.tomboyo.lily.compiler.util.Pair;
 import io.github.tomboyo.lily.compiler.util.Triple;
-import io.swagger.v3.oas.models.headers.Header;
-import io.swagger.v3.oas.models.media.MediaType;
-import io.swagger.v3.oas.models.responses.ApiResponse;
-import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,17 +21,17 @@ import java.util.stream.Stream;
 public class OasApiResponsesToAst {
 
   public static Pair<Fqn, Stream<Ast>> evaluateApiResponses(
-      PackageName basePackage, SimpleName operationId, ApiResponses responses) {
+      PackageName basePackage, SimpleName operationId, Responses responses) {
     var genRoot = basePackage.resolve(operationId.resolve("operation")); // a.b.getfoooperation
     var responseSumName = Fqn.newBuilder(genRoot, operationId.resolve("Response")).build();
 
-    // Lily needs something to hold unexpected responses.
-    if (responses.getDefault() == null) {
-      responses.setDefault(new ApiResponse());
-    }
-
     var memberAsts =
-        responses.entrySet().stream()
+        Stream.concat(
+                responses.responseMap().entrySet().stream(),
+                // Lily needs something to hold unexpected responses.
+                responses.responseMap().containsKey("default")
+                    ? Stream.of()
+                    : Stream.of(Map.entry("default", Response.empty())))
             .map(
                 entry -> {
                   var statusCode = entry.getKey();
@@ -61,15 +56,28 @@ public class OasApiResponsesToAst {
       PackageName operationPackage,
       SimpleName responseName,
       Fqn sumTypeName,
-      ApiResponse response) {
+      IResponse iResponse) {
+    // TODO: handle Refs
     // gen into com.example.myoperation.response
     var responsePackage = operationPackage.resolve("response");
 
-    var contentFqnAndAst =
-        evaluateApiResponseContent(basePackage, responsePackage, responseName, response);
+    Optional<Pair<Fqn, Stream<Ast>>> contentFqnAndAst =
+        switch (iResponse) {
+          case None none -> Optional.empty();
+          // TODO: correctly handle $refs
+          case Ref ref -> Optional.empty();
+          case Response response ->
+              evaluateApiResponseContent(basePackage, responsePackage, responseName, response);
+        };
 
-    var astHeadersAndAst =
-        evaluateApiResponseHeaders(basePackage, responsePackage, responseName, response);
+    Optional<Pair<AstHeaders, Stream<Ast>>> astHeadersAndAst =
+        switch (iResponse) {
+          case None none -> Optional.empty();
+          // TODO: correctly handle $refs
+          case Ref ref -> Optional.empty();
+          case Response response ->
+              evaluateApiResponseHeaders(basePackage, responsePackage, responseName, response);
+        };
 
     var astResponse =
         new AstResponse(
@@ -92,38 +100,45 @@ public class OasApiResponsesToAst {
       PackageName basePackage,
       PackageName responsePackage,
       SimpleName responseName,
-      ApiResponse response) {
-    if (response.getHeaders() == null || response.getHeaders().isEmpty()) {
+      Response response) {
+    if (response.headers().isEmpty()) {
       return Optional.empty();
     }
 
     var headersName = Fqn.newBuilder(responsePackage, responseName.resolve("Headers")).build();
     var headersFieldsAndAst =
-        requireNonNullElse(response.getHeaders(), Map.<String, Header>of()).entrySet().stream()
+        response.headers().entrySet().stream()
+            .filter(entry -> entry.getValue() != None.NONE)
             .flatMap(
                 entry -> {
                   var name = entry.getKey();
-                  var header = entry.getValue();
-                  if (header.getSchema() != null) {
-                    return Stream.of(
-                        OasSchemaToAst.evaluateInto(
-                                basePackage,
-                                headersName.toPackage(),
-                                SimpleName.of(name).resolve("Header"),
-                                header.getSchema())
-                            // TODO: issues/98
-                            .mapLeft(fqn -> new Field(fqn, SimpleName.of(name), name, false)));
-                  } else if (header.get$ref() != null) {
-                    var fqn =
-                        OasSchemaToAst.fqnForRef(basePackage, requireNonNull(header.get$ref()));
-                    return Stream.of(
-                        // TODO: issues/98
-                        new Pair<>(
-                            new Field(fqn, SimpleName.of(name), name, false), Stream.<Ast>of()));
-                  } else {
-                    // The OAS is malformed.
-                    return Stream.of();
-                  }
+                  var iHeader = entry.getValue();
+                  return switch (iHeader) {
+                    case None none -> Stream.of();
+                    case Ref(String $ref) -> {
+                      var fqn = OasSchemaToAst.fqnForRef(basePackage, $ref);
+                      // TODO: issues/98
+                      yield Stream.of(
+                          new Pair<>(
+                              new Field(fqn, SimpleName.of(name), name, false), Stream.<Ast>of()));
+                    }
+                    case Header header ->
+                        switch (header.schema()) {
+                          case None none -> Stream.of();
+                          // TODO: handle $ref correctly
+                          case Ref ref -> Stream.of();
+                          case Schema schema ->
+                              Stream.of(
+                                  OasSchemaToAst.evaluateInto(
+                                          basePackage,
+                                          headersName.toPackage(),
+                                          SimpleName.of(name).resolve("Header"),
+                                          schema)
+                                      // TODO: issues/98
+                                      .mapLeft(
+                                          fqn -> new Field(fqn, SimpleName.of(name), name, false)));
+                        };
+                  };
                 })
             .toList();
 
@@ -137,10 +152,11 @@ public class OasApiResponsesToAst {
       PackageName basePackage,
       PackageName responsePackage,
       SimpleName responseName,
-      ApiResponse apiResponse) {
-    return Optional.ofNullable(apiResponse.getContent())
+      // TODO: handle Ref?
+      Response responseDef) {
+    return Optional.ofNullable(responseDef.content())
         .map(content -> content.get("application/json"))
-        .map(MediaType::getSchema)
+        .map(MediaType::schema)
         .map(
             schema ->
                 OasSchemaToAst.evaluateInto(

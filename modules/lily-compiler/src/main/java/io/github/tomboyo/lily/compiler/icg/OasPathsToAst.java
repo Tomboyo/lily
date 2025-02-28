@@ -1,6 +1,5 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -12,11 +11,9 @@ import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.icg.OasOperationToAst.TagsOperationAndAst;
+import io.github.tomboyo.lily.compiler.oas.model.PathItem;
 import io.github.tomboyo.lily.compiler.util.Pair;
-import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.parameters.Parameter;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -87,8 +84,9 @@ public class OasPathsToAst {
   }
 
   private Stream<TagsOperationAndAst> evaluatePathItem(String relativePath, PathItem pathItem) {
-    var inheritedParameters = requireNonNullElse(pathItem.getParameters(), List.<Parameter>of());
-    return pathItem.readOperationsMap().entrySet().stream()
+    var inheritedParameters = pathItem.parameters();
+
+    return pathItem.operationsMap().entrySet().stream()
         .map(
             entry -> {
               var method = entry.getKey();

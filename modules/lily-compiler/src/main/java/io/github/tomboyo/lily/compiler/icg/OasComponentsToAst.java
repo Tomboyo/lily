@@ -11,15 +11,21 @@ import io.github.tomboyo.lily.compiler.ast.Field;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
+import io.github.tomboyo.lily.compiler.oas.model.ISchema;
+import io.github.tomboyo.lily.compiler.oas.model.None;
+import io.github.tomboyo.lily.compiler.oas.model.Ref;
+import io.github.tomboyo.lily.compiler.oas.model.Schema;
 import io.github.tomboyo.lily.compiler.util.Pair;
-import io.swagger.v3.oas.models.media.ComposedSchema;
-import io.swagger.v3.oas.models.media.Schema;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Evaluates OAS #/components/schemas into Java AST. */
 public class OasComponentsToAst {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OasComponentsToAst.class);
 
   /**
    * Evaluate a component schema (that is, any schema "root" located at #/components/schema),
@@ -40,39 +46,40 @@ public class OasComponentsToAst {
    * @return A stream of AST
    */
   public static Stream<Ast> evaluate(
-      PackageName basePackage, SimpleName componentName, Schema component) {
+      PackageName basePackage, SimpleName componentName, ISchema component) {
     var fqnAndAst = OasSchemaToAst.evaluate(basePackage, componentName, component);
-
-    if (component.get$ref() != null) {
+    return switch (component) {
+      // TODO: does this belong here?
+      case None none -> Stream.of();
       // Create a AstClassAlias of a referent type. There are no AST elements.
-      return Stream.concat(
-          Stream.of(
-              AstClassAlias.aliasOf(
-                  Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
-                  fqnAndAst.left())),
-          Stream.of());
-    }
-
-    if (component instanceof ComposedSchema || component.getNot() != null) {
-      return fqnAndAst.right();
-    }
-
-    if (component.getType() == null && component.getProperties() != null) {
-      return fqnAndAst.right();
-    }
-
-    return switch (component.getType()) {
-      case "integer", "number", "string", "boolean" ->
+      case Ref(String $ref) ->
           Stream.concat(
               Stream.of(
                   AstClassAlias.aliasOf(
                       Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
                       fqnAndAst.left())),
-              fqnAndAst.right());
-      case "array" -> evaluateArray(basePackage, fqnAndAst, componentName);
-      case "object" -> fqnAndAst.right();
-      default ->
-          throw new IllegalArgumentException("Unexpected component type: " + component.getType());
+              Stream.of());
+      case Schema schema when schema.isComposed() -> fqnAndAst.right();
+      case Schema schema when schema.isObject() -> fqnAndAst.right();
+      case Schema schema ->
+          switch (schema.type().orElse("null")) {
+            case "integer", "number", "string", "boolean" ->
+                Stream.concat(
+                    Stream.of(
+                        AstClassAlias.aliasOf(
+                            Fqn.newBuilder()
+                                .packageName(basePackage)
+                                .typeName(componentName)
+                                .build(),
+                            fqnAndAst.left())),
+                    fqnAndAst.right());
+            case "array" -> evaluateArray(basePackage, fqnAndAst, componentName);
+            case "object" -> fqnAndAst.right();
+            default -> {
+              LOGGER.warn("Unexpected component type '{}'", schema.type().orElse("null"));
+              yield Stream.of();
+            }
+          };
     };
   }
 

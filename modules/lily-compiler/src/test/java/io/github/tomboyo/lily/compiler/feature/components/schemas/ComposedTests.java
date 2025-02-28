@@ -247,14 +247,17 @@ components:
       oneOf:
         -
 %s
-        -
-%s
-            # The second oneOf also has a third mandatory property, unlike the preceding component
+        # Unlike the previous component, this also lists mandatory3 as required and non-nullable
+        - required: ['mandatory1', 'mandatory2', 'mandatory3']
+          properties:
+            mandatory1:
+              type: string
+            mandatory2:
+              type: string
             mandatory3:
               type: string
-            required: ['mandatory3']
 """
-                  .formatted(propertiesFragment.indent(10), propertiesFragment.indent(10)));
+                  .formatted(propertiesFragment.indent(10)));
         }
 
         @ParameterizedTest

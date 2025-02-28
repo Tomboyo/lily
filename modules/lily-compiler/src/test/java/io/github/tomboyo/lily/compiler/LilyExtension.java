@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
-import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -149,12 +149,12 @@ public class LilyExtension
       this.ctx = ctx;
     }
 
-    /** Generates and compiled java sources for the given OpenAPI specification located by a URI. */
-    public void compileOas(URI uri) {
+    /** Generates and compiled java sources for the given OpenAPI specification located by a URL. */
+    public void compileOas(URL url) {
       preventRepeatedCodeGen();
 
       try {
-        setSourcePaths(ctx, CompilerSupport.compileOas(getPackage(ctx), uri));
+        setSourcePaths(ctx, CompilerSupport.compileOas(getPackage(ctx), url));
       } catch (OasParseException e) {
         throw new RuntimeException(e);
       }
