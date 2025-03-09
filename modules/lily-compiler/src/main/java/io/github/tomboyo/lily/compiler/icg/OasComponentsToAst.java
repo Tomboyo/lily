@@ -49,7 +49,6 @@ public class OasComponentsToAst {
       PackageName basePackage, SimpleName componentName, ISchema component) {
     var fqnAndAst = OasSchemaToAst.evaluate(basePackage, componentName, component);
     return switch (component) {
-      // TODO: does this belong here?
       case None none -> Stream.of();
       // Create a AstClassAlias of a referent type. There are no AST elements.
       case Ref(String $ref) ->
