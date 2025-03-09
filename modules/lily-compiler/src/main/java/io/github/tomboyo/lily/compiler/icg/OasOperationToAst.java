@@ -100,7 +100,7 @@ public class OasOperationToAst {
         .map(RequestBody.class::cast)
         .map(RequestBody::content)
         .map(map -> map.get("application/json"))
-        .map(MediaType::schema)
+        .flatMap(MediaType::schema)
         .map(
             schema ->
                 OasSchemaToAst.evaluateInto(

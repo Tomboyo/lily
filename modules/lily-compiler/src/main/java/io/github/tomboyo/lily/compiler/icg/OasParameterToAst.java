@@ -21,15 +21,19 @@ public class OasParameterToAst {
   public static Optional<ParameterAndAst> evaluateParameter(
       PackageName basePackage, PackageName genRoot, IParameter iParameter) {
     return switch (iParameter) {
-      // TODO: handle Ref correctly
       case None none -> Optional.empty();
+      // TODO: handle Ref correctly
       case Ref ref -> Optional.empty();
-      case Parameter parameter -> Optional.of(evaluateSchema(basePackage, genRoot, parameter));
+      case Parameter parameter -> evaluateSchema(basePackage, genRoot, parameter);
     };
   }
 
-  private static ParameterAndAst evaluateSchema(
+  private static Optional<ParameterAndAst> evaluateSchema(
       PackageName basePackage, PackageName genRoot, Parameter parameter) {
+
+    if (parameter.schema().isEmpty()) {
+      return Optional.empty();
+    }
 
     // TODO: handle missing name
     var parameterRefAndAst =
@@ -37,7 +41,7 @@ public class OasParameterToAst {
             basePackage,
             genRoot,
             SimpleName.of(parameter.name().orElseThrow()),
-            parameter.schema());
+            parameter.schema().get());
 
     // TODO: handle missing in
     var location = ParameterLocation.fromString(parameter.in().orElseThrow());
@@ -49,14 +53,15 @@ public class OasParameterToAst {
             .orElseGet(() -> getDefaultEncoding(location));
 
     // TODO: handle missing name
-    return new ParameterAndAst(
-        new OperationParameter(
-            SimpleName.of(parameter.name().orElseThrow()),
-            parameter.name().orElseThrow(),
-            location,
-            encoding,
-            parameterRefAndAst.left()),
-        parameterRefAndAst.right());
+    return Optional.of(
+        new ParameterAndAst(
+            new OperationParameter(
+                SimpleName.of(parameter.name().orElseThrow()),
+                parameter.name().orElseThrow(),
+                location,
+                encoding,
+                parameterRefAndAst.left()),
+            parameterRefAndAst.right()));
   }
 
   private static ParameterEncoding getExplicitEncoding(String style, boolean explode) {

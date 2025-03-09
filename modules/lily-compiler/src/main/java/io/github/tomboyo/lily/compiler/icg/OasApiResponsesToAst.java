@@ -122,21 +122,17 @@ public class OasApiResponsesToAst {
                               new Field(fqn, SimpleName.of(name), name, false), Stream.<Ast>of()));
                     }
                     case Header header ->
-                        switch (header.schema()) {
-                          case None none -> Stream.of();
-                          // TODO: handle $ref correctly
-                          case Ref ref -> Stream.of();
-                          case Schema schema ->
-                              Stream.of(
-                                  OasSchemaToAst.evaluateInto(
-                                          basePackage,
-                                          headersName.toPackage(),
-                                          SimpleName.of(name).resolve("Header"),
-                                          schema)
-                                      // TODO: issues/98
-                                      .mapLeft(
-                                          fqn -> new Field(fqn, SimpleName.of(name), name, false)));
-                        };
+                        header.schema().stream()
+                            .map(
+                                iSchema ->
+                                    OasSchemaToAst.evaluateInto(
+                                            basePackage,
+                                            headersName.toPackage(),
+                                            SimpleName.of(name).resolve("Header"),
+                                            iSchema)
+                                        .mapLeft(
+                                            fqn ->
+                                                new Field(fqn, SimpleName.of(name), name, false)));
                   };
                 })
             .toList();
@@ -153,9 +149,8 @@ public class OasApiResponsesToAst {
       SimpleName responseName,
       // TODO: handle Ref?
       Response responseDef) {
-    return Optional.ofNullable(responseDef.content())
-        .map(content -> content.get("application/json"))
-        .map(MediaType::schema)
+    return Optional.ofNullable(responseDef.content().get("application/json"))
+        .flatMap(MediaType::schema)
         .map(
             schema ->
                 OasSchemaToAst.evaluateInto(

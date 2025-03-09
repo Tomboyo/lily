@@ -1,3 +1,5 @@
 package io.github.tomboyo.lily.compiler.oas.model;
 
-public record MediaType(ISchema schema) {}
+import java.util.Optional;
+
+public record MediaType(Optional<ISchema> schema) {}

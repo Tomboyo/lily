@@ -1,6 +1,8 @@
 package io.github.tomboyo.lily.compiler.icg;
 
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
@@ -9,7 +11,6 @@ import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.oas.model.ISchema;
-import io.github.tomboyo.lily.compiler.oas.model.None;
 import io.github.tomboyo.lily.compiler.oas.model.Ref;
 import io.github.tomboyo.lily.compiler.oas.model.Schema;
 import io.github.tomboyo.lily.compiler.util.Pair;
@@ -79,7 +80,6 @@ public class OasSchemaToAst {
   private Pair<Fqn, Stream<Ast>> evaluateSchema(
       PackageName currentPackage, SimpleName name, ISchema iSchema) {
     return switch (iSchema) {
-      case None none -> throw new RuntimeException("TODO");
       case Ref(String $ref) -> new Pair<>(toBasePackageClassReference($ref), Stream.of());
       case Schema schema when schema.isObject() -> evaluateObject(currentPackage, name, schema);
       case Schema schema when schema.isArray() -> evaluateArray(currentPackage, name, schema);
@@ -154,10 +154,9 @@ public class OasSchemaToAst {
 
   private Pair<Fqn, Stream<Ast>> evaluateArray(
       PackageName currentPackage, SimpleName name, Schema schema) {
-    var iSchema = schema.items();
-    return switch (schema.items()) {
-      // TODO: correct None handling
-      case None none -> throw new RuntimeException("Unimplemented None branch");
+    // TODO: correctly handle missing iSchema (should not call this function)
+    var iSchema = schema.items().orElseThrow();
+    return switch (iSchema) {
       case Schema items when items.isObject() -> {
         /*
          AST generated from objects in arrays are named similarly to all other objects in that they
@@ -206,15 +205,12 @@ public class OasSchemaToAst {
     */
     var fieldAndAst =
         properties.entrySet().stream()
-            .filter(entry -> entry.getValue() != None.NONE)
             .map(
                 entry -> {
                   var jsonName = entry.getKey();
                   var fieldSchema = entry.getValue();
                   var fieldPackage =
                       switch (fieldSchema) {
-                        case None none ->
-                            throw new RuntimeException("Unexpected None"); // already filtered out
                         case Ref ref -> basePackage; // $ref's always point to a base package type.
                         case Schema s -> interiorPackage;
                       };
@@ -242,7 +238,12 @@ public class OasSchemaToAst {
   private Map<String, ISchema> getProperties(ISchema iSchema) {
     // TODO: is this correct handling of $ref?
     if (iSchema instanceof Schema schema) {
-      var properties = new HashMap<>(schema.properties());
+      var properties =
+          schema.properties().entrySet().stream()
+              .filter(entry -> entry.getValue().isPresent())
+              .collect(
+                  collectingAndThen(
+                      toMap(Map.Entry::getKey, entry -> entry.getValue().get()), HashMap::new));
 
       if (schema.isComposed()) {
         Stream.of(schema.allOf(), schema.anyOf(), schema.oneOf())
@@ -313,7 +314,7 @@ public class OasSchemaToAst {
     if (iSchema instanceof Schema schema) {
       var result = new HashSet<String>();
 
-      schema.properties().entrySet().stream()
+      schema.getProperties().entrySet().stream()
           // TODO: properly handle $refs, where the nullable property is defined on the referent
           .filter(entry -> entry.getValue() instanceof Schema s && !s.nullable().orElse(false))
           .map(Map.Entry::getKey)

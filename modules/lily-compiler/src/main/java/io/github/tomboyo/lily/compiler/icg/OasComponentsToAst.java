@@ -12,7 +12,6 @@ import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.oas.model.ISchema;
-import io.github.tomboyo.lily.compiler.oas.model.None;
 import io.github.tomboyo.lily.compiler.oas.model.Ref;
 import io.github.tomboyo.lily.compiler.oas.model.Schema;
 import io.github.tomboyo.lily.compiler.util.Pair;
@@ -49,7 +48,6 @@ public class OasComponentsToAst {
       PackageName basePackage, SimpleName componentName, ISchema component) {
     var fqnAndAst = OasSchemaToAst.evaluate(basePackage, componentName, component);
     return switch (component) {
-      case None none -> Stream.of();
       // Create a AstClassAlias of a referent type. There are no AST elements.
       case Ref(String $ref) ->
           Stream.concat(

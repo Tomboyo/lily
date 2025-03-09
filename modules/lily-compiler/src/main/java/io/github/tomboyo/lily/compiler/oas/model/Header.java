@@ -1,3 +1,5 @@
 package io.github.tomboyo.lily.compiler.oas.model;
 
-public record Header(ISchema schema) implements IHeader {}
+import java.util.Optional;
+
+public record Header(Optional<ISchema> schema) implements IHeader {}
