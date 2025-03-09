@@ -7,7 +7,7 @@ public record Parameter(
     Optional<String> name,
     Optional<String> in,
     Optional<String> style,
-    IExplode explode,
+    Optional<Boolean> explode,
     // IParameter can be a Ref, but a Parameter's schema is never a Ref.
     ISchema schema)
     implements IParameter {}

@@ -45,7 +45,7 @@ public class OasParameterToAst {
     var encoding =
         parameter
             .style()
-            .map(style -> getExplicitEncoding(style, parameter.explode()))
+            .map(style -> getExplicitEncoding(style, parameter.explode().orElse(false)))
             .orElseGet(() -> getDefaultEncoding(location));
 
     // TODO: handle missing name
@@ -59,20 +59,10 @@ public class OasParameterToAst {
         parameterRefAndAst.right());
   }
 
-  private static ParameterEncoding getExplicitEncoding(String style, IExplode explode) {
+  private static ParameterEncoding getExplicitEncoding(String style, boolean explode) {
     return switch (OasStyle.forString(style)) {
-      case SIMPLE ->
-          switch (explode) {
-            case Explode(boolean value) when value -> simpleExplode();
-            case Explode x -> simple();
-            case None x -> simple();
-          };
-      case FORM ->
-          switch (explode) {
-            case Explode(boolean value) when value -> formExplode();
-            case Explode x -> form();
-            case None x -> form();
-          };
+      case SIMPLE -> explode ? simpleExplode() : simple();
+      case FORM -> explode ? formExplode() : form();
       case MATRIX, DEEP_OBJECT, LABEL, PIPE_DELIMITED, SPACE_DELIMITED, UNKNOWN -> unsupported();
     };
   }
