@@ -49,13 +49,17 @@ public class UriTemplate {
    * @param parameter The name of an unbound template parameter
    * @param value A URL-encoded value
    * @throws IllegalStateException if the parameter has already been bound to a value.
-   * @return This instance for chaining.
+   * @return A copy of this instance with the additional bound parameter
    */
   public UriTemplate bind(String parameter, String value) {
-    if (bindings.put(parameter, value) != null) {
+    if (bindings.containsKey(parameter)) {
       throw new IllegalStateException("Parameter already bound: name='" + parameter + "'");
     }
-    return this;
+
+    var newBindings = new HashMap<>(this.bindings);
+    newBindings.put(parameter, value);
+
+    return new UriTemplate(template, newBindings);
   }
 
   /**
@@ -66,13 +70,17 @@ public class UriTemplate {
    * @param value The value to bind to the parameter.
    * @param encoder The Encoder used to expand the object to a string.
    * @throws IllegalStateException if the parameter has already been bound to a value.
-   * @return This instance for chaining.
+   * @return A copy of this instance with the additional bound parameter.
    */
   public UriTemplate bind(String parameter, Object value, Encoder encoder) {
-    if (bindings.put(parameter, encoder.encode(parameter, value)) != null) {
+    if (bindings.containsKey(parameter)) {
       throw new IllegalStateException("Parameter already bound: name='" + parameter + "'");
     }
-    return this;
+
+    var newBindings = new HashMap<>(this.bindings);
+    newBindings.put(parameter, encoder.encode(parameter, value));
+
+    return new UriTemplate(template, newBindings);
   }
 
   /**
