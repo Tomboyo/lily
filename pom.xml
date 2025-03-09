@@ -81,6 +81,14 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.18.0</version>
+                <configuration>
+                    <ignoredVersions>(?i).*-(alpha|beta|m|rc)([-.]?\d+)?</ignoredVersions>
+                </configuration>
+            </plugin>
+            <plugin>
                 <!-- Runs before integration testing to ensure the plugin module and dependent poms are installed where
                      the it-project can find them. -->
                 <groupId>org.apache.maven.plugins</groupId>
