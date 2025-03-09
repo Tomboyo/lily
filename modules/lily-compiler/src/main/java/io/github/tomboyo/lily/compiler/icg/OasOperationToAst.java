@@ -1,6 +1,5 @@
 package io.github.tomboyo.lily.compiler.icg;
 
-import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
@@ -9,18 +8,9 @@ import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
+import io.github.tomboyo.lily.compiler.oas.model.*;
 import io.github.tomboyo.lily.compiler.util.Pair;
-import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.PathItem.HttpMethod;
-import io.swagger.v3.oas.models.media.MediaType;
-import io.swagger.v3.oas.models.parameters.Parameter;
-import io.swagger.v3.oas.models.parameters.RequestBody;
-import io.swagger.v3.oas.models.responses.ApiResponses;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,22 +34,23 @@ public class OasOperationToAst {
   public static TagsOperationAndAst evaluateOperaton(
       PackageName basePackage,
       String relativePath,
-      HttpMethod method,
+      String method,
       Operation operation,
-      List<Parameter> inheritedParameters) {
+      List<IParameter> inheritedParameters) {
     return new OasOperationToAst(basePackage)
         .evaluateOperation(relativePath, method, operation, inheritedParameters);
   }
 
   private TagsOperationAndAst evaluateOperation(
       String relativePath,
-      HttpMethod method,
+      String method,
       Operation operation,
-      List<Parameter> inheritedParameters) {
-    var operationId = SimpleName.of(operation.getOperationId());
+      List<IParameter> inheritedParameters) {
+    // TODO: if operationId is missing, skip this operation.
+    var operationId = operation.operationId().map(SimpleName::of).orElseThrow();
     var operationName = operationId.resolve("operation");
     var subordinatePackageName = basePackage.resolve(operationName.toString());
-    var ownParameters = requireNonNullElse(operation.getParameters(), List.<Parameter>of());
+    var ownParameters = operation.parameters();
 
     var parametersAndAst =
         mergeParameters(inheritedParameters, ownParameters).stream()
@@ -79,16 +70,17 @@ public class OasOperationToAst {
 
     var responseSumAndAst =
         OasApiResponsesToAst.evaluateApiResponses(
-            basePackage,
-            operationId,
-            requireNonNullElse(operation.getResponses(), new ApiResponses()));
+            // TODO: just deser Responses to an empty instance
+            basePackage, operationId, operation.responses().orElse(new Responses(Map.of())));
 
     return new TagsOperationAndAst(
-        new HashSet<>(requireNonNullElse(operation.getTags(), List.of())),
+        // TODO: does this need to be mutable?
+        new HashSet<>(operation.tags()),
         new AstOperation(
-            SimpleName.of(operation.getOperationId()),
+            // TODO: ignore operation if ID is missing rather than throw
+            SimpleName.of(operation.operationId().orElseThrow()),
             Fqn.newBuilder().packageName(basePackage).typeName(operationName).build(),
-            method.name(),
+            method,
             relativePath,
             parameters,
             bodyAndAst.left(),
@@ -101,10 +93,14 @@ public class OasOperationToAst {
   private Pair<Optional<Fqn>, Stream<Ast>> evaluateRequestBody(
       Operation operation, PackageName genRoot, SimpleName operationId) {
 
-    return Optional.ofNullable(operation.getRequestBody())
-        .map(RequestBody::getContent)
-        .map(content -> content.get("application/json"))
-        .map(MediaType::getSchema)
+    return operation
+        .requestBody()
+        // TODO: handle RequestBody.Ref
+        .filter(RequestBody.class::isInstance)
+        .map(RequestBody.class::cast)
+        .map(RequestBody::content)
+        .map(map -> map.get("application/json"))
+        .map(MediaType::schema)
         .map(
             schema ->
                 OasSchemaToAst.evaluateInto(
@@ -114,12 +110,18 @@ public class OasOperationToAst {
   }
 
   /** Merge owned parameters with inherited parameters. Owned parameters take precedence. */
-  private static Collection<Parameter> mergeParameters(
-      List<Parameter> inherited, List<Parameter> owned) {
+  private static Collection<IParameter> mergeParameters(
+      List<IParameter> inherited, List<IParameter> owned) {
     return Stream.concat(inherited.stream(), owned.stream())
+        // TODO: handle Parameters.Ref instances
+        .filter(Parameter.class::isInstance)
+        .map(x -> (Parameter) x)
+        .filter(x -> x.name().isPresent() && x.in().isPresent())
         .collect(
             toMap(
-                param -> new ParameterId(param.getName(), param.getIn()), identity(), (a, b) -> b))
+                param -> new ParameterId(param.name().get(), param.in().get()),
+                x -> (IParameter) x,
+                (a, b) -> b))
         .values();
   }
 

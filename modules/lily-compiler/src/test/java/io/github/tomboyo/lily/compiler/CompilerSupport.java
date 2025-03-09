@@ -8,7 +8,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -31,9 +31,9 @@ public class CompilerSupport {
     return "gen" + SERIAL.incrementAndGet();
   }
 
-  public static Map<String, Path> compileOas(String rootPackageName, URI uri)
+  public static Map<String, Path> compileOas(String rootPackageName, URL url)
       throws OasParseException {
-    var generatedSourcePaths = LilyCompiler.compile(uri, GENERATED_SOURCES, rootPackageName, true);
+    var generatedSourcePaths = LilyCompiler.compile(url, GENERATED_SOURCES, rootPackageName);
     compileJavaSources(TEST_CLASSES, generatedSourcePaths.values());
     return generatedSourcePaths;
   }
@@ -47,7 +47,7 @@ public class CompilerSupport {
    */
   public static Map<String, Path> compileOas(String rootPackageName, String oas)
       throws OasParseException {
-    var generatedSourcePaths = LilyCompiler.compile(oas, GENERATED_SOURCES, rootPackageName, true);
+    var generatedSourcePaths = LilyCompiler.compile(oas, GENERATED_SOURCES, rootPackageName);
     compileJavaSources(TEST_CLASSES, generatedSourcePaths.values());
     return generatedSourcePaths;
   }

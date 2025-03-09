@@ -14,12 +14,7 @@
     <packaging>maven-plugin</packaging>
     <description>Maven plugin to compile OAS documents using Lily.</description>
 
-    <prerequisites>
-        <maven>${maven.version}</maven>
-    </prerequisites>
-
     <properties>
-        <maven.version>3.6.3</maven.version>
         <main.project.dir>${project.basedir}/../..</main.project.dir>
     </properties>
 

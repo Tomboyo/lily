@@ -9,11 +9,11 @@ import io.github.tomboyo.lily.compiler.cg.CodeGen;
 import io.github.tomboyo.lily.compiler.cg.Source;
 import io.github.tomboyo.lily.compiler.icg.AstGenerator;
 import io.github.tomboyo.lily.compiler.oas.OasReader;
+import io.github.tomboyo.lily.compiler.oas.model.OpenApi;
 import io.github.tomboyo.lily.compiler.util.Pair;
-import io.swagger.v3.oas.models.OpenAPI;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -24,17 +24,15 @@ public class LilyCompiler {
   /**
    * Generate java source code from an OpenAPI V3 YAML specification file.
    *
-   * @param oasUri The URI of the OpenAPI YAML specification to compile.
+   * @param url The URI of the OpenAPI YAML specification to compile.
    * @param outputDir The parent directory to save java generated source code files.
    * @param basePackage The name of the base package for all generated java source files.
-   * @param allowWarnings Log but otherwise ignore OAS validation/parsing errors if possible.
    * @return The set of Path objects for each generated file.
    * @throws OasParseException If reading the document fails for any reason.
    */
-  public static Map<String, Path> compile(
-      URI oasUri, Path outputDir, String basePackage, boolean allowWarnings)
+  public static Map<String, Path> compile(URL url, Path outputDir, String basePackage)
       throws OasParseException {
-    var openAPI = OasReader.fromUri(oasUri, allowWarnings);
+    var openAPI = OasReader.fromUrl(url);
     return compile(openAPI, outputDir, basePackage);
   }
 
@@ -44,19 +42,17 @@ public class LilyCompiler {
    * @param oasContent A string representing an OpenAPI V3 YAML specification.
    * @param outputDir The parent directory to save java generated source code files.
    * @param basePackage The name of the base package for all generated java source files.
-   * @param allowWarnings Log but otherwise ignore OAS validation/parsing errors if possible.
    * @return The set of Path objects for each generated file.
    * @throws OasParseException If reading the document fails for any reason.
    */
-  public static Map<String, Path> compile(
-      String oasContent, Path outputDir, String basePackage, boolean allowWarnings)
+  public static Map<String, Path> compile(String oasContent, Path outputDir, String basePackage)
       throws OasParseException {
-    var openAPI = OasReader.fromString(oasContent, allowWarnings);
+    var openAPI = OasReader.fromString(oasContent);
     return compile(openAPI, outputDir, basePackage);
   }
 
-  private static Map<String, Path> compile(OpenAPI openAPI, Path outputDir, String basePackage) {
-    return AstGenerator.evaluate(PackageName.of(basePackage), openAPI)
+  private static Map<String, Path> compile(OpenApi openApi, Path outputDir, String basePackage) {
+    return AstGenerator.evaluate(PackageName.of(basePackage), openApi)
         .map(CodeGen::renderAst)
         .map(source -> new Pair<>(source.fqn(), persistSource(outputDir, source)))
         .collect(Collectors.toMap(Pair::left, Pair::right));

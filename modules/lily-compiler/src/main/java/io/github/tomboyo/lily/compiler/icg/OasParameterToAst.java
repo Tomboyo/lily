@@ -12,56 +12,58 @@ import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.ParameterEncoding;
 import io.github.tomboyo.lily.compiler.ast.ParameterLocation;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
-import io.swagger.v3.oas.models.parameters.Parameter;
-import io.swagger.v3.oas.models.parameters.Parameter.StyleEnum;
+import io.github.tomboyo.lily.compiler.oas.model.*;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OasParameterToAst {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OasParameterToAst.class);
-
   public static Optional<ParameterAndAst> evaluateParameter(
-      PackageName basePackage, PackageName genRoot, Parameter parameter) {
-    // A parameter may be a schema object or a reference object.
-    if (parameter.getSchema() != null) {
-      return Optional.of(evaluateSchema(basePackage, genRoot, parameter));
-    } else {
-      LOGGER.warn("Skipping parameter in {}: not yet supported.", genRoot);
-      return Optional.empty();
-    }
+      PackageName basePackage, PackageName genRoot, IParameter iParameter) {
+    return switch (iParameter) {
+      // TODO: handle Ref correctly
+      case None none -> Optional.empty();
+      case Ref ref -> Optional.empty();
+      case Parameter parameter -> Optional.of(evaluateSchema(basePackage, genRoot, parameter));
+    };
   }
 
   private static ParameterAndAst evaluateSchema(
       PackageName basePackage, PackageName genRoot, Parameter parameter) {
+
+    // TODO: handle missing name
     var parameterRefAndAst =
         OasSchemaToAst.evaluateInto(
-            basePackage, genRoot, SimpleName.of(parameter.getName()), parameter.getSchema());
+            basePackage,
+            genRoot,
+            SimpleName.of(parameter.name().orElseThrow()),
+            parameter.schema());
 
-    var location = ParameterLocation.fromString(parameter.getIn());
+    // TODO: handle missing in
+    var location = ParameterLocation.fromString(parameter.in().orElseThrow());
 
     var encoding =
-        parameter.getStyle() != null
-            ? getExplicitEncoding(parameter.getStyle(), parameter.getExplode())
-            : getDefaultEncoding(location);
+        parameter
+            .style()
+            .map(style -> getExplicitEncoding(style, parameter.explode().orElse(false)))
+            .orElseGet(() -> getDefaultEncoding(location));
 
+    // TODO: handle missing name
     return new ParameterAndAst(
         new OperationParameter(
-            SimpleName.of(parameter.getName()),
-            parameter.getName(),
+            SimpleName.of(parameter.name().orElseThrow()),
+            parameter.name().orElseThrow(),
             location,
             encoding,
             parameterRefAndAst.left()),
         parameterRefAndAst.right());
   }
 
-  private static ParameterEncoding getExplicitEncoding(StyleEnum style, boolean explode) {
-    return switch (style) {
+  private static ParameterEncoding getExplicitEncoding(String style, boolean explode) {
+    return switch (OasStyle.forString(style)) {
       case SIMPLE -> explode ? simpleExplode() : simple();
       case FORM -> explode ? formExplode() : form();
-      case MATRIX, DEEPOBJECT, LABEL, PIPEDELIMITED, SPACEDELIMITED -> unsupported();
+      case MATRIX, DEEP_OBJECT, LABEL, PIPE_DELIMITED, SPACE_DELIMITED, UNKNOWN -> unsupported();
     };
   }
 

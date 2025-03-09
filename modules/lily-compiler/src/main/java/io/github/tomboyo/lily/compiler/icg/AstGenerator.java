@@ -7,12 +7,9 @@ import io.github.tomboyo.lily.compiler.ast.Definition;
 import io.github.tomboyo.lily.compiler.ast.Modifier;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
-import io.swagger.v3.oas.models.Components;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.PathItem;
-import java.util.LinkedHashMap;
+import io.github.tomboyo.lily.compiler.oas.model.Components;
+import io.github.tomboyo.lily.compiler.oas.model.OpenApi;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,13 +21,13 @@ public class AstGenerator {
     this.basePackage = basePackage;
   }
 
-  public static Stream<Ast> evaluate(PackageName basePackage, OpenAPI openAPI) {
-    return new AstGenerator(basePackage).evaluate(openAPI);
+  public static Stream<Ast> evaluate(PackageName basePackage, OpenApi openApi) {
+    return new AstGenerator(basePackage).evaluate(openApi);
   }
 
-  private Stream<Ast> evaluate(OpenAPI openAPI) {
+  private Stream<Ast> evaluate(OpenApi openApi) {
     var table =
-        Stream.of(evaluateComponents(openAPI), evaluatePaths(openAPI))
+        Stream.of(evaluateComponents(openApi), evaluatePaths(openApi))
             .flatMap(identity())
             /*
              * Collect definitions into a FQN -> AST table. This gives us an
@@ -55,24 +52,17 @@ public class AstGenerator {
     return table.values().stream();
   }
 
-  private Stream<Ast> evaluateComponents(OpenAPI openAPI) {
-    return Optional.ofNullable(openAPI.getComponents())
-        .map(Components::getSchemas)
-        .orElseGet(Map::of)
-        .entrySet()
-        .stream()
+  private Stream<Ast> evaluateComponents(OpenApi openApi) {
+    return openApi.components().map(Components::schemas).orElse(Map.of()).entrySet().stream()
         .flatMap(
             entry ->
                 OasComponentsToAst.evaluate(
                     basePackage, SimpleName.of(entry.getKey()), entry.getValue()));
   }
 
-  private Stream<Ast> evaluatePaths(OpenAPI openAPI) {
+  private Stream<Ast> evaluatePaths(OpenApi openApi) {
     var evaluatedPathItems =
-        Optional.ofNullable(openAPI.getPaths())
-            .map(LinkedHashMap::entrySet)
-            .orElse(Map.<String, PathItem>of().entrySet())
-            .stream()
+        openApi.paths().entrySet().stream()
             .flatMap(
                 entry -> {
                   var relativePath = entry.getKey();

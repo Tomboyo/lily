@@ -16,6 +16,7 @@ class CandlepinApiTest {
         () ->
             support.compileOas(
                 URI.create(
-                    "https://raw.githubusercontent.com/candlepin/candlepin/e332838213587b1903e1c6331eaeff5f4912ef7e/api/candlepin-api-spec.yaml")));
+                        "https://raw.githubusercontent.com/candlepin/candlepin/e332838213587b1903e1c6331eaeff5f4912ef7e/api/candlepin-api-spec.yaml")
+                    .toURL()));
   }
 }

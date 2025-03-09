@@ -30,7 +30,7 @@ public class CompileCommand implements Callable<Integer> {
   @Override
   public Integer call() {
     try {
-      LilyCompiler.compile(source, output, basePackage, false);
+      LilyCompiler.compile(source, output, basePackage);
       return 0;
     } catch (OasParseException e) {
       LOGGER.error("Failed to parse OAS document", e);

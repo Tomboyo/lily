@@ -38,7 +38,7 @@
                 <artifactId>lily-compiler-maven-plugin</artifactId>
                 <version>${revision}</version>
                 <configuration>
-                    <uri>https://raw.githubusercontent.com/OAI/learn.openapis.org/refs/heads/main/examples/v3.0/petstore.json</uri>
+                    <url>https://raw.githubusercontent.com/OAI/learn.openapis.org/refs/heads/main/examples/v3.0/petstore.json</url>
                     <!-- Uncomment to customize the default generated sources directory. -->
                     <!-- <outputDir>target/generated-sources</outputDir> -->
                     <basePackage>io.github.tomboyo.lily.example</basePackage>
@@ -57,7 +57,9 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- BEGIN generated code dependency management -->
+            <!-- BEGIN generated code dependency management
+                 Note: This is commented out only because the parent pom of example/ already manages jackson. -->
+            <!--
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
@@ -65,6 +67,7 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            -->
             <!-- END generated code dependency management -->
         </dependencies>
     </dependencyManagement>
