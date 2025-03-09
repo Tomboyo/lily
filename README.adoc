@@ -149,7 +149,7 @@ These configurations can be stand-alone or embedded in a larger project.
 
 . Generate java source code directly from an OAS document within a java build pipeline (e.g. integrated with Maven or Gradle).
 . Support OAS v3.
-. Target Java 17+, with special attention paid to upcoming language features.
+. Target the ~latest version of java, with special attention paid to upcoming language features.
 . Help end-users work around incorrect or incomplete schema specifications so that they can make progress while awaiting upstream fixes.
 . Expose a high-level API to guide the user through API interactions.
 . Ensure that whenever possible, generated source code is compatible with user code between API specification revisions. In other words: "If I update to the latest API specification, and there are not breaking changes to the API, then Lily's generated source code doesn't break my application."
