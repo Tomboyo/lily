@@ -59,7 +59,6 @@ public class OasComponentsToAst {
                       Fqn.newBuilder().packageName(basePackage).typeName(componentName).build(),
                       fqnAndAst.left())),
               Stream.of());
-      case Schema schema when schema.isComposed() -> fqnAndAst.right();
       case Schema schema when schema.isObject() -> fqnAndAst.right();
       case Schema schema ->
           switch (schema.type().orElse("null")) {
