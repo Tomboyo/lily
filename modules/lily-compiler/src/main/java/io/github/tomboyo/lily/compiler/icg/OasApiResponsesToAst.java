@@ -108,7 +108,6 @@ public class OasApiResponsesToAst {
     var headersName = Fqn.newBuilder(responsePackage, responseName.resolve("Headers")).build();
     var headersFieldsAndAst =
         response.headers().entrySet().stream()
-            .filter(entry -> entry.getValue() != None.NONE)
             .flatMap(
                 entry -> {
                   var name = entry.getKey();
