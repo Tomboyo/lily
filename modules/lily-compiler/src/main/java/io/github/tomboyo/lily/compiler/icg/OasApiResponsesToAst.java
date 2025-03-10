@@ -149,7 +149,9 @@ public class OasApiResponsesToAst {
       SimpleName responseName,
       // TODO: handle Ref?
       Response responseDef) {
-    return Optional.ofNullable(responseDef.content().get("application/json"))
+    return responseDef
+        .content()
+        .get("application/json")
         .flatMap(MediaType::schema)
         .map(
             schema ->

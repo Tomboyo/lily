@@ -10,17 +10,15 @@ import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.oas.model.Components;
 import io.github.tomboyo.lily.compiler.oas.model.OpenApi;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
 
 public class AstGenerator {
 
   private static final Logger LOGGER = getLogger(AstGenerator.class);
-  
+
   private final PackageName basePackage;
 
   private AstGenerator(PackageName basePackage) {
@@ -60,12 +58,13 @@ public class AstGenerator {
 
   private Stream<Ast> evaluateComponents(OpenApi openApi) {
     return openApi.components().map(Components::schemas).orElse(Map.of()).entrySet().stream()
-        .filter(entry -> {
-          if (entry.getValue().isEmpty()) {
-            LOGGER.warn("#/components/schemas/{} has no schema.", entry.getKey());
-          }
-          return entry.getValue().isPresent();
-        })
+        .filter(
+            entry -> {
+              if (entry.getValue().isEmpty()) {
+                LOGGER.warn("#/components/schemas/{} has no schema.", entry.getKey());
+              }
+              return entry.getValue().isPresent();
+            })
         .flatMap(
             entry ->
                 OasComponentsToAst.evaluate(

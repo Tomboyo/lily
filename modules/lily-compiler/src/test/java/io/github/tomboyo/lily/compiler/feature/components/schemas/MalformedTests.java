@@ -35,6 +35,11 @@ public class MalformedTests {
 
     appender.stop();
     assertTrue(
-        appender.list.stream().anyMatch(event -> event.getFormattedMessage().contains("#/components/schemas/Foo has no schema")));
+        appender.list.stream()
+            .anyMatch(
+                event ->
+                    event
+                        .getFormattedMessage()
+                        .contains("#/components/schemas/Foo has no schema")));
   }
 }
