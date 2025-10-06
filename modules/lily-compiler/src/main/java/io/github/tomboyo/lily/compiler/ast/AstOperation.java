@@ -16,4 +16,4 @@ public record AstOperation(
     List<OperationParameter> parameters,
     Optional<Fqn> requestBody,
     Fqn responseName)
-    implements Definition {}
+    implements Ast {}

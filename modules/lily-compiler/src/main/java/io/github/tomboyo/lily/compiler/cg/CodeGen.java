@@ -20,7 +20,6 @@ import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
-import io.github.tomboyo.lily.compiler.ast.Modifier;
 
 /** Generates java source code from AST */
 public class CodeGen {
@@ -29,13 +28,14 @@ public class CodeGen {
       case AstApi astApi -> renderAstAPi(astApi);
       case AstClass astClass -> renderClass(astClass);
       case AstClassAlias astClassAlias -> renderAstClassAlias(astClassAlias);
+      // TODO: rendered headers are not currently used.
       case AstHeaders astHeaders -> renderAstHeaders(astHeaders);
       case AstInterface astInterface -> renderAstInterface(astInterface);
       case AstOperation astOperation -> renderAstOperation(astOperation);
       case AstResponseSum astResponseSum -> renderAstResponseSum(astResponseSum);
       case AstResponse astResponse -> renderAstResponse(astResponse);
-      case AstTaggedOperations astTaggedOperations -> renderAstTaggedOperations(astTaggedOperations);
-      case Modifier modifier -> throw new RuntimeException("Unexpected Modifier AST");
+      case AstTaggedOperations astTaggedOperations ->
+          renderAstTaggedOperations(astTaggedOperations);
     };
   }
 }
