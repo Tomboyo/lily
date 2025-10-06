@@ -20,30 +20,22 @@ import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
+import io.github.tomboyo.lily.compiler.ast.Modifier;
 
 /** Generates java source code from AST */
 public class CodeGen {
   public static Source renderAst(Ast ast) {
-    if (ast instanceof AstApi astApi) {
-      return renderAstAPi(astApi);
-    } else if (ast instanceof AstClass astClass) {
-      return renderClass(astClass);
-    } else if (ast instanceof AstClassAlias astClassAlias) {
-      return renderAstClassAlias(astClassAlias);
-    } else if (ast instanceof AstHeaders astHeaders) {
-      return renderAstHeaders(astHeaders);
-    } else if (ast instanceof AstInterface astInterface) {
-      return renderAstInterface(astInterface);
-    } else if (ast instanceof AstOperation astOperation) {
-      return renderAstOperation(astOperation);
-    } else if (ast instanceof AstResponseSum astResponseSum) {
-      return renderAstResponseSum(astResponseSum);
-    } else if (ast instanceof AstResponse astResponse) {
-      return renderAstResponse(astResponse);
-    } else if (ast instanceof AstTaggedOperations astTaggedOperations) {
-      return renderAstTaggedOperations(astTaggedOperations);
-    } else {
-      throw new IllegalArgumentException("Unsupported AST: " + ast);
-    }
+    return switch (ast) {
+      case AstApi astApi -> renderAstAPi(astApi);
+      case AstClass astClass -> renderClass(astClass);
+      case AstClassAlias astClassAlias -> renderAstClassAlias(astClassAlias);
+      case AstHeaders astHeaders -> renderAstHeaders(astHeaders);
+      case AstInterface astInterface -> renderAstInterface(astInterface);
+      case AstOperation astOperation -> renderAstOperation(astOperation);
+      case AstResponseSum astResponseSum -> renderAstResponseSum(astResponseSum);
+      case AstResponse astResponse -> renderAstResponse(astResponse);
+      case AstTaggedOperations astTaggedOperations -> renderAstTaggedOperations(astTaggedOperations);
+      case Modifier modifier -> throw new RuntimeException("Unexpected Modifier AST");
+    };
   }
 }
