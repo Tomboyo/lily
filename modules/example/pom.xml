@@ -38,7 +38,7 @@
                 <artifactId>lily-compiler-maven-plugin</artifactId>
                 <version>${revision}</version>
                 <configuration>
-                    <url>https://raw.githubusercontent.com/OAI/learn.openapis.org/refs/heads/main/examples/v3.0/petstore.json</url>
+                    <url>file://${project.basedir}/src/test/resources/example.petstore.json</url>
                     <!-- Uncomment to customize the default generated sources directory. -->
                     <!-- <outputDir>target/generated-sources</outputDir> -->
                     <basePackage>io.github.tomboyo.lily.example</basePackage>
@@ -87,6 +87,11 @@
             <!-- ZonedDatetime support -->
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.damnhandy</groupId>
+            <artifactId>handy-uri-templates</artifactId>
+            <version>2.1.7</version>
         </dependency>
         <!-- END Generated code dependencies -->
 

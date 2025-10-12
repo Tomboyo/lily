@@ -1,22 +1,41 @@
 package io.github.tomboyo.lily.compiler.feature;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.tomboyo.lily.compiler.LilyExtension;
 import io.github.tomboyo.lily.compiler.LilyExtension.LilyTestSupport;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.net.http.HttpResponse;
+
+import io.github.tomboyo.lily.compiler.LilyTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * Operations expose setters by parameter location, since parameters are only distinct by name and
- * location. Values are bound to parameters using anonymous namespaces to leverge IDE support and
- * avoid making the user import several classes:
+ * TODO: update this description<p>
+ *
+ * Operations expose setters by parameter location, since parameters
+ * are only distinct by name and location. Values are bound to parameters using anonymous namespaces
+ * to leverge IDE support and avoid making the user import several classes:
  *
  * <pre>{@code
  * myOperation
@@ -42,7 +61,194 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *   .build();
  * }</pre>
  */
+@WireMockTest
 public class ParametersTest {
+  @ParameterizedTest
+  @CsvSource({
+      "/pets/{id},           /pets/12345",
+      "/pets/{id}/,          /pets/12345/",
+      "/pets/{id}/the/rest,  /pets/12345/the/rest",
+      "/pets/{id}/the/rest/, /pets/12345/the/rest/",
+      "/{id}/the/rest,       /12345/the/rest",
+      "/{id}/the/rest/,      /12345/the/rest/",
+      "/{id},                /12345",
+      "/{id}/,               /12345/"
+  })
+  @LilyTest
+  void canBindPathParameters(String path, String expected, LilyTestSupport support, WireMockRuntimeInfo wmi) throws IOException {
+    support.compileOas(
+        """
+        paths:
+          %s:
+            get:
+              operationId: getPet
+              parameters:
+                - name: id
+                  in: path
+                  style: simple
+                  schema:
+                    type: string
+        """.formatted(path));
+
+    support.evaluate("""
+        {{package}}.Api.newBuilder()
+          .uri("{{baseUrl}}")
+          .build()
+          .everyOperation()
+          .getPet()
+          .withParameters(p -> p.withId("12345"))
+          .sendSync();
+        return null;
+        """, "baseUrl", wmi.getHttpBaseUrl());
+
+    // The user is able to bind path parameters with the operation API.
+    verify(getRequestedFor(urlEqualTo(expected)));
+  }
+
+  @Test
+  @LilyTest
+  void pathParametersAreFormatted(LilyTestSupport support, WireMockRuntimeInfo wmi) {
+    support.compileOas("""
+        paths:
+          /pets/{a}{b}{c}{d}:
+            get:
+              operationId: getPet
+              parameters:
+                - name: a
+                  in: path
+                  style: simple
+                  schema:
+                    type: string
+                - name: b
+                  in: path
+                  style: simple
+                  schema:
+                    type: string
+                - name: c
+                  in: path
+                  style: form
+                  schema:
+                    type: string
+                - name: d
+                  in: path
+                  style: form
+                  schema:
+                    type: string
+        """);
+
+    support.evaluate("""
+        {{package}}.Api.newBuilder()
+          .uri("{{baseUrl}}")
+          .build()
+          .everyOperation()
+          .getPet()
+          .withParameters(p -> p
+              .withA("a")
+              .withB("b")
+              .withC("c")
+              .withD("d"))
+          .sendSync();
+        return null;""", "baseUrl", wmi.getHttpBaseUrl());
+
+    /* The path parameters should evaluate like RFC6570 {a,b}{?c,d}, correctly grouping consecutive parameters with the
+     * same encoding style. This impacts the placement of separator characters. This is a contrived example. */
+    verify(getRequestedFor(urlEqualTo("/pets/a,b?c=c&d=d")));
+  }
+
+  @Test
+  @LilyTest
+  void canBindQueryParameters(LilyTestSupport support, WireMockRuntimeInfo wmi) throws IOException {
+    support.compileOas(
+        """
+        paths:
+          /pets:
+            get:
+              operationId: searchPets
+              parameters:
+                - name: name
+                  in: query
+                  style: form
+                  schema:
+                    type: string
+        """);
+
+    support.evaluate("""
+        {{package}}.Api.newBuilder()
+          .uri("{{baseUrl}}")
+          .build()
+          .everyOperation()
+          .searchPets()
+          .withParameters(p -> p.withName("fido"))
+          .sendSync();
+        return null;
+        """, "baseUrl", wmi.getHttpBaseUrl());
+
+    // The user is able to bind query parameters with the operation API.
+    verify(getRequestedFor(urlEqualTo("/pets?name=fido")));
+  }
+
+  @ExtendWith(LilyExtension.class)
+  @Nested
+  class CanSetEachTypeOfParameter {
+    @BeforeAll
+    static void beforeAll(LilyTestSupport support) throws Exception {
+      support.compileOas(
+          """
+          paths:
+            /pets/{id}:
+              get:
+                operationId: getPet
+                parameters:
+                  - name: id
+                    in: path
+                    style: simple
+                    schema:
+                      type: string
+                  - name: id
+                    in: path
+                    style: simple
+                    schema:
+                      type: string
+                  - name: id
+                    in: path
+                    style: simple
+                    schema:
+                      type: string
+                  - name: id
+                    in: path
+                    style: simple
+                    schema:
+                      type: string
+          """);
+    }
+
+    // TODO: test multiple arity! Especially for query parameters and when some are null.
+
+    @Test
+    void canSetPathParameters(LilyTestSupport support) {
+      // TODO:
+      //   - the queryString/pathString/etc functions should be re-implemented to use the
+      // setParameters data
+      //   - make sure to check whether each parameter is actually bound before interpolating it,
+      // otherwise it produces
+      //     NPEs like we have now (sigh)
+      var uri =
+          support.evaluate(
+              """
+              return {{package}}.Api.newBuilder()
+                .uri("https://www.example.com/")
+                .build()
+                .everyOperation()
+                .getPet()
+                .setParameters(p -> p.withId("id"))
+                .httpRequest()
+                .uri();
+              """,
+              URI.class);
+      assertEquals("https://www.example.com/pets/id", uri.toString(), "Can bind path parameters");
+    }
+  }
+
   @Nested
   class WhenSchemaObject {
     @Nested

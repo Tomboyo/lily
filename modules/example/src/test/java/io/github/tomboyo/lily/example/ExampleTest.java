@@ -50,7 +50,7 @@ public class ExampleTest {
             // The GET /pets/{petId} operation
             .showPetById()
             // bind "1234" to the {petId} path parameter of the OAS operation.
-            .path(path -> path.petId("1234"))
+            .withParameters(p -> p.withPetId("1234"))
             // execute the request synchronously and get a ShowPetByIdResponse object.
             .sendSync();
 
@@ -91,7 +91,7 @@ public class ExampleTest {
      * example we'll assume query parameters are missing from the OpenAPI specification and can't
      * be configured via the generated API.
      */
-    var operation = api.petsOperations().showPetById().path(path -> path.petId("1234"));
+    var operation = api.petsOperations().showPetById().withParameters(p -> p.withPetId("1234"));
 
     /* Using the native API, create a new http request. It will use our templated request for
      * default values, but we can override any part of the request, like the query string.
@@ -101,7 +101,9 @@ public class ExampleTest {
             // We can use baseUri(), pathString(), and queryString() from the operation to override
             // templated URIs. This lets us work around incomplete specifications until they are
             // fixed.
-            .uri(URI.create(operation.baseUri() + operation.pathString() + "?foo=foo&bar=bar"))
+            .uri(
+                URI.create(
+                    operation.baseUri() + operation.relativePathString() + "?foo=foo&bar=bar"))
             .build();
 
     /* Dispatch the customized request, taking advantage of the same sendSync behavior we normally

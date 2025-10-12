@@ -43,7 +43,7 @@
 
     <properties>
         <!-- Override this during releases. -->
-        <revision>SNAPSHOT</revision>
+        <revision>0.1.0-SNAPSHOT</revision>
         <maven.version>3.9.9</maven.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
@@ -230,6 +230,36 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <!--
+                    This plugin resolves $revision in the parent pom coordinates. Maven will use the string
+                    literally otherwise.
+                -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <configuration>
+                    <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                    <updatePomFile>true</updatePomFile>
+                </configuration>
+                <executions>
+                    <!-- enable flattening -->
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <!-- ensure proper cleanup -->
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -298,39 +328,9 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <!--
-                            This plugin resolves $revision in the parent pom coordinates. Maven will use the string
-                            literally otherwise.
-                        -->
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>flatten-maven-plugin</artifactId>
-                        <configuration>
-                            <flattenMode>resolveCiFriendliesOnly</flattenMode>
-                            <updatePomFile>true</updatePomFile>
-                        </configuration>
-                        <executions>
-                            <!-- enable flattening -->
-                            <execution>
-                                <id>flatten</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>flatten</goal>
-                                </goals>
-                            </execution>
-                            <!-- ensure proper cleanup -->
-                            <execution>
-                                <id>flatten.clean</id>
-                                <phase>clean</phase>
-                                <goals>
-                                    <goal>clean</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
+
                 </plugins>
             </build>
         </profile>
     </profiles>
-
 </project>

@@ -137,6 +137,11 @@ To generate sources from an OAS document in your maven project, and the followin
         <groupId>com.fasterxml.jackson.datatype</groupId>
         <artifactId>jackson-datatype-jsr310</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.damnhandy</groupId>
+      <artifactId>handy-uri-templates</artifactId>
+      <version>2.1.7</version>
+    </dependency>
     <!-- END Generated code dependencies -->
 </dependencies>
 ```
