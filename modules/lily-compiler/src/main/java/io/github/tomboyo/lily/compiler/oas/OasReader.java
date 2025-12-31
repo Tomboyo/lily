@@ -71,7 +71,7 @@ public class OasReader {
   /**
    * Read an OpenAPI object from a source located by a URI.
    *
-   * @param oasUrl The URL of an OpenAPI YAML specification resource.
+   * @param url The URL of an OpenAPI YAML specification resource.
    * @return An OpenAPI object representation of the source document.
    * @throws OasParseException If reading the document fails for any reason.
    */
@@ -81,6 +81,16 @@ public class OasReader {
       validate(openApi);
       return openApi;
     } catch (IOException e) {
+      throw new OasParseException("Could not load openapi specification", e);
+    }
+  }
+
+  public static OpenApi fromMap(Map<Object, Object> map) throws OasParseException {
+    try {
+      var openApi = MAPPER.convertValue(map, OpenApi.class);
+      validate(openApi);
+      return openApi;
+    } catch (IllegalArgumentException e) {
       throw new OasParseException("Could not load openapi specification", e);
     }
   }

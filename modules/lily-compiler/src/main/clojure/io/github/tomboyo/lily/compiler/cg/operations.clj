@@ -41,34 +41,36 @@
    "encoder" (encoder parameter (.encoding parameter))})
 
 (defn render [^AstOperation operation]
-  (Source. (.name operation)
-           (Mustache/writeString
-             template
-             (str ::render)
-             {
-              "packageName"           (.packageName (.name operation))
-              "className"             (.typeName (.name operation))
-              "pathTemplate"          (str/replace (.relativePath operation) #"^/" "")
-              "queryTemplate"         (queryTemplate (.parameters operation))
-              "method"                (.method operation)
-              "pathSmartFormEncoder"  (some #(and (= ParameterLocation/PATH (.location %))
-                                                  (= ParameterEncoding$Style/FORM (.style (.encoding %))))
-                                            (.parameters operation))
-              "querySmartFormEncoder" (some #(and (= ParameterLocation/QUERY (.location %))
-                                                  (= ParameterEncoding$Style/FORM (.style (.encoding %))))
-                                            (.parameters operation))
-              "responseTypeName"      (.toFqpString (.responseName operation))
-              "bodyFqpt"              (-> (.requestBody operation) (.map #(.toFqpString %)) (.orElse nil))
-              "pathParameters"        (eduction (comp (filter #(= ParameterLocation/PATH (.location %)))
-                                                      (map #(parameter-map %)))
-                                                (.parameters operation))
-              "queryParameters"       (eduction (comp (filter #(= ParameterLocation/QUERY (.location %)))
-                                                      (map #(parameter-map %)))
-                                                (.parameters operation))
-              "headers"               (eduction (comp (filter #(= ParameterLocation/HEADER (.location %)))
-                                                      (map #(parameter-map %)))
-                                                (.parameters operation))
-              })))
+  (let [path-parameters (eduction (comp (filter #(= ParameterLocation/PATH (.location %)))
+                                        (map #(parameter-map %)))
+                                  (.parameters operation))]
+    (Source. (.name operation)
+             (Mustache/writeString
+               template
+               (str ::render)
+               {
+                "packageName"           (.packageName (.name operation))
+                "className"             (.typeName (.name operation))
+                "pathTemplate"          (str/replace (.relativePath operation) #"^/" "")
+                "queryTemplate"         (queryTemplate (.parameters operation))
+                "method"                (.method operation)
+                "pathSmartFormEncoder"  (some #(and (= ParameterLocation/PATH (.location %))
+                                                    (= ParameterEncoding$Style/FORM (.style (.encoding %))))
+                                              (.parameters operation))
+                "querySmartFormEncoder" (some #(and (= ParameterLocation/QUERY (.location %))
+                                                    (= ParameterEncoding$Style/FORM (.style (.encoding %))))
+                                              (.parameters operation))
+                "responseTypeName"      (.toFqpString (.responseName operation))
+                "bodyFqpt"              (-> (.requestBody operation) (.map #(.toFqpString %)) (.orElse nil))
+                "pathParameters"        path-parameters
+                "hasPathParameters"     (not (empty? path-parameters))
+                "queryParameters"       (eduction (comp (filter #(= ParameterLocation/QUERY (.location %)))
+                                                        (map #(parameter-map %)))
+                                                  (.parameters operation))
+                "headers"               (eduction (comp (filter #(= ParameterLocation/HEADER (.location %)))
+                                                        (map #(parameter-map %)))
+                                                  (.parameters operation))
+                }))))
 
 (comment
   (macroexpand '(.. (Optional/of "cats") (map str/upper-case) (orElse nil)))

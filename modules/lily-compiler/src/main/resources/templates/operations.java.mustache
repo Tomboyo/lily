@@ -7,7 +7,9 @@ public class {{className}} {
   private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   private Query query;
+  {{#hasPathParameters}}
   private Path path;
+  {{/hasPathParameters}}
   private Headers headers;
   {{#bodyFqpt}}
   private {{{bodyFqpt}}} body;
@@ -24,17 +26,19 @@ public class {{className}} {
     this.httpClient = httpClient;
     this.objectMapper = objectMapper;
 
-    this.path = new Path();
+    {{#hasPathParameters}}this.path = new Path();{{/hasPathParameters}}
     this.query = new Query();
     this.headers = new Headers();
   }
 
+  {{#hasPathParameters}}
   /** Configure path parameters for this operation, if any. */
   public {{className}} path(java.util.function.Function<Path, Path> path) {
     this.path = path.apply(this.path);
     return this;
   }
 
+  {{/hasPathParameters}}
   /** Configure query parameters for this operation, if any. */
   public {{className}} query(java.util.function.Function<Query, Query> query) {
     this.query = query.apply(this.query);
@@ -82,11 +86,13 @@ public class {{className}} {
     {{#querySmartFormEncoder}}
     var smartFormEncoder = io.github.tomboyo.lily.http.encoding.Encoders.smartFormExploded();
     {{/querySmartFormEncoder}}
-    return this.queryTemplate
+    var t = this.queryTemplate;
     {{#queryParameters}}
-      .bind("{{apiName}}", this.query.{{name}}, {{{encoder}}})
+    if (this.query.{{name}} != null) {
+      t = t.bind("{{apiName}}", this.query.{{name}}, {{{encoder}}});
+    }
     {{/queryParameters}}
-      .toString();
+    return t.toString();
   }
 
   /**
@@ -140,6 +146,7 @@ public class {{className}} {
     return {{{responseTypeName}}}.fromHttpResponse(httpResponse, objectMapper);
   }
 
+  {{#hasPathParameters}}
   public static class Path {
     private Path() {}
 
@@ -152,6 +159,7 @@ public class {{className}} {
     {{/pathParameters}}
   }
 
+  {{/hasPathParameters}}
   public static class Query {
     private Query() {}
 

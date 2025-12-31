@@ -51,6 +51,20 @@ public class LilyCompiler {
     return compile(openAPI, outputDir, basePackage);
   }
 
+  /**
+   * Generate java source code form an OpenAPI V3 YAML specification Map.
+   *
+   * @param oasContent An OpenAPI V3 specification as a Map
+   * @param outputDir The parent directory to save java generated source code files.
+   * @param basePackage The name of the base package for all generated java source files.
+   * @return The set of Path objects for each generated file.
+   */
+  public static Map<String, Path> compile(
+      Map<Object, Object> oasContent, Path outputDir, String basePackage) throws OasParseException {
+    var openApi = OasReader.fromMap(oasContent);
+    return compile(openApi, outputDir, basePackage);
+  }
+
   private static Map<String, Path> compile(OpenApi openApi, Path outputDir, String basePackage) {
     return AstGenerator.evaluate(PackageName.of(basePackage), openApi)
         .map(CodeGen::renderAst)

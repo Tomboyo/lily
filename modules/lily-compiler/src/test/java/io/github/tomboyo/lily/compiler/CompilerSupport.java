@@ -52,6 +52,19 @@ public class CompilerSupport {
     return generatedSourcePaths;
   }
 
+  /**
+   * Generate and compile source code from the given OAS document object.
+   *
+   * @param rootPackageName The package within which to generate code.
+   * @param oas The OpenAPI specification document contents as a Map.
+   */
+  public static Map<String, Path> compileOas(String rootPackageName, Map<Object, Object> oas)
+      throws OasParseException {
+    var generatedSourcePaths = LilyCompiler.compile(oas, GENERATED_SOURCES, rootPackageName);
+    compileJavaSources(TEST_CLASSES, generatedSourcePaths.values());
+    return generatedSourcePaths;
+  }
+
   @Deprecated(forRemoval = true)
   public static String compileOas(String oas) throws OasParseException {
     var packageName = uniquePackageName();
