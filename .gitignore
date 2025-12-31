@@ -6,3 +6,6 @@ target/
 **/pom.xml.versionsBackup
 .flattened-pom.xml
 .vscode
+
+# clojure
+**/.nrepl-port

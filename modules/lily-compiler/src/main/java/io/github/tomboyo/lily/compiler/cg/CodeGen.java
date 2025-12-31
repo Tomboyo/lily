@@ -5,11 +5,12 @@ import static io.github.tomboyo.lily.compiler.cg.AstClassAliasCodeGen.renderAstC
 import static io.github.tomboyo.lily.compiler.cg.AstClassCodeGen.renderClass;
 import static io.github.tomboyo.lily.compiler.cg.AstHeadersCodeGen.renderAstHeaders;
 import static io.github.tomboyo.lily.compiler.cg.AstInterfaceCodeGen.renderAstInterface;
-import static io.github.tomboyo.lily.compiler.cg.AstOperationCodeGen.renderAstOperation;
 import static io.github.tomboyo.lily.compiler.cg.AstResponseCodeGen.renderAstResponse;
 import static io.github.tomboyo.lily.compiler.cg.AstResponseSumCodeGen.renderAstResponseSum;
 import static io.github.tomboyo.lily.compiler.cg.AstTaggedOperationCodeGen.renderAstTaggedOperations;
 
+import clojure.java.api.Clojure;
+import clojure.lang.IFn;
 import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstApi;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
@@ -31,7 +32,12 @@ public class CodeGen {
       // TODO: rendered headers are not currently used.
       case AstHeaders astHeaders -> renderAstHeaders(astHeaders);
       case AstInterface astInterface -> renderAstInterface(astInterface);
-      case AstOperation astOperation -> renderAstOperation(astOperation);
+      case AstOperation astOperation -> {
+        IFn require = Clojure.var("clojure.core", "require");
+        require.invoke(Clojure.read("io.github.tomboyo.lily.compiler.cg.operations"));
+        IFn render = Clojure.var("io.github.tomboyo.lily.compiler.cg.operations", "render");
+        yield (Source) render.invoke(astOperation);
+      }
       case AstResponseSum astResponseSum -> renderAstResponseSum(astResponseSum);
       case AstResponse astResponse -> renderAstResponse(astResponse);
       case AstTaggedOperations astTaggedOperations ->

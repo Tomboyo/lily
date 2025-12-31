@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 /* These are examples of how to use the API, formulated as contrived unit tests. These are not actual tests. */
 @WireMockTest
 public class ExampleTest {
-
   /*
    * In this example, we use as much of the Lily generated code support as possible to automate away the complexity of
    * http API integration. If the OAS is malformed or Lily has limited support for a feature, however, the user is
