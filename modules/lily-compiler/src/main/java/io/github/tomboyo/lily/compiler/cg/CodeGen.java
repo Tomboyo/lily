@@ -15,12 +15,14 @@ import io.github.tomboyo.lily.compiler.ast.Ast;
 import io.github.tomboyo.lily.compiler.ast.AstApi;
 import io.github.tomboyo.lily.compiler.ast.AstClass;
 import io.github.tomboyo.lily.compiler.ast.AstClassAlias;
+import io.github.tomboyo.lily.compiler.ast.AstDirectory;
 import io.github.tomboyo.lily.compiler.ast.AstHeaders;
 import io.github.tomboyo.lily.compiler.ast.AstInterface;
 import io.github.tomboyo.lily.compiler.ast.AstOperation;
 import io.github.tomboyo.lily.compiler.ast.AstResponse;
 import io.github.tomboyo.lily.compiler.ast.AstResponseSum;
 import io.github.tomboyo.lily.compiler.ast.AstTaggedOperations;
+import io.github.tomboyo.lily.compiler.ast.AstTemplate;
 
 /** Generates java source code from AST */
 public class CodeGen {
@@ -42,6 +44,18 @@ public class CodeGen {
       case AstResponse astResponse -> renderAstResponse(astResponse);
       case AstTaggedOperations astTaggedOperations ->
           renderAstTaggedOperations(astTaggedOperations);
+      case AstTemplate astTemplate -> {
+        IFn require = Clojure.var("clojure.core", "require");
+        require.invoke(Clojure.read("io.github.tomboyo.lily.compiler.cg.template"));
+        IFn render = Clojure.var("io.github.tomboyo.lily.compiler.cg.template", "render");
+        yield (Source) render.invoke(astTemplate);
+      }
+      case AstDirectory astDirectory -> {
+        IFn require = Clojure.var("clojure.core", "require");
+        require.invoke(Clojure.read("io.github.tomboyo.lily.compiler.cg.directory"));
+        IFn render = Clojure.var("io.github.tomboyo.lily.compiler.cg.directory", "render");
+        yield (Source) render.invoke(astDirectory);
+      }
     };
   }
 }

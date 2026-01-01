@@ -96,6 +96,9 @@
                 <groupId>com.theoryinpractise</groupId>
                 <artifactId>clojure-maven-plugin</artifactId>
                 <extensions>true</extensions>
+                <configuration>
+                    <clojureOptions>-Dio.github.tomboyo.lily.mode=dev</clojureOptions>
+                </configuration>
             </plugin>
         </plugins>
     </build>

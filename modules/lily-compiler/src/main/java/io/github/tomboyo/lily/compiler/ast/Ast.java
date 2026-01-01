@@ -10,6 +10,8 @@ public sealed interface Ast
         AstOperation,
         AstResponse,
         AstResponseSum,
-        AstTaggedOperations {
+        AstTaggedOperations,
+        AstTemplate,
+        AstDirectory {
   Fqn name();
 }

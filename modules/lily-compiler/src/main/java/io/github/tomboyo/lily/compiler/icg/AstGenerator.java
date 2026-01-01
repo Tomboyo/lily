@@ -4,6 +4,9 @@ import static java.util.function.Function.identity;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import io.github.tomboyo.lily.compiler.ast.Ast;
+import io.github.tomboyo.lily.compiler.ast.AstDirectory;
+import io.github.tomboyo.lily.compiler.ast.AstTemplate;
+import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.oas.model.Components;
@@ -61,13 +64,33 @@ public class AstGenerator {
             .collect(Collectors.toSet());
     var api = OasPathsToAst.evaluateApi(basePackage, taggedOperations);
 
-    return Stream.of(
-            evaluatedPathItems.stream()
-                .flatMap(result -> result.ast().stream()), // AST for parameter schemas,
-            evaluatedPathItems.stream()
-                .map(result -> result.operation()), // Ast for operation builders,
-            taggedOperations.stream(), // ast for tag groups,
-            Stream.of(api)) // and ast for the API root.
-        .flatMap(identity());
+    var templates =
+        evaluatedPathItems.stream()
+            .map(OasOperationToAst.TagsOperationAndAst::operation)
+            .map(
+                operation ->
+                    new AstTemplate(
+                        Fqn.newBuilder(basePackage.resolve("templates"), operation.operationName())
+                            .build()))
+            .collect(Collectors.toSet());
+    var directory =
+        new AstDirectory(
+            Fqn.newBuilder(basePackage, SimpleName.of("Directory")).build(), templates);
+
+    Stream<Ast> s =
+        Stream.of(
+                evaluatedPathItems.stream()
+                    .flatMap(result -> result.ast().stream()), // AST for parameter schemas,
+                evaluatedPathItems.stream()
+                    .map(result -> result.operation()), // Ast for operation builders,
+                taggedOperations.stream(), // ast for tag groups,
+                Stream.of(api)) // and ast for the API root.
+            .flatMap(identity());
+
+    if (Config.isDevMode()) {
+      s = Stream.concat(s, Stream.<Ast>concat(templates.stream(), Stream.of(directory)));
+    }
+
+    return s;
   }
 }

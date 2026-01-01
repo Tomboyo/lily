@@ -1,4 +1,5 @@
 (ns io.github.tomboyo.lily.compiler.test
+  (:require [clojure.string :as str])
   (:import (io.github.tomboyo.lily.compiler CompilerSupport)))
 
 (def ^:dynamic *state*)
@@ -22,6 +23,15 @@
   "Returns a symbol formed by resolving the relative name s against the
   generated source code package name."
   (symbol (str (:package @*state*) "." s)))
+
+(defn relative-class-name
+  "Returns the class name of x relative to the generated source code package. If
+  the generated package is GEN and x is an instance of GEN.foo.Bar, the result
+  is foo.Bar with no leading dot."
+  ([x]
+   (str/replace-first (.getName (class x))
+                      (re-pattern (str "^" (:package @*state*) "."))
+                      "")))
 
 (defn fixture [f]
   "Ensures code is generated into unique packages and cleaned up per-test."

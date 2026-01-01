@@ -275,6 +275,26 @@
 
     <profiles>
         <profile>
+            <!-- Dev profile activates WIP features for testing. -->
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemProperties>
+                                <io.github.tomboyo.lily.mode>dev</io.github.tomboyo.lily.mode>
+                            </systemProperties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>release</id>
             <modules>
                 <module>modules/lily-compiler</module>
