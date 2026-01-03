@@ -111,18 +111,18 @@ Templates are converted into `HttpRequest`s and dispatched in either of two
 ways. The first approach uses the `Api` class, a high-level interface for making
 requests:
 ```java
-var response = Api.syncCreatePet(
+var response = Api.sendSync(
         HttpClient.newHttpClient(),
-        URI.create("https://example.com"),
-        Template.getPet().withPathParameters(p -> p.withId("foo")));
-// => a CreatePetResponse
+        "https://example.com",
+        Directory.getPet().withPathParameters(p -> p.withId("foo")));
+// => a GetPetResponse
 ```
 If either the specification or Lily is flawed, this approach might not work.
 Users can use an equivalent, lower-level API as necessary:
 ```java
 var requestBuilder = HttpRequests.builderFor(
-        URI.create("https://example.com"),
-        Template.getPet().withPathParameters(p -> p.withId("foo")));
+        "https://example.com",
+        Directory.getPet().withPathParameters(p -> p.withId("foo")));
 // => a java.net.http.HttpRequest.Builder
 
 var httpResponse = HttpClient.newHttpClient()
@@ -136,10 +136,6 @@ This approach lets users work with the client, request, and response objects
 using the native API. Any of the Lily APIs used in the above example could be
 replaced with custom code, allowing users to "opt-in" to Lily support and
 hand-write whatever else is needed.
-
-TODO: DESIGN: The Api could expose multiple overloads of `sendSync` instead of a
-function named per operation, simplifying the API while ensuring the correct
-return types are used (e.g. GetFooResponse v CreateFooResponse).
 
 ## Receiving Responses
 
