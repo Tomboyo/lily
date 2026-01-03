@@ -29,11 +29,10 @@ achieve their goals.
 Each operation described by an OpenAPI specification is compiled into a _template_.
 
 Templates are APIs for creating HTTP requests conforming to an OpenAPI operation
-specification. Templates can:
-- bind values to path, query, cookie, and body parameters declared by the
-  specification;
-- bind whole path and query strings, overriding the specification; and
-- retrieve bound parameters or interpolated path and query strings.
+specification. Templates are logic-less containers of data that hold on to
+parameter bindings (the `id` in a path like `/foo/{id}/bar`), or 
+fully-formed request paths, queries, cookies, and bodies that need no 
+further processing.
 
 ```java
 // A blank template with no bound parameters.
@@ -43,26 +42,48 @@ var template = Directory.createPet(); // => CreatePetTemplate
 template = template
     .withPathParameters(p -> p.withBaz("baz"))
     .withQueryParameters(p -> p.withFoo("foo"))
-    .withCookieParameters(p -> p.withBar("bar")); // => CreatePetTemplate
+    .withCookieParameters(p -> p.withBar("bar"))
+    .withHeaderParameters(p -> p.withBiff("biff"))
+    .withBody(b -> b.withBang("bang")); // => CreatePetTemplate
 
-// Get path, query, and cookie parameters with bound values.
-template.getRelativePath(); // => /pets/baz
-template.getQuery();        // => ?foo=foo
-template.getCookie();       // => Map<String, List<String>> of cookies, e.g.
-                            //    {"Cookie": ["Version=\"1\"", "bar=\"bar\";Path=\"/\""]}
-                            //    (consistent with the java.net.http API,
-                            //    except without obsolete $ prefixes)
-
-// Set path, query, and cookie parameters to bespoke values, disregarding the
-// specification. Useful to work around errors in the specification or Lily.
+// Set overrides, which are fully-realized bespoke values. When templates 
+// are used to make http requests, overrides are used in preference to 
+// parameter bindings. These are used when something is wrong with the 
+// generated code or the underlying specification.
 template = template
-    .withRelativePath("/my/custom/path")
-    .withQuery("?my=custom,query,fragment")
-    .withCookie(Map.of("Cookie", List.of("Version=\"1\"", "cats=\"dogs,skunks,mice\"")));
+    .withpathOverride("/my/custom/path")
+    .withQueryOverride("?my=custom,query,fragment")
+    .withCookieOverride(Map.of(
+        "Cookie", List.of("Version=\"1\"", "cats=\"dogs,skunks,mice\"")))
+    .withHeaderOverride(Map.of(
+        "x-header-name", "x-header-value",
+        "biff-header", "biff"))
+    .withBodyOverride(myJsonPayload.getBytes()); // Any byte array or byte buffer
+```
 
-template.getRelativePath(); // => /my/custom/path
-template.getQuery();        // => ?my=custom,query,fragment
-template.getCookie();       // => {"Cookie": ["Version=\"1\"", "cats=\"dogs,skunks,mice\""]}
+Templates are immutable so that they can be easily shared.
+
+After binding parameters and/or overrides, the template may be used to get 
+the path component, query fragment, headers, cookies, and body of the 
+templated request. Note that if an override is configured, it takes 
+precedence over any relevant bound parameters.
+
+```java
+// The path component of a request with all parameters interpolated, like
+// `"/foo/myId/bar"`.
+template.getPath();
+
+// The query component of a request with all parameters interpolated, like
+// `"?foo=bar&baz=bang"`.
+template.getQuery();
+
+// The Map<String, List<String>> of cookies, e.g.
+// {"Cookie": ["$Version=\"1\"", "bar=\"bar\"; $Path=\"/\""]}
+// (consistent with the java.net.http API)
+template.getCookies();
+
+// The bytes of the request body.
+template.getBodyByteArray();
 ```
 
 Templates are immutable so that they can be easily shared. Templates can be
