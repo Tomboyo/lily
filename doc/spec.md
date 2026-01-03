@@ -86,8 +86,21 @@ template.getCookies();
 template.getBodyByteArray();
 ```
 
-Templates are immutable so that they can be easily shared. Templates can be
-comverted to `java.net.http.HttpRequest`s using the `Requests` class.
+### Optional Validation
+
+An optional `validate` method may be invoked to check if all required 
+parameters have been set, which is intended to be used during development 
+and testing to help developers explore an API and check their assumptions:
+
+```java
+template.validate(); // => ValidateResult := Valid | Invalid(reason)
+```
+
+This returns either a `Valid` record or an `Invalid` record with explanatory 
+text, which form the `ValidateResult` sealed interface. This is _optional_ 
+since enforced validation can become a burden when specifications contain 
+minor errors, and ultimately the service is the source of truth on what is 
+and is not valid.
 
 ### TODO: Cookies
 
@@ -263,6 +276,14 @@ public static Address exampleAddress(Address x) {
 The generator should be robust in the face of edge cases and unusual 
 specifications. It should do as much as it can to help the user, then get out of
 the user's way when it is unsatisfactory.
+
+### No Mandatory Validation
+
+The service itself is the source of truth on what is and is not a valid 
+request. While client-side validation may be useful for testing and learning,
+_mandatory_ validation runs the risk of preventing a user from making a 
+well-formed request if either the specification or the generated code is 
+inaccurate.
 
 ### Layered API
 The generated API is structured in layers, where the most abstract layer targets
