@@ -258,6 +258,10 @@ generated from A should still compile with the client generated from B.
 
 ### Anonymous Models
 
+TODO: response sum type names and response body models are both subject to 
+the problem of name changes over time, and there isn't an obvious way to 
+avoid coupling to them. Make a note about that in this section.
+
 The Template API exposes a set of "anonymized withers" that let the user build a
 request without coupling to the names of model classes. Consider the following:
 
