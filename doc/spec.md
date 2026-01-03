@@ -1,5 +1,3 @@
-TODO: rename Templates to Directory
-
 # The Spec
 
 This is a living document describing goals and features both implemented and
