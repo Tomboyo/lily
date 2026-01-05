@@ -6,8 +6,8 @@
 
 (defn render [^AstTemplate astTemplate]
   (Source. (.name astTemplate)
-           (helpers/render
-             (helpers/map->Record {:type (ast-interop/asType (.name astTemplate))}))))
+           (helpers/render-str
+             (helpers/map->Record {:type (ast-interop/asType astTemplate)}))))
 
 (comment
   (import [io.github.tomboyo.lily.compiler.ast SimpleName ParameterLocation ParameterEncoding])

@@ -1,20 +1,21 @@
 (ns io.github.tomboyo.lily.compiler.cg.directory
-  (:require [clojure.java.io :as io])
+  (:require [io.github.tomboyo.lily.compiler.cg.helpers :as helpers :refer [map->ClassDef map->Method]]
+            [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast])
   (:import (io.github.tomboyo.lily.compiler.ast AstDirectory)
-           (io.github.tomboyo.lily.compiler.cg Mustache Source)))
+           (io.github.tomboyo.lily.compiler.cg Source)))
 
-(def template (slurp (io/resource "templates/directory.java.mustache")))
+(defn static-factory [template]
+  (map->Method {:modifiers [:public :static]
+                :returns (ast/asType template)
+                :name (.. template name typeName lowerCamelCase)
+                :body [(str "return new "
+                            (helpers/render-str (ast/asType template))
+                            "();")]}))
 
-(defn render [^AstDirectory templates]
-  (Source. (.name templates)
-           (Mustache/writeString
-             template
-             (str ::render)
-             {
-              "packageName" (.packageName (.name templates))
-              "className"   (.typeName (.name templates))
-              "template"    (eduction (map #(hash-map "returnType" (.toFqpString (.name %))
-                                                      "methodName" (.lowerCamelCase (.typeName (.name %)))
-                                                      "constructor" (.toFqpString (.name %))))
-                                      (.templates templates))
-              })))
+(defn render [^AstDirectory directory]
+  (Source.
+    (.name directory)
+    (helpers/render-str
+      (map->ClassDef
+        {:type (ast/asType directory)
+         :body (map static-factory (.templates directory))}))))
