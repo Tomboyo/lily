@@ -64,19 +64,6 @@ public class AstGenerator {
             .collect(Collectors.toSet());
     var api = OasPathsToAst.evaluateApi(basePackage, taggedOperations);
 
-    var templates =
-        evaluatedPathItems.stream()
-            .map(OasOperationToAst.TagsOperationAndAst::operation)
-            .map(
-                operation ->
-                    new AstTemplate(
-                        Fqn.newBuilder(basePackage.resolve("templates"), operation.operationName())
-                            .build()))
-            .collect(Collectors.toSet());
-    var directory =
-        new AstDirectory(
-            Fqn.newBuilder(basePackage, SimpleName.of("Directory")).build(), templates);
-
     Stream<Ast> s =
         Stream.of(
                 evaluatedPathItems.stream()
@@ -88,6 +75,20 @@ public class AstGenerator {
             .flatMap(identity());
 
     if (Config.isDevMode()) {
+      var templates =
+          evaluatedPathItems.stream()
+              .map(OasOperationToAst.TagsOperationAndAst::operation)
+              .map(
+                  operation ->
+                      new AstTemplate(
+                          Fqn.newBuilder(
+                                  basePackage.resolve("templates"), operation.operationName())
+                              .build()))
+              .collect(Collectors.toSet());
+      var directory =
+          new AstDirectory(
+              Fqn.newBuilder(basePackage, SimpleName.of("Directory")).build(), templates);
+
       s = Stream.concat(s, Stream.<Ast>concat(templates.stream(), Stream.of(directory)));
     }
 
