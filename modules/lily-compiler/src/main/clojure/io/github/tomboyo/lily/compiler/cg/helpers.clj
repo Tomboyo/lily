@@ -22,18 +22,21 @@
   (render [xs] (str/join "\n" (map render xs)))
   )
 
+(defrecord PackageDecl [package]
+  Render
+  (render [_]
+    (str "package " package ";")))
+
 (defrecord Record [type]
   Render
   (render [_]
-    (str/join "\n" [(str "package " (:package type) ";")
-                    (str "public record " (:name type) "() {")
+    (str/join "\n" [(str "public record " (:name type) "() {")
                     "}"])))
 
 (defrecord ClassDef [type body]
   Render
   (render [_]
-    (str/join "\n" [(str "package " (:package type) ";")
-                    (str "public class " (:name type) " {")
+    (str/join "\n" [(str "public class " (:name type) " {")
                     (-> body render indent)
                     "}"])))
 
