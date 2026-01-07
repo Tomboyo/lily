@@ -31,12 +31,18 @@
   (render [_]
     (str "package " package ";")))
 
-(defrecord Record [type body]
+(defrecord Field [type name]
   Render
   (render [_]
-    (render [(str "public record " (:name type) "() {")
-             (-> body render indent)
-             "}"])))
+    (str (render type) " " name)))
+
+(defrecord Record [type fields body]
+  Render
+  (render [_]
+    (let [header (str/join ", " (map render fields))]
+      (render [(str "public record " (:name type) "(" header ") {")
+               (-> body render indent)
+               "}"]))))
 
 (defrecord ClassDef [type body]
   Render

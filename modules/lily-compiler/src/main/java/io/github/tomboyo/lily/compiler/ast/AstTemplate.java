@@ -1,3 +1,7 @@
 package io.github.tomboyo.lily.compiler.ast;
 
-public record AstTemplate(Fqn name) implements Ast {}
+import java.util.List;
+
+public record AstTemplate(
+    Fqn name,
+    List<OperationParameter> pathParameters) implements Ast {}

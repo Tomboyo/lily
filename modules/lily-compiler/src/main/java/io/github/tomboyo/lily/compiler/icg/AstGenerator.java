@@ -8,6 +8,7 @@ import io.github.tomboyo.lily.compiler.ast.AstDirectory;
 import io.github.tomboyo.lily.compiler.ast.AstTemplate;
 import io.github.tomboyo.lily.compiler.ast.Fqn;
 import io.github.tomboyo.lily.compiler.ast.PackageName;
+import io.github.tomboyo.lily.compiler.ast.ParameterLocation;
 import io.github.tomboyo.lily.compiler.ast.SimpleName;
 import io.github.tomboyo.lily.compiler.oas.model.Components;
 import io.github.tomboyo.lily.compiler.oas.model.OpenApi;
@@ -83,7 +84,10 @@ public class AstGenerator {
                       new AstTemplate(
                           Fqn.newBuilder(
                                   basePackage.resolve("templates"), operation.operationName())
-                              .build()))
+                              .build(),
+                          operation.parameters().stream()
+                              .filter(p -> ParameterLocation.PATH == p.location())
+                              .toList()))
               .collect(Collectors.toSet());
       var directory =
           new AstDirectory(
