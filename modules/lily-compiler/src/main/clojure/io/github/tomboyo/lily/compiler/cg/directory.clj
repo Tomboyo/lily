@@ -1,5 +1,7 @@
 (ns io.github.tomboyo.lily.compiler.cg.directory
-  (:require [io.github.tomboyo.lily.compiler.cg.helpers :as helpers :refer [map->ClassDef map->Method map->PackageDecl]]
+  (:require [io.github.tomboyo.lily.compiler.cg.helpers
+             :as helpers
+             :refer [map->ClassDef map->Method map->PackageDecl]]
             [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast])
   (:import (io.github.tomboyo.lily.compiler.ast AstDirectory)
            (io.github.tomboyo.lily.compiler.cg Source)))

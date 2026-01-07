@@ -5,7 +5,8 @@
 (use-fixtures :each fixture)
 
 (deftest directory-aggregates-templates
-  (testing "the Directory exposes a static function to create a Template for each operation in the specification"
+  (testing (str "the Directory exposes a static function to create a Template "
+                "for each operation in the specification")
     (generate {"paths" {"/foo"          {"get"  {"operationId" "getFoo"}
                                          "post" {"operationId" "createFoo"}}
                         "/bar/baz/bang" {"delete" {"operationId" "deleteBang"}}}})
