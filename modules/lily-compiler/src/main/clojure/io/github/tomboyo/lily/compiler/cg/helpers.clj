@@ -3,14 +3,16 @@
   (:import (clojure.lang Keyword Seqable)))
 
 (defn indent [s]
-  (str/join (map #(str "  " %) (str/split-lines s))))
+  (if (nil? s)
+    s
+    (str/join "\n" (map #(str "  " %) (str/split-lines s)))))
 
 (defprotocol Render
   (render [x]))
 
 (extend-protocol Render
   nil
-  (render [_] "")
+  (render [_] nil)
 
   String
   (render [s] s)
@@ -19,7 +21,9 @@
   (render [k] (subs (str k) 1))
 
   Seqable
-  (render [xs] (str/join "\n" (map render xs)))
+  (render [xs] (str/join "\n" (eduction (comp (filter (complement nil?))
+                                              (map render))
+                                        xs)))
   )
 
 (defrecord PackageDecl [package]
@@ -27,31 +31,31 @@
   (render [_]
     (str "package " package ";")))
 
-(defrecord Record [type]
+(defrecord Record [type body]
   Render
   (render [_]
-    (str/join "\n" [(str "public record " (:name type) "() {")
-                    "}"])))
+    (render [(str "public record " (:name type) "() {")
+             (-> body render indent)
+             "}"])))
 
 (defrecord ClassDef [type body]
   Render
   (render [_]
-    (str/join "\n" [(str "public class " (:name type) " {")
-                    (-> body render indent)
-                    "}"])))
+    (render [(str "public class " (:name type) " {")
+             (-> body render indent)
+             "}"])))
 
 (defrecord Method [modifiers returns name body]
   Render
   (render [_]
-    (str/join "\n"
-              [(str (str/join " " (map render modifiers))
-                    " "
-                    (render returns)
-                    " "
-                    name
-                    "() {")
-               (-> body render indent)
-               "}"])))
+    (render [(str (str/join " " (map render modifiers))
+                  " "
+                  (render returns)
+                  " "
+                  name
+                  "() {")
+             (-> body render indent)
+             "}"])))
 
 (defrecord Type [package name]
   Render
