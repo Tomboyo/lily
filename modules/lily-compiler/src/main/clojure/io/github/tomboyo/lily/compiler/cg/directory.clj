@@ -9,13 +9,13 @@
                 :returns (ast/asType template)
                 :name (.. template name typeName lowerCamelCase)
                 :body [(str "return new "
-                            (helpers/render-str (ast/asType template))
+                            (helpers/render (ast/asType template))
                             "();")]}))
 
 (defn render [^AstDirectory directory]
   (Source.
     (.name directory)
-    (helpers/render-str
+    (helpers/render
       (map->ClassDef
         {:type (ast/asType directory)
          :body (map static-factory (.templates directory))}))))

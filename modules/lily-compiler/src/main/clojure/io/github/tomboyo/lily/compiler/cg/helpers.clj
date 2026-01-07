@@ -1,20 +1,12 @@
 (ns io.github.tomboyo.lily.compiler.cg.helpers
   (:require [clojure.string :as str])
-  (:import (clojure.lang Keyword)))
+  (:import (clojure.lang Keyword Seqable)))
 
 (defn indent [s]
-  (if (seq? s)
-    (map #(str "  " %) s)
-    (str "  " s)))
+  (str/join (map #(str "  " %) (str/split-lines s))))
 
 (defprotocol Render
   (render [x]))
-
-(defn render-str [x]
-  (let [x (render x)]
-    (cond
-      (coll? x) (str/join "\n" x)
-      (string? x) x)))
 
 (extend-protocol Render
   nil
@@ -25,37 +17,38 @@
 
   Keyword
   (render [k] (subs (str k) 1))
+
+  Seqable
+  (render [xs] (str/join "\n" (map render xs)))
   )
 
 (defrecord Record [type]
   Render
   (render [_]
-    (concat
-      [(str "package " (:package type) ";")
-       (str "public record " (:name type) "() {")]
-      ["}"])))
+    (str/join "\n" [(str "package " (:package type) ";")
+                    (str "public record " (:name type) "() {")
+                    "}"])))
 
 (defrecord ClassDef [type body]
   Render
   (render [_]
-    (concat
-      [(str "package " (:package type) ";")
-       (str "public class " (:name type) " {")]
-      (flatten (map (comp indent render) body))
-      ["}"])))
+    (str/join "\n" [(str "package " (:package type) ";")
+                    (str "public class " (:name type) " {")
+                    (-> body render indent)
+                    "}"])))
 
 (defrecord Method [modifiers returns name body]
   Render
   (render [_]
-    (concat
-      [(str (str/join " " (map render modifiers))
-            " "
-            (render returns)
-            " "
-            name
-            "() {")]
-      (flatten (map (comp indent render) body))
-      ["}"])))
+    (str/join "\n"
+              [(str (str/join " " (map render modifiers))
+                    " "
+                    (render returns)
+                    " "
+                    name
+                    "() {")
+               (-> body render indent)
+               "}"])))
 
 (defrecord Type [package name]
   Render
@@ -63,7 +56,7 @@
 
 (comment
   (render (map->Record {:type {:package "com.example.template"
-                               :name "MyRecord"}}))
+                               :name    "MyRecord"}}))
   (render (let [return-type (map->Type {:package "com.example.template"
                                         :name    "GetFooTemplate"})
                 method (map->Method {:modifiers   [:public :static]

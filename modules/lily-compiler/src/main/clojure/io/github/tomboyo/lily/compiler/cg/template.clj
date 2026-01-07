@@ -6,7 +6,7 @@
 
 (defn render [^AstTemplate astTemplate]
   (Source. (.name astTemplate)
-           (helpers/render-str
+           (helpers/render
              (helpers/map->Record {:type (ast-interop/asType astTemplate)}))))
 
 (comment
