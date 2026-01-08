@@ -65,7 +65,7 @@
 
 (defrecord Type [package name]
   Render
-  (render [_] (str package "." name)))
+  (render [_] (str/join "." (filter (complement nil?) [package name]))))
 
 (comment
   (render (map->Record {:type {:package "com.example.template"
