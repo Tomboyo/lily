@@ -13,8 +13,8 @@
                   :name      (.. template name typeName lowerCamelCase)
                   :body      [(str "return "
                                    (helpers/render type)
-                                   ".new"
-                                   (:name type)
+                                   "."
+                                   helpers/emptyFactoryName
                                    "();")]})))
 
 (defn render [^AstDirectory directory]

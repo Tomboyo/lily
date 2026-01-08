@@ -79,6 +79,21 @@
   Render
   (render [_] (str/join "." (filter (complement nil?) [package name]))))
 
+
+(def emptyFactoryName
+  "The name of static factories for 'empty' instances of things."
+  "empty")
+
+(defn staticFactory
+  [type fields xform]
+  (let [params (str/join ", " (map xform fields))]
+    (map->Method {:modifiers [:public :static]
+                  :returns   type
+                  :name      emptyFactoryName
+                  :body      [(str "return new " (render type)
+                                   "(" params ");")]
+                  })))
+
 (comment
   (render (map->Record {:type {:package "com.example.template"
                                :name    "MyRecord"}}))

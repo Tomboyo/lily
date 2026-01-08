@@ -9,25 +9,14 @@
              ParameterLocation SimpleName)
            (io.github.tomboyo.lily.compiler.cg Source)))
 
-(defn staticFactory
-  [type fields xform]
-  (let [name (:name type)
-        params (str/join ", " (map xform fields))]
-    (map->Method {:modifiers [:public :static]
-                  :returns   type
-                  :name      (str "new" name)
-                  :body      [(str "return new " (helpers/render type)
-                                   "(" params ");")]
-                  })))
-
 (defn parameterRecordStaticFactory
   [type fields]
-  (staticFactory type fields (fn [_] "null")))
+  (helpers/staticFactory type fields (fn [_] "null")))
 
 (defn templateStaticFactory
   [type fields]
-  (staticFactory type fields #(str (helpers/render
-                                     (:type %)) ".new" (-> % :type :name) "()"))
+  (helpers/staticFactory type fields #(str (helpers/render (:type %))
+                                   "." helpers/emptyFactoryName "()"))
   )
 
 (defn pathParameters [template]
