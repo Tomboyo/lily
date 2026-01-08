@@ -9,32 +9,26 @@
              ParameterLocation SimpleName)
            (io.github.tomboyo.lily.compiler.cg Source)))
 
-(defn parameterRecordStaticFactory
-  [type fields]
-  (let [name (:name type)]
+(defn staticFactory
+  [type fields xform]
+  (let [name (:name type)
+        params (str/join ", " (map xform fields))]
     (map->Method {:modifiers [:public :static]
                   :returns   type
                   :name      (str "new" name)
-                  :body      [(str "return new " (helpers/render type) "("
-                                   (str/join ", " (map (fn [_] "null") fields))
-                                   ");")]
+                  :body      [(str "return new " (helpers/render type)
+                                   "(" params ");")]
                   })))
+
+(defn parameterRecordStaticFactory
+  [type fields]
+  (staticFactory type fields (fn [_] "null")))
 
 (defn templateStaticFactory
   [type fields]
-  (let [name (:name type)
-        params (map #(str (helpers/render (:type %))
-                          ".new"
-                          (-> % :type :name)
-                          "()")
-                    fields)]
-    (map->Method {:modifiers [:public :static]
-                  :returns   type
-                  :name      (str "new" name)
-                  :body      [(str "return new " (helpers/render type) "("
-                                   (str/join ", " params)
-                                   ");")]
-                  })))
+  (staticFactory type fields #(str (helpers/render
+                                     (:type %)) ".new" (-> % :type :name) "()"))
+  )
 
 (defn pathParameters [template]
   (let [type (map->Type {:name "PathParameters"})
@@ -42,7 +36,7 @@
     (map->Record
       {:type   type
        :fields fields
-       :body [(parameterRecordStaticFactory type fields)]})))
+       :body   [(parameterRecordStaticFactory type fields)]})))
 
 (defn render [^AstTemplate astTemplate]
   (Source. (.name astTemplate)
@@ -51,10 +45,10 @@
                    pathParameters (pathParameters astTemplate)
                    fields [(helpers/toField pathParameters)]]
                [(map->PackageDecl type)
-                (map->Record {:type type
+                (map->Record {:type   type
                               :fields fields
-                              :body [(templateStaticFactory type fields)
-                                     pathParameters]})]))))
+                              :body   [(templateStaticFactory type fields)
+                                       pathParameters]})]))))
 
 (comment
   (import [io.github.tomboyo.lily.compiler.ast SimpleName ParameterLocation ParameterEncoding])
