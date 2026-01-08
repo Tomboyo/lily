@@ -2,7 +2,7 @@
   (:require [clojure.string :as str]
             [io.github.tomboyo.lily.compiler.cg.helpers
              :as helpers
-             :refer [map->PackageDecl map->Record map->Method map->Type]]
+             :refer [map->PackageDecl map->Record map->Method map->Type map->Field]]
             [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast])
   (:import (io.github.tomboyo.lily.compiler.ast
              AstTemplate Fqn OperationParameter ParameterEncoding
@@ -20,6 +20,22 @@
                                    ");")]
                   })))
 
+(defn templateStaticFactory
+  [type fields]
+  (let [name (:name type)
+        params (map #(str (helpers/render (:type %))
+                          ".new"
+                          (-> % :type :name)
+                          "()")
+                    fields)]
+    (map->Method {:modifiers [:public :static]
+                  :returns   type
+                  :name      (str "new" name)
+                  :body      [(str "return new " (helpers/render type) "("
+                                   (str/join ", " params)
+                                   ");")]
+                  })))
+
 (defn pathParameters [template]
   (let [type (map->Type {:name "PathParameters"})
         fields (map ast/asField (.pathParameters template))]
@@ -31,10 +47,14 @@
 (defn render [^AstTemplate astTemplate]
   (Source. (.name astTemplate)
            (helpers/render
-             (let [type (ast/asType astTemplate)]
+             (let [type (ast/asType astTemplate)
+                   pathParameters (pathParameters astTemplate)
+                   fields [(helpers/toField pathParameters)]]
                [(map->PackageDecl type)
                 (map->Record {:type type
-                              :body [(pathParameters astTemplate)]})]))))
+                              :fields fields
+                              :body [(templateStaticFactory type fields)
+                                     pathParameters]})]))))
 
 (comment
   (import [io.github.tomboyo.lily.compiler.ast SimpleName ParameterLocation ParameterEncoding])

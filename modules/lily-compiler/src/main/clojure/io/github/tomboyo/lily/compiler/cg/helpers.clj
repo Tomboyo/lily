@@ -7,6 +7,13 @@
     s
     (str/join "\n" (map #(str "  " %) (str/split-lines s)))))
 
+(defn lowerCamelCase
+  "returns name in lowerCamelCase"
+  [name]
+  (str
+    (str/lower-case (nth name 0))
+    (subs name 1)))
+
 (defprotocol Render
   (render [x]))
 
@@ -35,6 +42,11 @@
   Render
   (render [_]
     (str (render type) " " name)))
+
+(defn toField
+  "Converts anything with a :type to a field `NameOfType nameOfType`."
+  [x]
+  (->Field (:type x) (lowerCamelCase (-> x :type :name))))
 
 (defrecord Record [type fields body]
   Render
