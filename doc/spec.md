@@ -69,27 +69,22 @@ template = template
 ```
 
 Templates are immutable so that they can be easily shared. For each of the
-"wither" methods above, there is a corresponding getter:
+withers described above, the bound parameters can be retrieved with a
+corresponding record-style getter:
 
 ```java
-// => Map<String, String> of parameter names to values
-template.getPathParameters();
-// => Map<String, String> of parameter names to values
-template.getQueryParameters();
-// The Map<String, List<String>> of cookies, e.g.
-// {"Cookie": ["$Version=\"1\"", "bar=\"bar\"; $Path=\"/\""]}
-// (consistent with the java.net.http API)
-template.getCookieParameters();
-// Map<String, List<String>> of parameter names to values
-template.getHeaderParameters();
+template.pathParameters().baz();    // => "baz"
+template.qeryParameters().foo();    //=> "foo"
+template.cookieParameters().bar();  // => "bar"
+template.headerParameters().biff(); // => "biff"
 // The generated model (DTO) with bound parameters, e.g. CreatePetBody
-template.getBody();
+template.body();
 
-template.getPathOverride();   // => Optional<String>
-template.getQueryOverride();  // => Optional<String>
-template.getCookieOverride(); // => Map<String, List<String>> of cookies
-template.getHeaderOverride(); // => Map<String, List<String>>
-template.getBodyOverride();   // => A byte array.
+template.pathOverride();   // => Optional<String>
+template.queryOverride();  // => Optional<String>
+template.cookieOverride(); // => Map<String, List<String>> of cookies
+template.headerOverride(); // => Map<String, List<String>>
+template.bodyOverride();   // => A byte array.
 ```
 
 Templates are logic-less data containers. The knowledge of how to convert a 

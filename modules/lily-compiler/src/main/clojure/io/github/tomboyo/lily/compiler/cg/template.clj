@@ -16,7 +16,7 @@
 (defn templateStaticFactory
   [type fields]
   (helpers/staticFactory type fields #(str (helpers/render (:type %))
-                                   "." helpers/emptyFactoryName "()"))
+                                           "." helpers/emptyFactoryName "()"))
   )
 
 (defn pathParameters [template]
@@ -25,7 +25,8 @@
     (map->Record
       {:type   type
        :fields fields
-       :body   [(parameterRecordStaticFactory type fields)]})))
+       :body   [(parameterRecordStaticFactory type fields)]
+       :meta #{:withers}})))
 
 (defn render [^AstTemplate astTemplate]
   (Source. (.name astTemplate)
@@ -37,7 +38,8 @@
                 (map->Record {:type   type
                               :fields fields
                               :body   [(templateStaticFactory type fields)
-                                       pathParameters]})]))))
+                                       pathParameters]
+                              :meta   #{:fwithers}})]))))
 
 (comment
   (import [io.github.tomboyo.lily.compiler.ast SimpleName ParameterLocation ParameterEncoding])
