@@ -188,13 +188,18 @@ The `HttpRequests` class converts templates with bound parameters and/or
 overrides into `java.net.http.HttpRequest.Builder`s:
 
 ```java
-HttpRequests.builder(template) // => java.net.http.HttpRequest$Builder
-    .build();                  //  => java.net.http.HttpRequest
+HttpRequests.builder("https://example.com/", template)
+// => java.net.http.HttpRequest$Builder
+    .build();
+// => java.net.http.HttpRequest
 ```
 
-And similarly, the `HttpResponses` class converts `java.net.http.
-HttpResponse` objects into generated response objects (e.g. 
-a member of the `CreatePetResponse` sealed interface):
+Note the example URL parameter is the base URL for the service. Template paths
+are resolved _relative_ to this base URL.
+
+The `HttpResponses` class converts `java.net.http.HttpResponse` objects into
+generated response objects (e.g. a member of the `CreatePetResponse` sealed
+interface):
 
 ```java
 // Creates an instance of CreatePetResponse (like CreatePet200) from the 
@@ -210,7 +215,7 @@ takes advantage of as much of the generated API as possible:
 var template = Directory.createPet()
     // (Bind whatever seems to work here)
     ;
-var httpRequest = HttpRequests.builder(template)
+var httpRequest = HttpRequests.builder("https://example.com/", template)
     // (Override the native HTTP request here)
     ;
 
