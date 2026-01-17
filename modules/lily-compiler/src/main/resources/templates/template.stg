@@ -1,0 +1,41 @@
+record(type, fields, body) ::= <<
+<if(type.package)>
+package <type.package>;
+<endif>
+public record <type.name>(<fieldDecls(fields)>) {<\\>
+<if(body)>
+  <body; separator="\n\n">
+<endif>
+}
+>>
+
+emptyFactory(type, parameters) ::= <<
+public static <qualify(type)> empty() {
+  return new <qualify(type)>(<parameters; separator=", ">);
+}
+>>
+
+wither(returns, field, ctorParams) ::= <<
+public <qualify(returns)> with<field.name; format="cap">(<fieldDecl(field)>) {
+  return new <qualify(returns)>(<ctorParams; separator=", ">);
+}
+>>
+
+method(modifiers, returns, name, args, body) ::= <<
+<modifiers; separator=" "> <qualify(returns)> <name>(<fieldDecls(args)>) {<\\>
+<if(body)>
+  <body>
+<endif>
+}
+>>
+
+fieldDecls(fields) ::= "<fields:fieldDecl(); separator=\", \">"
+
+fieldDecl(field) ::= "<qualify(field.type)> <field.name>"
+
+qualify(type) ::= <<
+<if(type.package)><type.package>.<endif><\\>
+<type.name><\\>
+<if(type.parameters)>\<<type.parameters:qualify()>\><endif>
+>>
+
