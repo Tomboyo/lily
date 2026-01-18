@@ -2,34 +2,12 @@
   (:require
     [clojure.java.io :as io]
     [clojure.walk :refer [stringify-keys]]
-    [io.github.tomboyo.lily.compiler.cg.helpers
-     :as helpers
-     :refer [map->PackageDecl map->Record map->Method map->Type map->Field]]
     [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast])
   (:import (io.github.tomboyo.lily.compiler.ast
              AstTemplate Fqn OperationParameter ParameterEncoding
              ParameterLocation SimpleName)
            (io.github.tomboyo.lily.compiler.cg Source)
            (org.stringtemplate.v4 STGroupFile StringRenderer)))
-
-(defn parameterRecordStaticFactory
-  [type fields]
-  (helpers/staticFactory type fields (fn [_] "null")))
-
-(defn templateStaticFactory
-  [type fields]
-  (helpers/staticFactory type fields #(str (helpers/render (:type %))
-                                           "." helpers/emptyFactoryName "()"))
-  )
-
-(defn pathParameters [template]
-  (let [type (map->Type {:name "PathParameters"})
-        fields (map ast/asField (.pathParameters template))]
-    (map->Record
-      {:type   type
-       :fields fields
-       :body   [(parameterRecordStaticFactory type fields)]
-       :meta   #{:withers}})))
 
 (def stgf (let [tmp (STGroupFile. (io/resource "templates/template.stg"))]
             (.registerRenderer tmp String (StringRenderer.))
@@ -93,25 +71,22 @@
       m
       fields)))
 
-(defn render2 [^AstTemplate astTemplate]
-  (let [pathParameters (-> {:type   {:name "PathParameters"}
-                            :fields (map ast/asField (.pathParameters astTemplate))}
-                           (with-body emptyFactory)
-                           (withers))
-        template (-> {:type   (ast/asType astTemplate)
-                      :fields (when pathParameters
-                                [{:type (:type pathParameters)
-                                  :name "pathParameters"}])
-                      :body   [(record pathParameters)]}
-                     (with-body #(emptyFactory % (fn [f] (case (-> f :type :name)
-                                                           "PathParameters" "PathParameters.empty()"))))
-                     (f-withers)
-                     (record))]
-    (.render template)))
-
 (defn render [^AstTemplate astTemplate]
   (Source. (.name astTemplate)
-           (render2 astTemplate)))
+           (let [pathParameters (-> {:type   {:name "PathParameters"}
+                                     :fields (map ast/asField (.pathParameters astTemplate))}
+                                    (with-body emptyFactory)
+                                    (withers))
+                 template (-> {:type   (ast/asType astTemplate)
+                               :fields (when pathParameters
+                                         [{:type (:type pathParameters)
+                                           :name "pathParameters"}])
+                               :body   [(record pathParameters)]}
+                              (with-body #(emptyFactory % (fn [f] (case (-> f :type :name)
+                                                                    "PathParameters" "PathParameters.empty()"))))
+                              (f-withers)
+                              (record))]
+             (.render template))))
 
 (comment
   (import [io.github.tomboyo.lily.compiler.ast SimpleName ParameterLocation ParameterEncoding])
