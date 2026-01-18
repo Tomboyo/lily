@@ -1,47 +1,30 @@
 (ns io.github.tomboyo.lily.compiler.cg.template
   (:require
-    [clojure.java.io :as io]
-    [clojure.walk :refer [stringify-keys]]
-    [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast])
+    [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast]
+    [io.github.tomboyo.lily.compiler.cg.string-template :as st])
   (:import (io.github.tomboyo.lily.compiler.ast
              AstTemplate Fqn OperationParameter ParameterEncoding
              ParameterLocation SimpleName)
-           (io.github.tomboyo.lily.compiler.cg Source)
-           (org.stringtemplate.v4 STGroupFile StringRenderer)))
-
-(def stgf (let [tmp (STGroupFile. (io/resource "templates/template.stg"))]
-            (.registerRenderer tmp String (StringRenderer.))
-            tmp))
-
-(defn st-render [template m]
-  (reduce
-    (fn [result [k v]]
-      (.add result (name k) (stringify-keys v)))
-    (.getInstanceOf stgf template)
-    m))
-
-(defn record [m] (st-render "record" m))
-(defn wither [m] (st-render "wither" m))
-(defn empty-fn [m] (st-render "emptyFactory" m))
+           (io.github.tomboyo.lily.compiler.cg Source)))
 
 (defn with-body [m f]
   (update m :body #(conj % (f m))))
 
 (defn add-empty-fn
   ([m] (add-empty-fn m (fn [_] "null")))
-  ([m f] (with-body m #(empty-fn (-> (select-keys % #{:type})
-                                     (assoc :parameters (map f (:fields m))))))))
+  ([m f] (with-body m #(st/empty-fn (-> (select-keys % #{:type})
+                                        (assoc :parameters (map f (:fields m))))))))
 
 (defn add-withers [{fields :fields :as m}]
   (letfn [(wither-for-field
             [field {:keys [type fields]}]
-            (wither {:returns    type
-                     :name       (:name field)
-                     :param      field
-                     :ctorParams (map #(if (= field %)
-                                         (:name %)
-                                         (str "this." (:name %)))
-                                      fields)}))]
+            (st/wither {:returns    type
+                        :name       (:name field)
+                        :param      field
+                        :ctorParams (map #(if (= field %)
+                                            (:name %)
+                                            (str "this." (:name %)))
+                                         fields)}))]
     (reduce
       (fn [result field]
         (with-body result #(wither-for-field field %)))
@@ -51,16 +34,16 @@
 (defn add-fwithers [{fields :fields :as m}]
   (letfn [(wither-for-field
             [field {:keys [type fields]}]
-            (wither {:returns    type
-                     :name       (:name field)
-                     :param      {:type {:package    "java.util.function"
-                                         :name       "Function"
-                                         :parameters (repeat 2 (:type field))}
-                                  :name "f"}
-                     :ctorParams (map #(if (= field %)
-                                         (str "f.apply(this." (:name %) ")")
-                                         (str "this." (:name %)))
-                                      fields)}))]
+            (st/wither {:returns    type
+                        :name       (:name field)
+                        :param      {:type {:package    "java.util.function"
+                                            :name       "Function"
+                                            :parameters (repeat 2 (:type field))}
+                                     :name "f"}
+                        :ctorParams (map #(if (= field %)
+                                            (str "f.apply(this." (:name %) ")")
+                                            (str "this." (:name %)))
+                                         fields)}))]
     (reduce
       (fn [result field]
         (with-body result #(wither-for-field field %)))
@@ -77,11 +60,11 @@
                                :fields (when pathParameters
                                          [{:type (:type pathParameters)
                                            :name "pathParameters"}])
-                               :body   [(record pathParameters)]}
+                               :body   [(st/record pathParameters)]}
                               (add-empty-fn (fn [f] (case (-> f :type :name)
                                                       "PathParameters" "PathParameters.empty()")))
                               (add-fwithers)
-                              (record))]
+                              (st/record))]
              (.render template))))
 
 (comment
