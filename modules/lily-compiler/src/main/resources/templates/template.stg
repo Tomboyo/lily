@@ -15,17 +15,9 @@ public static <qualify(type)> empty() {
 }
 >>
 
-wither(returns, field, ctorParams) ::= <<
-public <qualify(returns)> with<field.name; format="cap">(<fieldDecl(field)>) {
+wither(returns, param, ctorParams) ::= <<
+public <qualify(returns)> with<param.name; format="cap">(<fieldDecl(param)>) {
   return new <qualify(returns)>(<ctorParams; separator=", ">);
-}
->>
-
-method(modifiers, returns, name, args, body) ::= <<
-<modifiers; separator=" "> <qualify(returns)> <name>(<fieldDecls(args)>) {<\\>
-<if(body)>
-  <body>
-<endif>
 }
 >>
 
