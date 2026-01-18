@@ -1,31 +1,15 @@
 (ns io.github.tomboyo.lily.compiler.cg.directory
-  (:require [io.github.tomboyo.lily.compiler.cg.helpers
-             :as helpers
-             :refer [map->ClassDef map->Method map->PackageDecl]]
-            [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast])
+  (:require [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast]
+            [io.github.tomboyo.lily.compiler.cg.string-template :as st])
   (:import (io.github.tomboyo.lily.compiler.ast AstDirectory Fqn)
            (io.github.tomboyo.lily.compiler.cg Source)))
-
-(defn static-factory [template]
-  (let [type (ast/asType template)]
-    (map->Method {:modifiers [:public :static]
-                  :returns   type
-                  :name      (.. template name typeName lowerCamelCase)
-                  :body      [(str "return "
-                                   (helpers/render type)
-                                   "."
-                                   helpers/emptyFactoryName
-                                   "();")]})))
 
 (defn render [^AstDirectory directory]
   (Source.
     (.name directory)
-    (helpers/render
-      (let [type (ast/asType directory)]
-        [(map->PackageDecl type)
-         (map->ClassDef
-           {:type type
-            :body (map static-factory (.templates directory))})]))))
+    (.render (st/directory
+             {:type      (ast/asType directory)
+              :templates (map ast/asType (.templates directory))}))))
 
 (comment
   (import '[io.github.tomboyo.lily.compiler.ast OperationParameter SimpleName AstTemplate ParameterLocation ParameterEncoding])
@@ -38,5 +22,6 @@
                                          (.build (Fqn/newBuilder "java.lang" "String")))])
         directory (AstDirectory. (.build (Fqn/newBuilder "com.example" "Directory"))
                                  #{template})]
-    (.contents (render directory)))
+    (.contents (render directory))
+    )
   )

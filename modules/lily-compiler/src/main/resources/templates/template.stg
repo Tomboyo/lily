@@ -1,3 +1,18 @@
+directory(type, templates) ::= <<
+package <type.package>;
+public class <type.name> {
+  private <type.name>() {};
+
+  <templates:templateFn(); separator="\n\n">
+}
+>>
+
+templateFn(type) ::= <<
+public static <qualify(type)> <type.name; format="low">() {
+  return <qualify(type)>.empty();
+}
+>>
+
 record(type, fields, body) ::= <<
 <if(type.package)>
 package <type.package>;
