@@ -74,19 +74,22 @@
       (.add "returns" (stringify-keys (:returns m)))
       (.add "name" (:name m))))
 
+(defn with-body [x f]
+  (update x :body #(conj % (f x))))
+
 (defn render2 [^AstTemplate astTemplate]
-  (let [pathParameters (when (.pathParameters astTemplate)
-                         (let [it {:type   {:name "PathParameters"}
-                                   :fields (map ast/asField (.pathParameters astTemplate))}]
-                           (assoc it :body (emptyFactory it))))
-        template {:type   (ast/asType astTemplate)
-                  :fields (when pathParameters
-                            [{:type (:type pathParameters)
-                              :name "pathParameters"}])
-                  }]
-    (.render (record (assoc template :body [(emptyFactory template #(case (-> % :type :name)
-                                                                      "PathParameters" "PathParameters.empty()"))
-                                            (record pathParameters)])))))
+  (let [pathParameters (-> {:type   {:name "PathParameters"}
+                            :fields (map ast/asField (.pathParameters astTemplate))}
+                           (with-body emptyFactory))
+        template (-> {:type   (ast/asType astTemplate)
+                      :fields (when pathParameters
+                                [{:type (:type pathParameters)
+                                  :name "pathParameters"}])
+                      :body   [(record pathParameters)]}
+                     (with-body #(emptyFactory % (fn [f] (case (-> f :type :name)
+                                                           "PathParameters" "PathParameters.empty()"))))
+                     (record))]
+    (.render template)))
 
 (comment
   (import [io.github.tomboyo.lily.compiler.ast SimpleName ParameterLocation ParameterEncoding])
