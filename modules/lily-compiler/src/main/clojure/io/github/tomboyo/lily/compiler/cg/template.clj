@@ -7,13 +7,13 @@
              ParameterLocation SimpleName)
            (io.github.tomboyo.lily.compiler.cg Source)))
 
-(defn with-body [m f]
-  (update m :body #(conj % (f m))))
+(defn conj-body [m v]
+  (update m :body #(conj % v)))
 
 (defn add-empty-fn
   ([m] (add-empty-fn m (fn [_] "null")))
-  ([m f] (with-body m #(st/empty-fn (-> (select-keys % #{:type})
-                                        (assoc :parameters (map f (:fields m))))))))
+  ([m f] (conj-body m (st/empty-fn {:type       (:type m)
+                                    :parameters (map f (:fields m))}))))
 
 (defn add-withers [{fields :fields :as m}]
   (letfn [(wither-for-field
@@ -26,8 +26,7 @@
                                             (str "this." (:name %)))
                                          fields)}))]
     (reduce
-      (fn [result field]
-        (with-body result #(wither-for-field field %)))
+      (fn [result field] (conj-body result (wither-for-field field m)))
       m
       fields)))
 
@@ -45,8 +44,7 @@
                                             (str "this." (:name %)))
                                          fields)}))]
     (reduce
-      (fn [result field]
-        (with-body result #(wither-for-field field %)))
+      (fn [result field] (conj-body result (wither-for-field field m)))
       m
       fields)))
 
