@@ -13,38 +13,34 @@
             (.registerRenderer tmp String (StringRenderer.))
             tmp))
 
-(defn record [m]
-  (-> (.getInstanceOf stgf "record")
-      (.add "type" (stringify-keys (:type m)))
-      (.add "fields" (stringify-keys (:fields m)))
-      (.add "body" (stringify-keys (:body m)))))
+(defn st-render [template m]
+  (reduce
+    (fn [result [k v]]
+      (.add result (name k) (stringify-keys v)))
+    (.getInstanceOf stgf template)
+    m))
 
-(defn wither [{:keys [returns name param ctorParams]}]
-  (-> (.getInstanceOf stgf "wither")
-      (.add "returns" (stringify-keys returns))
-      (.add "name" name)
-      (.add "param" (stringify-keys param))
-      (.add "ctorParams" ctorParams)))
-
-(defn emptyFactory
-  ([m] (emptyFactory m (fn [_] "null")))
-  ([m f]
-   (-> (.getInstanceOf stgf "emptyFactory")
-       (.add "type" (stringify-keys (:type m)))
-       (.add "parameters" (map f (:fields m))))))
+(defn record [m] (st-render "record" m))
+(defn wither [m] (st-render "wither" m))
+(defn empty-fn [m] (st-render "emptyFactory" m))
 
 (defn with-body [m f]
   (update m :body #(conj % (f m))))
 
-(defn withers [{fields :fields :as m}]
+(defn add-empty-fn
+  ([m] (add-empty-fn m (fn [_] "null")))
+  ([m f] (with-body m #(empty-fn (-> (select-keys % #{:type})
+                                     (assoc :parameters (map f (:fields m))))))))
+
+(defn add-withers [{fields :fields :as m}]
   (letfn [(wither-for-field
             [field {:keys [type fields]}]
             (wither {:returns    type
                      :name       (:name field)
                      :param      field
                      :ctorParams (map #(if (= field %)
-                                         (:name field)
-                                         (str "this." (:name field)))
+                                         (:name %)
+                                         (str "this." (:name %)))
                                       fields)}))]
     (reduce
       (fn [result field]
@@ -52,7 +48,7 @@
       m
       fields)))
 
-(defn f-withers [{fields :fields :as m}]
+(defn add-fwithers [{fields :fields :as m}]
   (letfn [(wither-for-field
             [field {:keys [type fields]}]
             (wither {:returns    type
@@ -62,8 +58,8 @@
                                          :parameters (repeat 2 (:type field))}
                                   :name "f"}
                      :ctorParams (map #(if (= field %)
-                                         (str "f.apply(this." (:name field) ")")
-                                         (str "this." (:name field)))
+                                         (str "f.apply(this." (:name %) ")")
+                                         (str "this." (:name %)))
                                       fields)}))]
     (reduce
       (fn [result field]
@@ -75,16 +71,16 @@
   (Source. (.name astTemplate)
            (let [pathParameters (-> {:type   {:name "PathParameters"}
                                      :fields (map ast/asField (.pathParameters astTemplate))}
-                                    (with-body emptyFactory)
-                                    (withers))
+                                    (add-empty-fn)
+                                    (add-withers))
                  template (-> {:type   (ast/asType astTemplate)
                                :fields (when pathParameters
                                          [{:type (:type pathParameters)
                                            :name "pathParameters"}])
                                :body   [(record pathParameters)]}
-                              (with-body #(emptyFactory % (fn [f] (case (-> f :type :name)
-                                                                    "PathParameters" "PathParameters.empty()"))))
-                              (f-withers)
+                              (add-empty-fn (fn [f] (case (-> f :type :name)
+                                                      "PathParameters" "PathParameters.empty()")))
+                              (add-fwithers)
                               (record))]
              (.render template))))
 
@@ -98,16 +94,16 @@
                                              (ParameterEncoding/simple)
                                              (.build (Fqn/newBuilder "java.lang" "String")))])))
 
-  (render2 (AstTemplate.
-             (.build (Fqn/newBuilder "com.example" "myOperation"))
-             [(OperationParameter. (SimpleName/of "id")
-                                   "id"
-                                   ParameterLocation/PATH
-                                   (ParameterEncoding/simple)
-                                   (.build (Fqn/newBuilder "java.lang" "String")))
-              (OperationParameter. (SimpleName/of "include")
-                                   "include"
-                                   ParameterLocation/PATH
-                                   (ParameterEncoding/simple)
-                                   (.build (Fqn/newBuilder "java.lang" "String")))]))
+  (.contents (render (AstTemplate.
+                       (.build (Fqn/newBuilder "com.example" "myOperation"))
+                       [(OperationParameter. (SimpleName/of "id")
+                                             "id"
+                                             ParameterLocation/PATH
+                                             (ParameterEncoding/simple)
+                                             (.build (Fqn/newBuilder "java.lang" "String")))
+                        (OperationParameter. (SimpleName/of "include")
+                                             "include"
+                                             ParameterLocation/PATH
+                                             (ParameterEncoding/simple)
+                                             (.build (Fqn/newBuilder "java.lang" "String")))])))
   )
