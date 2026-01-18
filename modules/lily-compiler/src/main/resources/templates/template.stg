@@ -30,8 +30,8 @@ public static <qualify(type)> empty() {
 }
 >>
 
-wither(returns, name, param, ctorParams) ::= <<
-public <qualify(returns)> with<name; format="cap">(<fieldDecl(param)>) {
+wither(returns, name, arg, ctorParams) ::= <<
+public <qualify(returns)> with<name; format="cap">(<fieldDecl(arg)>) {
   return new <qualify(returns)>(<ctorParams; separator=", ">);
 }
 >>

@@ -20,7 +20,7 @@
             [field {:keys [type fields]}]
             (st/wither {:returns    type
                         :name       (:name field)
-                        :param      field
+                        :arg        field
                         :ctorParams (map #(if (= field %)
                                             (:name %)
                                             (str "this." (:name %)))
@@ -36,7 +36,7 @@
             [field {:keys [type fields]}]
             (st/wither {:returns    type
                         :name       (:name field)
-                        :param      {:type {:package    "java.util.function"
+                        :arg        {:type {:package    "java.util.function"
                                             :name       "Function"
                                             :parameters (repeat 2 (:type field))}
                                      :name "f"}
