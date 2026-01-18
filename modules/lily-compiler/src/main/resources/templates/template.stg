@@ -15,8 +15,8 @@ public static <qualify(type)> empty() {
 }
 >>
 
-wither(returns, param, ctorParams) ::= <<
-public <qualify(returns)> with<param.name; format="cap">(<fieldDecl(param)>) {
+wither(returns, name, param, ctorParams) ::= <<
+public <qualify(returns)> with<name; format="cap">(<fieldDecl(param)>) {
   return new <qualify(returns)>(<ctorParams; separator=", ">);
 }
 >>
@@ -28,6 +28,6 @@ fieldDecl(field) ::= "<qualify(field.type)> <field.name>"
 qualify(type) ::= <<
 <if(type.package)><type.package>.<endif><\\>
 <type.name><\\>
-<if(type.parameters)>\<<type.parameters:qualify()>\><endif>
+<if(type.parameters)>\<<type.parameters:qualify(); separator=", ">\><endif>
 >>
 

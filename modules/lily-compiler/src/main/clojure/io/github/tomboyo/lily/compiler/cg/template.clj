@@ -31,19 +31,6 @@
        :body   [(parameterRecordStaticFactory type fields)]
        :meta   #{:withers}})))
 
-(defn render [^AstTemplate astTemplate]
-  (Source. (.name astTemplate)
-           (helpers/render
-             (let [type (ast/asType astTemplate)
-                   pathParameters (pathParameters astTemplate)
-                   fields [(helpers/toField pathParameters)]]
-               [(map->PackageDecl type)
-                (map->Record {:type   type
-                              :fields fields
-                              :body   [(templateStaticFactory type fields)
-                                       pathParameters]
-                              :meta   #{:fwithers}})]))))
-
 (def stgf (let [tmp (STGroupFile. (io/resource "templates/template.stg"))]
             (.registerRenderer tmp String (StringRenderer.))
             tmp))
@@ -54,9 +41,10 @@
       (.add "fields" (stringify-keys (:fields m)))
       (.add "body" (stringify-keys (:body m)))))
 
-(defn wither [{:keys [returns param ctorParams]}]
+(defn wither [{:keys [returns name param ctorParams]}]
   (-> (.getInstanceOf stgf "wither")
       (.add "returns" (stringify-keys returns))
+      (.add "name" name)
       (.add "param" (stringify-keys param))
       (.add "ctorParams" ctorParams)))
 
@@ -74,9 +62,29 @@
   (letfn [(wither-for-field
             [field {:keys [type fields]}]
             (wither {:returns    type
+                     :name       (:name field)
                      :param      field
                      :ctorParams (map #(if (= field %)
                                          (:name field)
+                                         (str "this." (:name field)))
+                                      fields)}))]
+    (reduce
+      (fn [result field]
+        (with-body result #(wither-for-field field %)))
+      m
+      fields)))
+
+(defn f-withers [{fields :fields :as m}]
+  (letfn [(wither-for-field
+            [field {:keys [type fields]}]
+            (wither {:returns    type
+                     :name       (:name field)
+                     :param      {:type {:package    "java.util.function"
+                                         :name       "Function"
+                                         :parameters (repeat 2 (:type field))}
+                                  :name "f"}
+                     :ctorParams (map #(if (= field %)
+                                         (str "f.apply(this." (:name field) ")")
                                          (str "this." (:name field)))
                                       fields)}))]
     (reduce
@@ -97,8 +105,13 @@
                       :body   [(record pathParameters)]}
                      (with-body #(emptyFactory % (fn [f] (case (-> f :type :name)
                                                            "PathParameters" "PathParameters.empty()"))))
+                     (f-withers)
                      (record))]
     (.render template)))
+
+(defn render [^AstTemplate astTemplate]
+  (Source. (.name astTemplate)
+           (render2 astTemplate)))
 
 (comment
   (import [io.github.tomboyo.lily.compiler.ast SimpleName ParameterLocation ParameterEncoding])
