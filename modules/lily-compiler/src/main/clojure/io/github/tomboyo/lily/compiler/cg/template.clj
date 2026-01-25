@@ -1,45 +1,69 @@
 (ns io.github.tomboyo.lily.compiler.cg.template
-  (:require [clojure.string :as str]
-            [io.github.tomboyo.lily.compiler.cg.helpers
-             :as helpers
-             :refer [map->PackageDecl map->Record map->Method map->Type map->Field]]
-            [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast])
+  (:require
+    [io.github.tomboyo.lily.compiler.cg.interop.ast :as ast]
+    [io.github.tomboyo.lily.compiler.cg.string-template :as st])
   (:import (io.github.tomboyo.lily.compiler.ast
              AstTemplate Fqn OperationParameter ParameterEncoding
              ParameterLocation SimpleName)
            (io.github.tomboyo.lily.compiler.cg Source)))
 
-(defn parameterRecordStaticFactory
-  [type fields]
-  (helpers/staticFactory type fields (fn [_] "null")))
+(defn conj-body [m v]
+  (update m :body #(conj % v)))
 
-(defn templateStaticFactory
-  [type fields]
-  (helpers/staticFactory type fields #(str (helpers/render (:type %))
-                                           "." helpers/emptyFactoryName "()"))
-  )
+(defn add-empty-fn
+  ([m] (add-empty-fn m (fn [_] "null")))
+  ([m f] (conj-body m (st/empty-fn {:type       (:type m)
+                                    :parameters (map f (:fields m))}))))
 
-(defn pathParameters [template]
-  (let [type (map->Type {:name "PathParameters"})
-        fields (map ast/asField (.pathParameters template))]
-    (map->Record
-      {:type   type
-       :fields fields
-       :body   [(parameterRecordStaticFactory type fields)]
-       :meta #{:withers}})))
+(defn add-withers [{fields :fields :as m}]
+  (letfn [(wither-for-field
+            [field {:keys [type fields]}]
+            (st/wither {:returns    type
+                        :name       (:name field)
+                        :arg        field
+                        :ctorParams (map #(if (= field %)
+                                            (:name %)
+                                            (str "this." (:name %)))
+                                         fields)}))]
+    (reduce
+      (fn [result field] (conj-body result (wither-for-field field m)))
+      m
+      fields)))
+
+(defn add-fwithers [{fields :fields :as m}]
+  (letfn [(wither-for-field
+            [field {:keys [type fields]}]
+            (st/wither {:returns    type
+                        :name       (:name field)
+                        :arg        {:type {:package    "java.util.function"
+                                            :name       "Function"
+                                            :parameters (repeat 2 (:type field))}
+                                     :name "f"}
+                        :ctorParams (map #(if (= field %)
+                                            (str "f.apply(this." (:name %) ")")
+                                            (str "this." (:name %)))
+                                         fields)}))]
+    (reduce
+      (fn [result field] (conj-body result (wither-for-field field m)))
+      m
+      fields)))
 
 (defn render [^AstTemplate astTemplate]
   (Source. (.name astTemplate)
-           (helpers/render
-             (let [type (ast/asType astTemplate)
-                   pathParameters (pathParameters astTemplate)
-                   fields [(helpers/toField pathParameters)]]
-               [(map->PackageDecl type)
-                (map->Record {:type   type
-                              :fields fields
-                              :body   [(templateStaticFactory type fields)
-                                       pathParameters]
-                              :meta   #{:fwithers}})]))))
+           (let [pathParameters (-> {:type   {:name "PathParameters"}
+                                     :fields (map ast/asField (.pathParameters astTemplate))}
+                                    (add-empty-fn)
+                                    (add-withers))
+                 template (-> {:type   (ast/asType astTemplate)
+                               :fields (when pathParameters
+                                         [{:type (:type pathParameters)
+                                           :name "pathParameters"}])
+                               :body   [(st/record pathParameters)]}
+                              (add-empty-fn (fn [f] (case (-> f :type :name)
+                                                      "PathParameters" "PathParameters.empty()")))
+                              (add-fwithers)
+                              (st/record))]
+             (.render template))))
 
 (comment
   (import [io.github.tomboyo.lily.compiler.ast SimpleName ParameterLocation ParameterEncoding])
@@ -47,6 +71,19 @@
                        (.build (Fqn/newBuilder "com.example" "myOperation"))
                        [(OperationParameter. (SimpleName/of "id")
                                              "id"
+                                             ParameterLocation/PATH
+                                             (ParameterEncoding/simple)
+                                             (.build (Fqn/newBuilder "java.lang" "String")))])))
+
+  (.contents (render (AstTemplate.
+                       (.build (Fqn/newBuilder "com.example" "myOperation"))
+                       [(OperationParameter. (SimpleName/of "id")
+                                             "id"
+                                             ParameterLocation/PATH
+                                             (ParameterEncoding/simple)
+                                             (.build (Fqn/newBuilder "java.lang" "String")))
+                        (OperationParameter. (SimpleName/of "include")
+                                             "include"
                                              ParameterLocation/PATH
                                              (ParameterEncoding/simple)
                                              (.build (Fqn/newBuilder "java.lang" "String")))])))
