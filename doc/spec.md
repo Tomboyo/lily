@@ -30,34 +30,114 @@ generated response objects (e.g. `GetPetResponse`, `GetPet200`, `GetPet404`).
 This section describes how a developer will interact with generated sources to
 achieve their goals.
 
-## Templates
+Lily is composed of two layers:
 
-Each operation described by an OpenAPI specification is compiled into a
-_template_. Templates may be created using the template directory, `Directory`.
+* The **domain layer** is the most-abstract layer. It works in terms of the
+  domain described by an OpenAPI specification.
+* The **Http layer** is the lest-abstract layer. It works in terms of HTTP via
+  the `java.net.http` package and the Jackson serialization library.
 
-Templates are APIs for creating HTTP requests conforming to an OpenAPI operation
-specification. Templates are logic-less containers of data that hold on to
-parameter bindings (the `id` in a path like `/foo/{id}/bar`), or 
-fully-formed request paths, queries, cookies, and bodies that need no 
-further processing.
+If an OpenAPI specification is accurate and complete, and if Lily is free of
+bugs, users will use the domain layer exclusively. Otherwise, they can drop down
+into the Http layer in order to work around flaws in Lily or their OpenAPI
+specification.
+
+## Domain Layer API
+
+The domain layer consists of:
+
+- `Api`
+- `Operation` and `Operations`
+- `RequestTemplate` and `IParameters`
+
+### `Api` - Make Requests And Read Responses
+
+The `Api` class provides the most convenient method for sending requests and
+parsing responses. `Api` creates HTTP requests from `RequestTemplate`s and
+parses HTTP responses into response types. The response types are sealed
+interfaces with one permitted member per documented HTTP response code, plus a
+catch-all for unexpected responses.
 
 ```java
-// A blank template with no bound parameters.
-var template = Directory.createPet(); // => CreatePetTemplate
+Api.sendSync(
+  HttpClient.newHttpClient(),
+  "https://example.com/base/url",
+  Operations.getPet(),
+  template -> template
+    .withPathParameters(p -> p.withId("1234")));
+// => GetPetResponse (e.g. GetPet200, GetPet404, or GetPetUnexpectedCode)
+```
 
-// Bind parameters:
-template = template
-    .withPathParameters(p -> p.withBaz("baz"))
-    .withQueryParameters(p -> p.withFoo("foo"))
-    .withCookieParameters(p -> p.withBar("bar"))
-    .withHeaderParameters(p -> p.withBiff("biff"))
-    .withBody(b -> b.withBang("bang")); // => CreatePetTemplate
+### `Operation` and `Operations` - Request And Response Type Pairs
 
-// Set overrides, which are fully-realized bespoke values. When templates 
-// are used to make http requests, overrides are used in preference to 
-// parameter bindings. These are used when something is wrong with the 
-// generated code or the underlying specification.
-template = template
+To make requests, the `Api.sendSync` method requires an instance of `Operation`.
+Instances of operation hold coupled instances of `RequestTemplate` and
+`ResponseReader`, making the relationship between request types
+(`RequestTemplate`) and response types (`ResponseReader`) explicit.
+
+For each operation defined in the OpenAPI specification for a service, there is
+a corresponding `Operations.operationName()` function that returns the operation
+instance. This arrangement should make it easy for users to discover operations
+with their IDE's code completion prompts.
+
+```java
+Operations.createPet(); // => Operation<CreatePetResponse>
+```
+
+### `RequestTemplate` and `IParameters` - Bind Request Parameters
+
+`RequestTemplate`s help the user create a request using the domain language of a
+particular OpenAPI operation. The `RequestTemplate` is a record whose components
+are concrete implementations of `IPathParameters`, `IQueryParameters`,
+`IHeaderParameters`, `ICookieParameters`, and `IBodyParameters`. Those
+`IParameters` interfaces present an API for binding parameters to requests based
+on their "location" in the HTTP request (e.g. in the path or the query) and
+their name in the OpenAPI specification.
+
+```
+var getPetTemplate = Operations.getPet().requestTemplate();
+getPetTemplate
+  .withPathParameters(p -> p.withFoo("foo"))
+  .withQueryParameters(p -> p.withBar("bar"))
+  .withCookieParameters(p -> p.withBaz("baz"))
+  .withHeaderParameters(p -> p.withBiff("biff"))
+  .withBodyParameters(p -> p.withBang("bang"));
+  // => an immutable copy with the requested modifications
+```
+
+After parameters are bound, they may be retrieved through a set of accessors:
+
+```java
+// The generated model (DTO) with bound parameters, e.g. CreatePetBody
+template.body();
+
+template.headerParameters();     // => IHeaderParameters
+template.cookieParameters();     // => ICookieParameters
+template.queryParameters();      // => IQueryParameters
+template.pathParameters();       // => IPathParameters
+```
+
+Templates are **immutable** so that they can be shared and re-used throughout an
+application.
+
+Templates are **logic-less** data containers. The knowledge of how to convert a
+template into an HttpRequest is intentionally kept separate from the data
+itself. This forces the API to expose all the data that could be required to
+make an HTTP, which ensures the API is flexible enough to be used for new
+purposes (such as to implement HTTP requests with a different HTTP library than 
+`java.net.http`.)
+
+#### Template Overrides
+
+TODO: Consider a set of override methods like the following. They take
+precedence over the IParameters bindings and give users a way to "fix" malformed
+specifications. This may be a useful way to work around flawed specifications,
+but there could be higher-leverage ways to achieve the same goal (such as
+"mix-in" specifications that add/remove from a "base"/"source-of-truth"
+specification.)
+
+```java
+myTemplate
     .withPathOverride("/my/custom/path")
     .withQueryOverride("?my=custom,query,fragment")
     .withCookieOverride(Map.of(
@@ -66,36 +146,15 @@ template = template
         "x-header-name", List.of("x-header-value"),
         "biff-header", List.of("biff")))
     .withBodyOverride(myJsonPayload.getBytes()); // Any byte array
-```
-
-Templates are immutable so that they can be easily shared. For each of the
-withers described above, the bound parameters can be retrieved with a
-corresponding record-style getter:
-
-```java
-template.pathParameters().baz();    // => "baz"
-template.qeryParameters().foo();    //=> "foo"
-template.cookieParameters().bar();  // => "bar"
-template.headerParameters().biff(); // => "biff"
-// The generated model (DTO) with bound parameters, e.g. CreatePetBody
-template.body();
 
 template.pathOverride();   // => Optional<String>
 template.queryOverride();  // => Optional<String>
 template.cookieOverride(); // => Map<String, List<String>> of cookies
 template.headerOverride(); // => Map<String, List<String>>
-template.bodyOverride();   // => A byte array.
+template.bodyOverride();   // => byte[]
 ```
 
-Templates are logic-less data containers. The knowledge of how to convert a 
-template into an HttpRequest is intentionally kept separate from the data
-itself: If our generated code is able to use the template api to produce HTTP
-requests, an end-user probably can as well (whereas if the templates 
-contained the logic, we might accidentally make crucial data private or hard
-to access). This keeps the generated code flexible enough to support e.g. the
-nuclear scenario where a user wants to use a totally different http library.
-
-### Optional Validation
+#### Optional Validation
 
 An optional `validate` method may be invoked to check if all required
 parameters have been set, which is intended to be used during development
@@ -111,9 +170,12 @@ since enforced validation can become a burden when specifications contain
 minor errors, and ultimately the service is the source of truth on what is
 and is not valid.
 
-### TODO: Cookies
+#### TODO: Cookies
 
-TODO: The java.net.http cookie management API renders `$` prefixes for cookie
+This section impacts how we convert an `ICookieParameters` to a map so that we
+can configure an `HttpRequest`.
+
+The java.net.http cookie management API renders `$` prefixes for cookie
 attributes like Path and Version, which is an obsolete practice. Whether we
 imitate this depends on how much it impacts java.net.http interop and the
 user experience.
@@ -127,79 +189,47 @@ specifies how cookies are formatted. The OpenAPI specification lets users
 set a format for cookies, which is probably constrained to the contents of a
 single key-value pair. We will need to confirm.
 
-## Making Requests And Reading Responses
+## HTTP Layer API
 
-The `Api` class provided the most convenient method for sending requests and 
-parsing responses. Given a client, base-url, and a populated template, `Api` 
-will issue an HTTP request and convert the response to an instance of a 
-sealed interface corresponding to the documented HTTP return codes:
+The HTTP layer consists of:
 
-```java
-var response = Api.sendSync(
-        HttpClient.newHttpClient(),
-        "https://example.com",
-        Directory.getPet().withPathParameters(p -> p.withId("foo")));
-// => a GetPetResponse, like GetPet200, GetPet404, or GetPetUnexpectedCode
-```
+- The `java.net.http` package.
+- `HttpRequests`
+- `HttpResponses`
 
-This is intended to satisfy the common use-case, but only works when the 
-specification is accurate. Users can access less-abstract levels of the 
-generated API to work around flaws in the specification, described in the 
-following subsections.
+If a user is unable to create a request with the domain layer or can't work
+around a bug with [template overrides](#template-overrides), they can shift
+from the domain layer to the Http layer.
+ 
+Typically, the user will either need to customize how requests are made,
+responses are read, or both.
 
-### De/Serialization Customization
+* To customize requests, the user can first populate a template, then use
+  `HttpRequests.builderFrom(String baseUrl, ITemplate template)` to convert it
+  to an HTTP request builder. They can then use any of the builder APIs to
+  manipulate the request and send it with an HTTP client.
+* To customize response deserialization, the user can define their own model
+  with Jackson annotations and use an object mapper to read it from an
+  `HttpResponse`.
 
-The `Api` exposes an alternative signature to let users customize the 
-serialization library:
-
-```java
-Api.sendSync(
-    HttpClient.newHttpClient(),
-    new ObjectMapper(), // for request serialization
-    new ObjectMapper(), // for response deserialization(?; see TODO)
-    "https://example.com",
-    Directory.getPet().withPathParameters(p -> p.withId("foo")));
-// => a GetPetResponse, like GetPet200, GetPet404, or GetPetUnexpectedCode
-```
-
-TODO: I am unsure if we need two or if just one would be sufficient. Are 
-configurations for serialization separate from deserialization? I.e. can 
-dates be _written_ one way and _read_ another?
-
-The user may provide a custom ObjectMapper to configure de/serialization, 
-which may let them fix certain classes of error.
-
-### Template Overrides
-
-Recall that if the specification contains flaws, the user may be able to
-work around them using the request template's `with*Override` methods to
-directly configure path, query, cookie, header, or request bodies (see
-[Templates](#Templates)). This may be powerful enough for the user, and keeps
-them insulated from lower-level details of request/response generation.
-
-### Resort To java.net.http API 
-
-In the worst case, users can convert templates to
-`java.net.http.HttpRequest$Builder`s, make requests with an `HttpClient` 
-manually, and either handle the response with bespoke code or convert it to 
-a generated response object.
+### `HttpRequests` - Convert `ITemplate`s Into `HttpRequest`s
 
 The `HttpRequests` class converts templates with bound parameters and/or 
-overrides into `java.net.http.HttpRequest.Builder`s:
+overrides into `java.net.http.HttpRequest.Builder`s, which let users customize
+the request arbitrarily:
 
 ```java
-HttpRequests.builder("https://example.com/", template)
+HttpRequests.builder("https://example.com/base/url", template);
 // => java.net.http.HttpRequest$Builder
-    .build();
-// => java.net.http.HttpRequest
 ```
 
 Note the example URL parameter is the base URL for the service. Template paths
 are resolved _relative_ to this base URL.
 
+### `HttpResponses` - Convert `HttpResponse`s Into Domain Types
+
 The `HttpResponses` class converts `java.net.http.HttpResponse` objects into
-generated response objects (e.g. a member of the `CreatePetResponse` sealed
-interface):
+any of the Lily-generated domain-layer models, e.g. `CreatePetResponse`:
 
 ```java
 // Creates an instance of CreatePetResponse (like CreatePet200) from the 
@@ -207,6 +237,8 @@ interface):
 HttpResponses.read(httpResponse, CreatePetResponse.class);
 // Caution: if you ask it to read the wrong response class, this will fail!
 ```
+
+### TODO
 
 Taken together, the user can write a bespoke request with these tools that 
 takes advantage of as much of the generated API as possible:
@@ -224,18 +256,87 @@ var httpResponse = HttpClient.newHttpClient().send(
     BodyHandlers.ofByteArray());
 // => A java.net.http.HttpResponse object
 
-// Either inspect and deserialize the httpResponse manually in the usual way:
+
+// Read a domain-layer response if possible:
+switch (HttpResponses.read(httpResponse, CreatePetResponse.class)) {
+    case CreatePet200 ok -> ok.body();
+    // other cases here. Exhaustively type-checked.
+}
+
+// ...or deserialize the httpResponse manually:
 switch (httpResponse.statusCode()) {
     case 200: return JACKSON_MAPPER.readValue(response.body(), MyDto.class);
     // other cases here.
 }
 
-// ... or use the generated API to deserialize it to a response object:
-switch (HttpResponses.read(httpResponse, CreatePetResponse.class)) {
-    case CreatePet200 ok -> ok.body();
-    // other cases here. Exhaustively type-checked.
+```
+
+### Customization
+
+OpenAPI specifications may be flawed or incomplete, created flawed and
+incomplete generated code. There are several ways to work around flaws without
+leaving the Lily API.
+
+The first is to use [template overrides](#template-overrides), which we've
+already discussed.
+
+The second is to create our own templates and exchange, assuming there are only
+a few things we need to "fix" about the generated code. For example, assume the
+`getPet` operation is missing a path parameter, `id`. We can use subclassing to
+add it in:
+
+```java
+class MyTemplate extends GetPetTemplate {
+  // Not an `@Overrides`, technically an overload.
+  MyTemplate withPathParameters(Function<MyPathParameters, MyPathParameters> f) {
+    
+  }
+  
+  class MyPathParameters extends GetPetTemplate.PathParameters {
+    String myCustomField;
+    
+    MyPathParameters withMyCustomField(String myCustomField) {
+      this.myCustomField = myCustomField;
+      return this;
+    }
+    
+    // Other fields and builders are defined by GetPetTemplate.PathParameters
+  }
+  
+  // ITemplate overrides, e.g:
+  @Override
+  Map<String, Object> pathParameters() {
+    var m = new HashMap<>();
+    m.putAll(delegate.pathParameters()); // 
+  }
 }
 ```
+
+### TODO: De/Serialization Customization
+
+The `Api` exposes an alternative signature to let users customize the
+serialization library:
+
+```java
+Api.sendSync(
+    HttpClient.newHttpClient(),
+    new ObjectMapper(), // for request serialization
+    new ObjectMapper(), // for response deserialization(?; see TODO)
+    "https://example.com",
+    Directory.getPet().withPathParameters(p -> p.withId("foo")));
+// => a GetPetResponse, like GetPet200, GetPet404, or GetPetUnexpectedCode
+```
+
+TODO: I am unsure if we need two or if just one would be sufficient. Are
+configurations for serialization separate from deserialization? I.e. can
+dates be _written_ one way and _read_ another?
+
+TODO: The http client and object mapper(s) could be collapsed into a single
+"options" object.
+
+The user may provide a custom ObjectMapper to configure de/serialization,
+which may let them fix certain classes of error.
+
 
 ## TODO: Models
 
