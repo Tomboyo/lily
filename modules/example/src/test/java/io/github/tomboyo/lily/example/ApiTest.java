@@ -15,8 +15,6 @@ public class ApiTest {
     var actual = Api.sendSync(
             HttpClient.newBuilder().build(),
             info.getHttpBaseUrl(),
-            // TODO: remove this somehow -- make the requestWriter part of the Operation?
-            JsonMapper.builder().build(),
             Api.Operations.getPet(),
             template -> template
                 .withPathParameters(p -> p.withId("mock-id"))

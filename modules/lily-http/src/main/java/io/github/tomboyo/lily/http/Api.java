@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpConnectTimeoutException;
@@ -15,7 +14,6 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 
@@ -49,16 +47,16 @@ public class Api {
    *   200 (content) versus 404 (no content).
    */
   public static <
-      Parameters extends ParameterBindings<?, ?, ?, ?>,
+      BodyParameters,
+      Parameters extends ParameterBindings<?, ?, ?, BodyParameters>,
       Response
   > Result<Response, SendSyncError> sendSync(
       HttpClient client,
       String baseUrl,
-      JsonMapper mapper, // TODO: remove me somehow
-      Operation<Parameters, Response> operation,
+      Operation<BodyParameters, Parameters, Response> operation,
       Function<Parameters, Parameters> f
   ) throws InterruptedException {
-      var requestTemplate = f.apply(operation.requestTemplate());
+      var requestTemplate = f.apply(operation.parameters());
 
       /* Pah and query fragments are expanded independently since parameter
          names are only unique down to their name _and_ location. If we mixed
@@ -78,8 +76,8 @@ public class Api {
         bodyPublisher = requestTemplate.bodyParameters() instanceof NoBodyParameters
             ? HttpRequest.BodyPublishers.noBody()
             : HttpRequest.BodyPublishers.ofByteArray(
-            mapper.writeValueAsBytes(requestTemplate.bodyParameters()));
-      } catch (JsonProcessingException e) {
+                operation.bodyWriter().writeBody(requestTemplate.bodyParameters()));
+      } catch (Exception e) {
         throw new ApiException("Unable to serialize the http request body", e);
       }
 
@@ -107,7 +105,7 @@ public class Api {
       try {
         return new Result.Ok<>(
             operation.responseReader().readResponse(httpResponse));
-      } catch (IOException e) {
+      } catch (Exception e) {
         throw new ApiException("Unable to deserialize the http response", e);
       }
   }
@@ -134,22 +132,34 @@ public class Api {
   }
 
   public record Operation<
-      Request extends ParameterBindings<?, ?, ?, ?>,
+      BodyParameters,
+      Parameters extends ParameterBindings<?, ?, ?, BodyParameters>,
       Response
   >(
       String httpMethod,
       String pathTemplate,
       String queryTemplate,
-      Request requestTemplate,
+      Parameters parameters,
+      BodyWriter<BodyParameters> bodyWriter,
       ResponseReader<Response> responseReader
   ) {
-    public Operation<Request, Response> withRequestTemplate(Request customTemplate) {
-      return new Operation<>(httpMethod, pathTemplate, queryTemplate, customTemplate, responseReader);
+    public Operation<BodyParameters, Parameters, Response> withRequestTemplate(Parameters customTemplate) {
+      return new Operation<>(httpMethod, pathTemplate, queryTemplate, customTemplate, bodyWriter, responseReader);
     }
 
-    public <Response2> Operation<Request, Response2> withResponseReader(ResponseReader<Response2> customResponseReader) {
-      return new Operation<>(httpMethod, pathTemplate, queryTemplate, requestTemplate, customResponseReader);
+    public <Response2> Operation<BodyParameters, Parameters, Response2> withResponseReader(ResponseReader<Response2> customResponseReader) {
+      return new Operation<>(httpMethod, pathTemplate, queryTemplate, parameters, bodyWriter, customResponseReader);
     }
+  }
+
+  @FunctionalInterface
+  public interface BodyWriter<BodyParameters> {
+    byte[] writeBody(BodyParameters parameters) throws Exception;
+  }
+
+  @FunctionalInterface
+  public interface ResponseReader<T> {
+    T readResponse(HttpResponse<byte[]> httpResponse) throws Exception;
   }
 
   public record ParameterBindings<
@@ -170,11 +180,6 @@ public class Api {
     public ParameterBindings<PathParameters, QueryParameters, HeaderParameters, BodyParameters> withQueryParameters(Function<QueryParameters, QueryParameters> f) {
       return new ParameterBindings<>(pathParameters, f.apply(queryParameters), headerParameters, bodyParameters);
     }
-  }
-
-  @FunctionalInterface
-  public interface ResponseReader<T> {
-    T readResponse(HttpResponse<byte[]> httpResponse) throws IOException;
   }
 
   /** Key-value pairs for path, query, header, and cookie parameters. */
@@ -259,7 +264,9 @@ public class Api {
   //
 
   public static class Operations{
+    public static final ObjectMapper MAPPER = new ObjectMapper(); // TODO
     public static Operation<
+        NoBodyParameters,
         ParameterBindings<GetPetPathParameters, GetPetQueryParameters, NoKvParameters<String, String>, NoBodyParameters>,
         GetPetResponse> getPet() {
       return new Operation<>(
@@ -271,6 +278,7 @@ public class Api {
               GetPetQueryParameters.empty(),
               NoKvParameters.empty(),
               new NoBodyParameters()),
+          MAPPER::writeValueAsBytes,
           GetPetResponse::fromHttpResponse);
     }
   }
