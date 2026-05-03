@@ -65,7 +65,7 @@ Api.sendSync(
   Operations.getPet(),
   template -> template
     .withPathParameters(p -> p.withId("1234")));
-// => GetPetResponse (e.g. GetPet200, GetPet404, or GetPetUnexpectedCode)
+// => GetPetResponse (e.g. GetPet200, GetPet404, or GetPetError)
 ```
 
 ### `Operation` and `Operations` - Request And Response Type Pairs

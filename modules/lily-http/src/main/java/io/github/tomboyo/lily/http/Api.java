@@ -1,136 +1,281 @@
 package io.github.tomboyo.lily.http;
 
 import com.damnhandy.uri.template.UriTemplate;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 
 public class Api {
+  /*
+   * TODO:
+   *  - capture documentation on the difference between Result and
+   *    RuntimeException. The gist is: Result<Ok, Error> is for all reasonable
+   *    things a function could do that the code SHOULD expect and handle.
+   *    RuntimeExceptions are _bugs_. There's no reasonable way to catch and
+   *    handle a RuntimeException, because it means the code is flawed and donig
+   *    the wrong thing -- the way to "handle" a bug is to FIX it. So, throw RTE
+   *    when the user needs to re-code something (or implement a custom bug-free
+   *    implementation of otherwise generated code), and return a Result for
+   *    normal control flow.
+   * - work on cookie management. I think the user needs to provide one cookie
+   *   manager per http client per "session," and pass the correct client in
+   *   when they need a particular set of sessions. We need a way to interact
+   *   with the cookie manager from within this function.
+   * NOTE:
+   * - throwing unchecked exceptions. These represent a flaw in the logic, not a
+   *   value that could be sensibly used for control flow. If the user sees
+   *   these exceptions in their logs, it may prompt them to implement
+   *   workaround code. That code would be a new Operation definition, not
+   *   something that could consume the failure and try to handle it as a
+   *   fallback. This API isn't polluted with code to aid control flow in the
+   *   worst case. The user can extend lily to implement the operation correctly
+   *   instead.
+   * - This is DIFFERENT from the various result types one-to-one with response
+   *   codes. Each code represents an expected and normal type of response, e.g.
+   *   200 (content) versus 404 (no content).
+   */
   public static <
-      Request extends RequestTemplate<?, ?>,
+      Parameters extends ParameterBindings<?, ?, ?, ?>,
       Response
-  > Response sendSync(
+  > Result<Response, SendSyncError> sendSync(
       HttpClient client,
       String baseUrl,
-      Operation<Request, Response> operation,
-      Function<Request, Request> f
+      JsonMapper mapper, // TODO: remove me somehow
+      Operation<Parameters, Response> operation,
+      Function<Parameters, Parameters> f
   ) throws InterruptedException {
-    try {
-      var requestTemplate= f.apply(operation.requestTemplate());
+      var requestTemplate = f.apply(operation.requestTemplate());
 
-      var uriTemplate = UriTemplate.fromTemplate(
-          // TODO: trailing-slash-aware url-join
-          baseUrl + requestTemplate.uriTemplate());
-      if (!(requestTemplate.pathParameters() instanceof NoPathParameters)) {
-        uriTemplate.set(requestTemplate.pathParameters().asMap());
-      }
-      if (!(requestTemplate.queryParameters() instanceof NoQueryParameters)) {
-        uriTemplate.set(requestTemplate.queryParameters().asMap());
+      /* Pah and query fragments are expanded independently since parameter
+         names are only unique down to their name _and_ location. If we mixed
+         them all up together into one template, a path parameter and a query
+         parameter may collide. */
+      var pathFragment = UriTemplate.fromTemplate(operation.pathTemplate())
+          .set(requestTemplate.pathParameters().asMap())
+          .expand();
+      var queryFragment = UriTemplate.fromTemplate(operation.queryTemplate())
+          .set(requestTemplate.queryParameters().asMap())
+          .expand();
+      // TODO: how to joint baseUrl with path fragment? Enforce trailing slash?
+      var uri = URI.create(baseUrl + pathFragment + queryFragment);
+
+      HttpRequest.BodyPublisher bodyPublisher;
+      try {
+        bodyPublisher = requestTemplate.bodyParameters() instanceof NoBodyParameters
+            ? HttpRequest.BodyPublishers.noBody()
+            : HttpRequest.BodyPublishers.ofByteArray(
+            mapper.writeValueAsBytes(requestTemplate.bodyParameters()));
+      } catch (JsonProcessingException e) {
+        throw new ApiException("Unable to serialize the http request body", e);
       }
 
-      var request = HttpRequest.newBuilder()
-          .uri(URI.create(uriTemplate.expand()))
-          .build();
-      var response = client.send(
-          request,
-          HttpResponse.BodyHandlers.ofByteArray());
-      return operation.responseReader().readResponse(response);
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to make HTTP request", e);
+      var requestBuilder = HttpRequest.newBuilder()
+          .method(operation.httpMethod(), bodyPublisher)
+          .uri(uri);
+
+      for (var entry : requestTemplate.headerParameters().asMap().entrySet()) {
+        requestBuilder = requestBuilder.header(entry.getKey(), entry.getValue());
+      }
+
+      HttpResponse<byte[]> httpResponse;
+      try {
+        httpResponse = client.send(
+            requestBuilder.build(),
+            HttpResponse.BodyHandlers.ofByteArray());
+      } catch (HttpConnectTimeoutException e) {
+        return new Result.Error<>(new SendSyncError.ConnectTimeout(e));
+      } catch (HttpTimeoutException e) {
+        return new Result.Error<>(new SendSyncError.ResponseTimeout(e));
+      } catch (IOException e) {
+        return new Result.Error<>(new SendSyncError.IoError(e));
+      }
+
+      try {
+        return new Result.Ok<>(
+            operation.responseReader().readResponse(httpResponse));
+      } catch (IOException e) {
+        throw new ApiException("Unable to deserialize the http response", e);
+      }
+  }
+
+  public sealed interface SendSyncError {
+    <E extends Exception> E exception();
+
+    record ConnectTimeout(HttpConnectTimeoutException exception) implements SendSyncError {}
+    record ResponseTimeout(HttpTimeoutException exception) implements SendSyncError {}
+    record IoError(IOException exception) implements SendSyncError {}
+  }
+
+  /** Thrown due to an unrecoverable, unexpected exception while preparing or
+    * sending an HTTP request.
+    */
+  public static final class ApiException extends RuntimeException {
+    public ApiException(String message) {
+      super(message);
+    }
+
+    public ApiException(String message, Exception cause) {
+      super(message, cause);
     }
   }
 
   public record Operation<
-      Request extends IRequestTemplate<?, ?>,
+      Request extends ParameterBindings<?, ?, ?, ?>,
       Response
   >(
+      String httpMethod,
+      String pathTemplate,
+      String queryTemplate,
       Request requestTemplate,
       ResponseReader<Response> responseReader
   ) {
     public Operation<Request, Response> withRequestTemplate(Request customTemplate) {
-      return new Operation<>(customTemplate, responseReader);
+      return new Operation<>(httpMethod, pathTemplate, queryTemplate, customTemplate, responseReader);
     }
 
     public <Response2> Operation<Request, Response2> withResponseReader(ResponseReader<Response2> customResponseReader) {
-      return new Operation<>(requestTemplate, customResponseReader);
+      return new Operation<>(httpMethod, pathTemplate, queryTemplate, requestTemplate, customResponseReader);
     }
   }
 
-  public interface IRequestTemplate<
-      PathParameters extends IPathParameters,
-      QueryParameters extends IQueryParameters
-  > {
-    IRequestTemplate<PathParameters, QueryParameters> withPathParameters(Function<PathParameters, PathParameters> f);
-    IRequestTemplate<PathParameters, QueryParameters> withQueryParameters(Function<QueryParameters, QueryParameters> f);
-  }
-
-  public record RequestTemplate<
-      PathParameters extends IPathParameters,
-      QueryParameters extends IQueryParameters
+  public record ParameterBindings<
+      PathParameters extends IKvParameters<String, Object>,
+      QueryParameters extends IKvParameters<String, Object>,
+      HeaderParameters extends IKvParameters<String, String>,
+      BodyParameters
   > (
-      String uriTemplate,
       PathParameters pathParameters,
-      QueryParameters queryParameters
-  ) implements IRequestTemplate<PathParameters, QueryParameters> {
-    @Override
-    public RequestTemplate<PathParameters, QueryParameters> withPathParameters(Function<PathParameters, PathParameters> f) {
-      return new RequestTemplate<>(uriTemplate, f.apply(pathParameters), queryParameters);
+      QueryParameters queryParameters,
+      HeaderParameters headerParameters,
+      BodyParameters bodyParameters
+  ) {
+    public ParameterBindings<PathParameters, QueryParameters, HeaderParameters, BodyParameters> withPathParameters(Function<PathParameters, PathParameters> f) {
+      return new ParameterBindings<>(f.apply(pathParameters), queryParameters, headerParameters, bodyParameters);
     }
 
-    @Override
-    public IRequestTemplate<PathParameters, QueryParameters> withQueryParameters(Function<QueryParameters, QueryParameters> f) {
-      return new RequestTemplate<>(uriTemplate, pathParameters, f.apply(queryParameters));
+    public ParameterBindings<PathParameters, QueryParameters, HeaderParameters, BodyParameters> withQueryParameters(Function<QueryParameters, QueryParameters> f) {
+      return new ParameterBindings<>(pathParameters, f.apply(queryParameters), headerParameters, bodyParameters);
     }
   }
 
   @FunctionalInterface
   public interface ResponseReader<T> {
-    T readResponse(HttpResponse<byte[]> httpResponse);
+    T readResponse(HttpResponse<byte[]> httpResponse) throws IOException;
   }
 
-  public interface IPathParameters extends IParameters {}
-  public interface IQueryParameters extends IParameters {}
-  public interface IParameters {
-    Map<String, Object> asMap();
+  /** Key-value pairs for path, query, header, and cookie parameters. */
+  public interface IKvParameters<Key, Value> {
+    Map<Key, Value> asMap();
   }
 
-  public static class NoPathParameters implements IPathParameters {
+  /** Default/Empty impl of IKvParameters for APIs without parameters. */
+  public static class NoKvParameters<Key, Value> implements IKvParameters<Key, Value> {
+    public static <Key, Value> NoKvParameters<Key, Value> empty() {
+      return new NoKvParameters<>();
+    }
+
     @Override
-    public Map<String, Object> asMap() {
+    public Map<Key, Value> asMap() {
       return Map.of();
     }
   }
 
-  public static class NoQueryParameters implements IQueryParameters {
-    @Override
-    public Map<String, Object> asMap() {
-      return Map.of();
+  public static class NoBodyParameters {}
+
+
+  //
+  // Utils
+  //
+
+  public sealed interface Result<T, E> permits Result.Ok, Result.Error {
+    <T2> Result<T2, E> map(Function<T, T2> f);
+    <E2> Result<T, E2> mapError(Function<E, E2> f);
+    <T2, E2> Result<T2, E2> biMap(Function<T, T2> fOk, Function<E, E2> fError);
+    <R> R unwrap(Function<T, R> fOk, Function<E, R> fError);
+
+    record Ok<T, E>(T value) implements Result<T, E> {
+      @Override
+      public <T2> Result<T2, E> map(Function<T, T2> f) {
+        return new Ok<>(f.apply(value));
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public <E2> Result<T, E2> mapError(Function<E, E2> f) {
+        return (Result<T, E2>) this;
+      }
+
+      @Override
+      public <T2, E2> Result<T2, E2> biMap(Function<T, T2> fOk, Function<E, E2> fError) {
+        return new Ok<>(fOk.apply(value));
+      }
+
+      @Override
+      public <R> R unwrap(Function<T, R> fOk, Function<E, R> fError) {
+        return fOk.apply(value);
+      }
+    }
+
+    record Error<T, E>(E value) implements Result<T, E> {
+      @Override
+      @SuppressWarnings("unchecked")
+      public <T2> Result<T2, E> map(Function<T, T2> f) {
+        return (Error<T2, E>) this;
+      }
+
+      @Override
+      public <E2> Result<T, E2> mapError(Function<E, E2> f) {
+        return new Error<>(f.apply(value));
+      }
+
+      @Override
+      public <T2, E2> Result<T2, E2> biMap(Function<T, T2> fOk, Function<E, E2> fError) {
+        return new Error<>(fError.apply(value));
+      }
+
+      @Override
+      public <R> R unwrap(Function<T, R> fOk, Function<E, R> fError) {
+        return fError.apply(value);
+      }
     }
   }
 
+  //
   // Example Impls
+  //
 
-  public class Operations{
-    public Operation<
-        RequestTemplate<GetPetPathParameters, GetPetQueryParameters>,
+  public static class Operations{
+    public static Operation<
+        ParameterBindings<GetPetPathParameters, GetPetQueryParameters, NoKvParameters<String, String>, NoBodyParameters>,
         GetPetResponse> getPet() {
       return new Operation<>(
-          new RequestTemplate<>(
-              "/pets/{id}{?foo,bar,baz}",
+          "GET",
+          "/pets/{id}",
+          "{?foo,bar,baz}",
+          new ParameterBindings<>(
               GetPetPathParameters.empty(),
-              GetPetQueryParameters.empty()),
-          (httpResponse) -> new GetPetResponse());
+              GetPetQueryParameters.empty(),
+              NoKvParameters.empty(),
+              new NoBodyParameters()),
+          GetPetResponse::fromHttpResponse);
     }
   }
 
-  public record GetPetPathParameters(String id) implements IPathParameters {
+  public record GetPetPathParameters(String id) implements IKvParameters<String, Object> {
     public static GetPetPathParameters empty() {
       return new GetPetPathParameters(null);
     }
@@ -149,7 +294,7 @@ public class Api {
     }
   }
 
-  public record GetPetQueryParameters(String foo, String bar, String baz) implements IQueryParameters {
+  public record GetPetQueryParameters(String foo, String bar, String baz) implements IKvParameters<String, Object> {
     public static GetPetQueryParameters empty() {
       return new GetPetQueryParameters(null, null, null);
     }
@@ -182,154 +327,18 @@ public class Api {
     }
   }
 
-  // Would normally be a sealed interface
-  public class GetPetResponse {}
+  public sealed interface GetPetResponse permits GetPet200, GetPet404 {
+    // TODO
+    static final ObjectMapper mapper = new ObjectMapper();
 
-  // Customizations!
-
-  /* OLD APPROACH
-  public static <Template extends ITemplate, Response> Result<Response> sendSync(
-      HttpClient httpClient,
-      String baseUrl,
-      IExchange<Template, Response> exchange,
-      Function<Template, Template> fillTemplate
-  ) throws InterruptedException {
-    try {
-      var template = fillTemplate.apply(exchange.createRequestTemplate());
-      var httpRequest = HttpRequests.builder(baseUrl, template).build();
-      var httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofByteArray());
-      var response = exchange.readResponse(httpResponse);
-      return new Result.Ok<>(response);
-    } catch (IOException e) {
-      return new Result.Error<>("Unable to send HTTP request", e);
+    static GetPetResponse fromHttpResponse(HttpResponse<byte[]> httpResponse) throws IOException {
+      return switch (httpResponse.statusCode()) {
+        case 200 -> mapper.readValue(httpResponse.body(), GetPet200.class);
+        case 404 -> mapper.readValue(httpResponse.body(), GetPet404.class);
+        default -> throw new IOException("Unexpected http status '%s'".formatted(httpResponse.statusCode()));
+      };
     }
   }
-
-  public interface IExchange<Template extends ITemplate, Response> {
-    Template createRequestTemplate();
-    Response readResponse(HttpResponse<byte[]> httpResponse);
-  }
-
-  // Marker interface only.
-  public interface ITemplate {}
-
-  public interface IHasPathParameters<Path extends IPathParameters> extends ITemplate {
-    <Path2 extends IPathParameters> IHasPathParameters<Path2> withPathParameters(Path2 pathParameters);
-    IHasPathParameters<Path> withPathOverride(String pathOverride);
-
-    Path pathParameters();
-    Optional<String> pathOverride();
-
-    default <Path2 extends IPathParameters> IHasPathParameters<Path2> withPathParameters(
-        Function<? super Path, Path2> f) {
-      return withPathParameters(f.apply(pathParameters()));
-    }
-
-    default <Path2 extends IPathParameters> IHasPathParameters<Path2> withPathParameters(
-        Function<? super Path2, Path2> f,
-        Supplier<Path2> g) {
-      return withPathParameters(f.apply(g.get()));
-    }
-  }
-
-  public interface IPathParameters {
-    Map<String, String> asMap();
-  }
-
-  public static class HttpRequests {
-    public static HttpRequest.Builder builder(String baseUrl, ITemplate template) {
-      return HttpRequest.newBuilder();
-          //.uri(...)
-    }
-  }
-
-  public sealed interface Result<T> permits Result.Ok, Result.Error {
-    record Ok<T>(T result) implements Result<T> {}
-    record Error<T>(String message, Exception cause) implements Result<T> {}
-  }
-
-  // EXAMPLE IMPLS
-
-  // NOTE: templates are immutable, so this could in fact be a record.
-  static class MyGetPetExchange implements IExchange<GetPetTemplate<GetPetTemplate.PathParameters>, GetPetResponse> {
-    @Override
-    public GetPetTemplate<GetPetTemplate.PathParameters> createRequestTemplate() {
-      return GetPetTemplate.defaultInstance();
-    }
-
-    @Override
-    public GetPetResponse readResponse(HttpResponse<byte[]> httpResponse) {
-      return GetPetResponse.read(httpResponse);
-    }
-  }
-
-  static class GetPetTemplate<Path extends IPathParameters> implements
-      IHasPathParameters<Path> {
-    private final Path pathParameters;
-    private final Optional<String> pathOverride;
-
-    public static GetPetTemplate<PathParameters> defaultInstance() {
-      return new GetPetTemplate<>(new PathParameters(), Optional.empty());
-    }
-
-    public GetPetTemplate(Path pathParameters, Optional<String> pathOverride) {
-      this.pathParameters = pathParameters;
-      this.pathOverride = pathOverride;
-    }
-
-    @Override
-    public <Path2 extends IPathParameters> GetPetTemplate<Path2> withPathParameters(Path2 pathParameters) {
-      return new GetPetTemplate<>(pathParameters, pathOverride);
-    }
-
-    @Override
-    public IHasPathParameters<Path> withPathOverride(String pathOverride) {
-      return new GetPetTemplate<>(pathParameters, Optional.of(pathOverride));
-    }
-
-    @Override
-    public Path pathParameters() {
-      return pathParameters;
-    }
-
-    @Override
-    public Optional<String> pathOverride() {
-      return Optional.empty();
-    }
-
-    static class PathParameters implements IPathParameters {
-      @Override
-      public Map<String, String> asMap() {
-        return Map.of();
-      }
-    }
-  }
-
-  record GetPetResponse() {
-    public static GetPetResponse read(HttpResponse<byte[]> httpResponse) {
-      return null;
-    }
-  }
-
-  static class MyGetPetTemplate<
-      Path extends GetPetTemplate.PathParameters,
-      Query extends MyGetPetTemplate.QueryParameters> extends GetPetTemplate<Path> {
-
-    private final Supplier<Query> newQueryParameters;
-    private final Query queryParameters;
-
-    public MyGetPetTemplate(
-        Supplier<Path> newPathParameters,
-        Path pathParameters,
-        Supplier<Query> newQueryParameters,
-        Query queryParameters) {
-      super(newPathParameters, pathParameters);
-
-      this.newQueryParameters = newQueryParameters;
-      this.queryParameters = queryParameters;
-    }
-
-    public static class QueryParameters {}
-  }
-  */
+  public record GetPet200() implements GetPetResponse {}
+  public record GetPet404() implements GetPetResponse {}
 }
