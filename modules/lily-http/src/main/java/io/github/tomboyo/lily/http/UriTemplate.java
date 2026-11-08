@@ -22,7 +22,9 @@ import java.util.regex.Pattern;
  * }</pre>
  *
  * @see Encoders
+ * @deprecated Going to replace with with damnhandy.UriTemplate
  */
+@Deprecated(forRemoval = true)
 public class UriTemplate {
 
   private final String template;
