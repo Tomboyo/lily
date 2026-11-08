@@ -7,5 +7,9 @@ target/
 .flattened-pom.xml
 .vscode
 
+**/.classpath
+**/.project
+**/.settings
+
 # clojure
 **/.nrepl-port
