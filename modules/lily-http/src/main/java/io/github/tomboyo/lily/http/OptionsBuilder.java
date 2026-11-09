@@ -1,8 +1,8 @@
 package io.github.tomboyo.lily.http;
 
-import java.net.http.HttpClient;
-
 import static java.util.Objects.requireNonNull;
+
+import java.net.http.HttpClient;
 
 public class OptionsBuilder {
   private HttpClient httpClient;

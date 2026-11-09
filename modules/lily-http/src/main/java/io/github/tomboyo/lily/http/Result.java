@@ -54,12 +54,6 @@ public sealed interface Result<T, E> permits Result.Ok, Result.Error {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public <E2> Result<T, E2> mapError(Function<E, E2> f) {
-      return (Result<T, E2>) this;
-    }
-
-    @Override
     public <X> X reduce(Function<T, X> fOk, Function<E, X> fError) {
       return fOk.apply(value);
     }
@@ -86,11 +80,6 @@ public sealed interface Result<T, E> permits Result.Ok, Result.Error {
     @SuppressWarnings("unchecked")
     public <T2, E2 extends E> Result<T2, E> flatMap(Function<T, Result<T2, E2>> f) {
       return (Error<T2, E>) this;
-    }
-
-    @Override
-    public <E2> Result<T, E2> mapError(Function<E, E2> f) {
-      return new Error<>(f.apply(value));
     }
 
     @Override

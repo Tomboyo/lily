@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
@@ -176,6 +177,7 @@ public class CompilerSupport {
         .call();
 
     listener.getDiagnostics().stream()
+        .filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR)
         .findFirst()
         .ifPresent(
             (it) -> {

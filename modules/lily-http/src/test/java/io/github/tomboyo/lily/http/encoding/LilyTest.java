@@ -10,22 +10,22 @@ import io.github.tomboyo.lily.http.model.IParameters;
 import io.github.tomboyo.lily.http.model.NoParameters;
 import io.github.tomboyo.lily.http.model.Operation;
 import io.github.tomboyo.lily.http.model.ParameterBindings;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
 @WireMockTest
 public class LilyTest {
   @Test
   void test(WireMockRuntimeInfo info) {
-    var options = Options.builder()
-        .setHttpClient(HttpClient.newBuilder().build())
-        .setBaseUrl(info.getHttpBaseUrl())
-        .build();
+    var options =
+        Options.builder()
+            .setHttpClient(HttpClient.newBuilder().build())
+            .setBaseUrl(info.getHttpBaseUrl())
+            .build();
 
     Lily.sendSync(
             options,
@@ -45,11 +45,9 @@ public class LilyTest {
   }
 
   public sealed interface PetStoreError {
-    record NoSuchPet() implements PetStoreError {
-    }
+    record NoSuchPet() implements PetStoreError {}
 
-    record ApiError(Lily.SendSyncError reason) implements PetStoreError {
-    }
+    record ApiError(Lily.SendSyncError reason) implements PetStoreError {}
   }
 
   /*
@@ -63,15 +61,15 @@ public class LilyTest {
     public static final ObjectMapper MAPPER = new ObjectMapper(); // TODO
 
     public static Operation<
-        NoParameters,
-        ParameterBindings<
-            GetPetPathParameters,
-            GetPetQueryParameters,
             NoParameters,
-            NoParameters,
-            NoParameters>,
-        GetPetResponse>
-    getPet() {
+            ParameterBindings<
+                GetPetPathParameters,
+                GetPetQueryParameters,
+                NoParameters,
+                NoParameters,
+                NoParameters>,
+            GetPetResponse>
+        getPet() {
       return new Operation<>(
           "GET",
           "/pets/{id}",
@@ -143,23 +141,24 @@ public class LilyTest {
     // TODO
     ObjectMapper mapper = new ObjectMapper();
 
-    static Result<GetPetResponse, Lily.SendSyncError.ReadResponseError> fromHttpResponse(HttpResponse<byte[]> httpResponse) {
+    static Result<GetPetResponse, Lily.SendSyncError.ReadResponseError> fromHttpResponse(
+        HttpResponse<byte[]> httpResponse) {
       try {
         return switch (httpResponse.statusCode()) {
           case 200 -> Result.ok(mapper.readValue(httpResponse.body(), GetPet200.class));
           case 404 -> Result.ok(mapper.readValue(httpResponse.body(), GetPet404.class));
           default ->
-              Result.error(new Lily.SendSyncError.ReadResponseError.UnexpectedHttpStatus(httpResponse.statusCode()));
+              Result.error(
+                  new Lily.SendSyncError.ReadResponseError.UnexpectedHttpStatus(
+                      httpResponse.statusCode()));
         };
       } catch (IOException e) {
         return Result.error(new Lily.SendSyncError.ReadResponseError.DeserializationError(e));
       }
     }
 
-    record GetPet200() implements GetPetResponse {
-    }
+    record GetPet200() implements GetPetResponse {}
 
-    record GetPet404() implements GetPetResponse {
-    }
+    record GetPet404() implements GetPetResponse {}
   }
 }

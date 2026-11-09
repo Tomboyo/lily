@@ -4,7 +4,6 @@ import com.damnhandy.uri.template.UriTemplate;
 import io.github.tomboyo.lily.http.model.NoParameters;
 import io.github.tomboyo.lily.http.model.Operation;
 import io.github.tomboyo.lily.http.model.ParameterBindings;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -23,8 +22,7 @@ public class Lily {
           Function<Parameters, Parameters> f) {
     var request = createHttpRequest(options.baseUrl(), operation, f);
     var reader = operation.responseReader();
-    return sendSync(options.httpClient(), request)
-        .flatMap(reader::readResponse);
+    return sendSync(options.httpClient(), request).flatMap(reader::readResponse);
   }
 
   private static Result<HttpResponse<byte[]>, SendSyncError> sendSync(
@@ -56,7 +54,7 @@ public class Lily {
     parameter may collide. */
 
     /* All path parameters must be RFC6570 serialized. The operation is
-       generated with an RFC6570 template. */
+    generated with an RFC6570 template. */
     var pathFragment =
         UriTemplate.fromTemplate(operation.pathTemplate())
             .set(requestTemplate.pathParameters().asMap())
@@ -66,7 +64,7 @@ public class Lily {
     var queryFragment = "";
 
     /* NOTE: the path fragment always begins with a slash. The query should likewise begin with
-       '?'. */
+    '?'. */
     var uri = URI.create(baseUrl + pathFragment + queryFragment);
 
     // TODO: headers, see above comment about format+style/content encoding
@@ -94,12 +92,16 @@ public class Lily {
 
   public sealed interface SendSyncError {
     record ConnectTimeout(HttpConnectTimeoutException exception) implements SendSyncError {}
+
     record InterruptedError(InterruptedException exception) implements SendSyncError {}
+
     record IoError(IOException exception) implements SendSyncError {}
+
     record ResponseTimeout(HttpTimeoutException exception) implements SendSyncError {}
 
     sealed interface ReadResponseError extends SendSyncError {
       record DeserializationError(IOException exception) implements ReadResponseError {}
+
       record UnexpectedHttpStatus(int code) implements ReadResponseError {}
     }
   }
