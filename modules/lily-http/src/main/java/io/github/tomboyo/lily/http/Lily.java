@@ -102,7 +102,7 @@ public class Lily {
     sealed interface ReadResponseError extends SendSyncError {
       record DeserializationError(IOException exception) implements ReadResponseError {}
 
-      record UnexpectedHttpStatus(int code) implements ReadResponseError {}
+      record UnexpectedHttpStatus(int code, HttpResponse<?> response) implements ReadResponseError {}
     }
   }
 }
